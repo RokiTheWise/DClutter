@@ -1041,13 +1041,21 @@ private struct ThumbnailPreview: NSViewRepresentable {
 private struct LivePreview: NSViewRepresentable {
     let url: URL
 
-    func makeNSView(context: Context) -> QLPreviewView {
-        let view = QLPreviewView(frame: .zero, style: .normal)
+    // QLPreviewView's init is failable on recent SDKs (confirmed on the
+    // macOS 26 SDK). NSViewRepresentable must return a non-optional view,
+    // so fall back to an empty NSView rather than force-unwrapping and
+    // crashing on an unpreviewable file — the resting-state thumbnail is
+    // unaffected, so the worst case is a blank focused pane.
+    func makeNSView(context: Context) -> NSView {
+        guard let view = QLPreviewView(frame: .zero, style: .normal) else {
+            return NSView()
+        }
         view.previewItem = url as QLPreviewItem
         return view
     }
 
-    func updateNSView(_ view: QLPreviewView, context: Context) {
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let view = nsView as? QLPreviewView else { return }
         if (view.previewItem as? URL) != url {
             view.previewItem = url as QLPreviewItem
         }
