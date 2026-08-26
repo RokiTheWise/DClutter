@@ -27,6 +27,9 @@ public struct FileCandidate: Identifiable, Hashable, Sendable {
     public let bytes: Int64
     public let lastOpened: Date?
     public let created: Date
+    /// Filesystem modification time. Falls back point for staleness when
+    /// `lastOpened` is unavailable — see QueueScorer.
+    public let modified: Date?
     public let sourceURL: URL?
     public let contentType: UTType?
     public let isDirectory: Bool
@@ -37,6 +40,7 @@ public struct FileCandidate: Identifiable, Hashable, Sendable {
         bytes: Int64,
         lastOpened: Date?,
         created: Date,
+        modified: Date? = nil,
         sourceURL: URL? = nil,
         contentType: UTType? = nil,
         isDirectory: Bool = false
@@ -46,8 +50,41 @@ public struct FileCandidate: Identifiable, Hashable, Sendable {
         self.bytes = bytes
         self.lastOpened = lastOpened
         self.created = created
+        self.modified = modified
         self.sourceURL = sourceURL
         self.contentType = contentType
         self.isDirectory = isDirectory
+    }
+
+    /// Whether the filename looks auto-generated rather than user-chosen —
+    /// camera/screenshot patterns, bare "download"/"untitled"/"document",
+    /// or a purely numeric name. Feeds the §4 ambiguous-name penalty, which
+    /// only applies alongside a missing source URL.
+    public var hasGenericName: Bool {
+        let stem = url.deletingPathExtension().lastPathComponent
+            .trimmingCharacters(in: .whitespaces)
+        guard !stem.isEmpty else { return true }
+
+        if stem.range(of: #"^\d+$"#, options: .regularExpression) != nil {
+            return true
+        }
+
+        let patterns = [
+            #"^img[_-]?\d+$"#,
+            #"^img[_-].*$"#,
+            #"^dsc[_-]?\d+$"#,
+            #"^screenshot.*$"#,
+            #"^screen ?shot.*$"#,
+            #"^download(s)?( ?\(\d+\))?$"#,
+            #"^untitled( \d+)?$"#,
+            #"^new document( \d+)?$"#,
+            #"^document( \d+)?$"#,
+            #"^unnamed( \d+)?$"#,
+            #"^scan ?\d*.*$"#,
+            #"^file( \d+)?$"#,
+        ]
+        return patterns.contains { pattern in
+            stem.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+        }
     }
 }
