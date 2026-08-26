@@ -121,3 +121,57 @@ private func tempPersistenceURL() -> URL {
     session.commitTrashed([a.url]) // a is still .pending — nothing to commit
     #expect(session.current?.id == a.id)
 }
+
+@MainActor
+@Test func decisionsArePersistedToDisk() throws {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let url = tempPersistenceURL()
+    defer { try? FileManager.default.removeItem(at: url) }
+    let session = DClutterSession(candidates: [a, b], persistenceURL: url)
+    session.keep()
+    #expect(FileManager.default.fileExists(atPath: url.path))
+    let data = try Data(contentsOf: url)
+    let snapshot = try JSONDecoder().decode(SessionSnapshot.self, from: data)
+    #expect(snapshot.states[a.url.absoluteString] == .kept)
+}
+
+@MainActor
+@Test func relaunchReconcilesPersistedStateForCandidatesStillPresent() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let url = tempPersistenceURL()
+    defer { try? FileManager.default.removeItem(at: url) }
+    let first = DClutterSession(candidates: [a, b], persistenceURL: url)
+    first.keep() // decides a
+
+    let second = DClutterSession(candidates: [a, b], persistenceURL: url)
+    #expect(second.current?.id == b.id) // a's .kept state survived relaunch
+    #expect(second.remainingCount == 1)
+}
+
+@MainActor
+@Test func relaunchAppendsNewCandidatesNotInPersistedSnapshot() {
+    let a = candidate("a.pdf")
+    let url = tempPersistenceURL()
+    defer { try? FileManager.default.removeItem(at: url) }
+    let first = DClutterSession(candidates: [a], persistenceURL: url)
+    first.keep()
+
+    let b = candidate("b.pdf") // newly downloaded since last launch
+    let second = DClutterSession(candidates: [a, b], persistenceURL: url)
+    #expect(second.current?.id == b.id)
+    #expect(second.totalCount == 2)
+}
+
+@MainActor
+@Test func relaunchDropsPersistedURLsNoLongerPresent() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let url = tempPersistenceURL()
+    defer { try? FileManager.default.removeItem(at: url) }
+    let first = DClutterSession(candidates: [a, b], persistenceURL: url)
+    first.skip() // defers a
+
+    // b was manually deleted from Downloads outside the app before relaunch.
+    let second = DClutterSession(candidates: [a], persistenceURL: url)
+    #expect(second.totalCount == 1)
+    #expect(second.current?.id == a.id) // deferred state also reconciled
+}

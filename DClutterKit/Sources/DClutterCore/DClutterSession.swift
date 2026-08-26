@@ -19,6 +19,14 @@ public final class DClutterSession {
     public init(candidates: [FileCandidate], persistenceURL: URL) {
         self.queue = candidates
         self.persistenceURL = persistenceURL
+        if let snapshot = Self.loadSnapshot(from: persistenceURL) {
+            let known = Set(candidates.map(\.url.absoluteString))
+            self.states = snapshot.states.reduce(into: [:]) { result, entry in
+                guard known.contains(entry.key), let url = URL(string: entry.key) else { return }
+                result[url] = entry.value
+            }
+            self.deferred = Set(snapshot.deferred.compactMap { known.contains($0) ? URL(string: $0) : nil })
+        }
     }
 
     private var effectiveOrder: [FileCandidate] {
@@ -42,6 +50,29 @@ private enum Decision {
     case skip(URL)
 }
 
+struct SessionSnapshot: Codable {
+    let queueOrder: [String]      // url.absoluteString, in effective order at save time
+    let states: [String: FileState]
+    let deferred: [String]
+}
+
+extension DClutterSession {
+    private func persist() {
+        let snapshot = SessionSnapshot(
+            queueOrder: queue.map(\.url.absoluteString),
+            states: states.reduce(into: [:]) { $0[$1.key.absoluteString] = $1.value },
+            deferred: deferred.map(\.absoluteString)
+        )
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        try? data.write(to: persistenceURL, options: .atomic)
+    }
+
+    static func loadSnapshot(from url: URL) -> SessionSnapshot? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(SessionSnapshot.self, from: data)
+    }
+}
+
 extension DClutterSession {
     public var canUndo: Bool { !history.isEmpty }
 
@@ -49,18 +80,21 @@ extension DClutterSession {
         guard let url = current?.url else { return }
         states[url] = .kept
         history.append(.keep(url))
+        persist()
     }
 
     public func stage() {
         guard let url = current?.url else { return }
         states[url] = .staged
         history.append(.stage(url))
+        persist()
     }
 
     public func skip() {
         guard let url = current?.url else { return }
         deferred.insert(url)
         history.append(.skip(url))
+        persist()
     }
 
     public func undo() {
@@ -71,6 +105,7 @@ extension DClutterSession {
         case .skip(let url):
             deferred.remove(url)
         }
+        persist()
     }
 
     public func stagedForCommit() -> [FileCandidate] {
@@ -88,5 +123,6 @@ extension DClutterSession {
             states[url] = .trashed
         }
         history.removeAll()
+        persist()
     }
 }
