@@ -37,18 +37,30 @@ struct PreviewPane: View {
 private struct ThumbnailPreview: NSViewRepresentable {
     let url: URL
 
+    final class Coordinator {
+        var requestedURL: URL?
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
     func makeNSView(context: Context) -> NSImageView {
         let view = NSImageView()
         view.imageScaling = .scaleProportionallyUpOrDown
-        loadThumbnail(into: view)
+        loadThumbnail(into: view, coordinator: context.coordinator)
         return view
     }
 
     func updateNSView(_ view: NSImageView, context: Context) {
-        loadThumbnail(into: view)
+        loadThumbnail(into: view, coordinator: context.coordinator)
     }
 
-    private func loadThumbnail(into view: NSImageView) {
+    private func loadThumbnail(into view: NSImageView, coordinator: Coordinator) {
+        // Skip redundant reloads, and ignore a slow load that lost the race
+        // to a newer card — otherwise the pane can show the previous file's
+        // thumbnail while the user is deciding on this one.
+        guard coordinator.requestedURL != url else { return }
+        coordinator.requestedURL = url
+
         let size = CGSize(width: 400, height: 300)
         let request = QLThumbnailGenerator.Request(
             fileAt: url, size: size, scale: 2, representationTypes: .thumbnail
@@ -56,6 +68,7 @@ private struct ThumbnailPreview: NSViewRepresentable {
         Task { @MainActor in
             let thumbnail = try? await QLThumbnailGenerator.shared
                 .generateBestRepresentation(for: request)
+            guard coordinator.requestedURL == url else { return }
             view.image = thumbnail?.nsImage
         }
     }
