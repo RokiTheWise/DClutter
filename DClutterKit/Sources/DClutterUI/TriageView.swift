@@ -11,6 +11,7 @@ import DClutterCore
 public struct TriageView: View {
     @State private var viewModel: SessionViewModel?
     @State private var context: QueueContext?
+    @State private var loadError: String?
     let folder: URL
 
     public init(folder: URL) {
@@ -21,6 +22,19 @@ public struct TriageView: View {
         Group {
             if let viewModel, let context {
                 content(viewModel: viewModel, context: context)
+            } else if let loadError {
+                VStack(spacing: DesignTokens.Spacing.large) {
+                    Text("Couldn't read your Downloads folder.")
+                        .foregroundStyle(DesignTokens.ColorToken.textPrimary)
+                    Text(loadError)
+                        .font(.system(size: 12))
+                        .foregroundStyle(DesignTokens.ColorToken.textSecondary)
+                    Button("Try Again") {
+                        self.loadError = nil
+                        Task { await loadSession() }
+                    }
+                }
+                .padding(DesignTokens.Spacing.cardMargin)
             } else {
                 ProgressView().task { await loadSession() }
             }
@@ -69,6 +83,15 @@ public struct TriageView: View {
             default: return .ignored
             }
         }
+        // §6: Esc "returns control to triage", so while the preview is
+        // focused the triage keys must not fire — only Esc is live.
+        if viewModel.previewFocused {
+            if press.key == .escape {
+                viewModel.previewFocused = false
+                return .handled
+            }
+            return .ignored
+        }
         switch press.key {
         case .rightArrow, "k": viewModel.keep(); return .handled
         case .leftArrow, "x": viewModel.stage(); return .handled
@@ -81,7 +104,13 @@ public struct TriageView: View {
 
     private func loadSession() async {
         let provider = DirectoryMetadataProvider()
-        guard let candidates = try? await provider.candidates(in: folder) else { return }
+        let candidates: [FileCandidate]
+        do {
+            candidates = try await provider.candidates(in: folder)
+        } catch {
+            loadError = error.localizedDescription
+            return
+        }
         let ranked = QueueScorer.rank(candidates).map(\.candidate)
         let supportDir = try? FileManager.default.url(
             for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true
