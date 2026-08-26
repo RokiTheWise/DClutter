@@ -1,0 +1,620 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1DDBA36A303E9BE5005B50CD /* DClutterCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1DDBA369303E9BE5005B50CD /* DClutterCore */; };
+		1DDBA36C303E9BE5005B50CD /* DClutterPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = 1DDBA36B303E9BE5005B50CD /* DClutterPlatform */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1DDBA340303E9A2F005B50CD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1DDBA32A303E9A2E005B50CD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1DDBA331303E9A2E005B50CD;
+			remoteInfo = DClutter;
+		};
+		1DDBA34A303E9A2F005B50CD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1DDBA32A303E9A2E005B50CD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1DDBA331303E9A2E005B50CD;
+			remoteInfo = DClutter;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		1DDBA332303E9A2E005B50CD /* DClutter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DClutter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1DDBA33F303E9A2F005B50CD /* DClutterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DClutterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1DDBA349303E9A2F005B50CD /* DClutterUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DClutterUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		1DDBA334303E9A2E005B50CD /* DClutter */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DClutter;
+			sourceTree = "<group>";
+		};
+		1DDBA342303E9A2F005B50CD /* DClutterTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DClutterTests;
+			sourceTree = "<group>";
+		};
+		1DDBA34C303E9A2F005B50CD /* DClutterUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DClutterUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1DDBA32F303E9A2E005B50CD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1DDBA36C303E9BE5005B50CD /* DClutterPlatform in Frameworks */,
+				1DDBA36A303E9BE5005B50CD /* DClutterCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1DDBA33C303E9A2F005B50CD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1DDBA346303E9A2F005B50CD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1DDBA329303E9A2E005B50CD = {
+			isa = PBXGroup;
+			children = (
+				1DDBA334303E9A2E005B50CD /* DClutter */,
+				1DDBA342303E9A2F005B50CD /* DClutterTests */,
+				1DDBA34C303E9A2F005B50CD /* DClutterUITests */,
+				1DDBA333303E9A2E005B50CD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1DDBA333303E9A2E005B50CD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1DDBA332303E9A2E005B50CD /* DClutter.app */,
+				1DDBA33F303E9A2F005B50CD /* DClutterTests.xctest */,
+				1DDBA349303E9A2F005B50CD /* DClutterUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1DDBA331303E9A2E005B50CD /* DClutter */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DDBA353303E9A2F005B50CD /* Build configuration list for PBXNativeTarget "DClutter" */;
+			buildPhases = (
+				1DDBA32E303E9A2E005B50CD /* Sources */,
+				1DDBA32F303E9A2E005B50CD /* Frameworks */,
+				1DDBA330303E9A2E005B50CD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1DDBA334303E9A2E005B50CD /* DClutter */,
+			);
+			name = DClutter;
+			packageProductDependencies = (
+				1DDBA369303E9BE5005B50CD /* DClutterCore */,
+				1DDBA36B303E9BE5005B50CD /* DClutterPlatform */,
+			);
+			productName = DClutter;
+			productReference = 1DDBA332303E9A2E005B50CD /* DClutter.app */;
+			productType = "com.apple.product-type.application";
+		};
+		1DDBA33E303E9A2F005B50CD /* DClutterTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DDBA356303E9A2F005B50CD /* Build configuration list for PBXNativeTarget "DClutterTests" */;
+			buildPhases = (
+				1DDBA33B303E9A2F005B50CD /* Sources */,
+				1DDBA33C303E9A2F005B50CD /* Frameworks */,
+				1DDBA33D303E9A2F005B50CD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1DDBA341303E9A2F005B50CD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1DDBA342303E9A2F005B50CD /* DClutterTests */,
+			);
+			name = DClutterTests;
+			packageProductDependencies = (
+			);
+			productName = DClutterTests;
+			productReference = 1DDBA33F303E9A2F005B50CD /* DClutterTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		1DDBA348303E9A2F005B50CD /* DClutterUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DDBA359303E9A2F005B50CD /* Build configuration list for PBXNativeTarget "DClutterUITests" */;
+			buildPhases = (
+				1DDBA345303E9A2F005B50CD /* Sources */,
+				1DDBA346303E9A2F005B50CD /* Frameworks */,
+				1DDBA347303E9A2F005B50CD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1DDBA34B303E9A2F005B50CD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1DDBA34C303E9A2F005B50CD /* DClutterUITests */,
+			);
+			name = DClutterUITests;
+			packageProductDependencies = (
+			);
+			productName = DClutterUITests;
+			productReference = 1DDBA349303E9A2F005B50CD /* DClutterUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1DDBA32A303E9A2E005B50CD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					1DDBA331303E9A2E005B50CD = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					1DDBA33E303E9A2F005B50CD = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 1DDBA331303E9A2E005B50CD;
+					};
+					1DDBA348303E9A2F005B50CD = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 1DDBA331303E9A2E005B50CD;
+					};
+				};
+			};
+			buildConfigurationList = 1DDBA32D303E9A2E005B50CD /* Build configuration list for PBXProject "DClutter" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 1DDBA329303E9A2E005B50CD;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1DDBA368303E9BE5005B50CD /* XCLocalSwiftPackageReference "DClutterKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 1DDBA333303E9A2E005B50CD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1DDBA331303E9A2E005B50CD /* DClutter */,
+				1DDBA33E303E9A2F005B50CD /* DClutterTests */,
+				1DDBA348303E9A2F005B50CD /* DClutterUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1DDBA330303E9A2E005B50CD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1DDBA33D303E9A2F005B50CD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1DDBA347303E9A2F005B50CD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1DDBA32E303E9A2E005B50CD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1DDBA33B303E9A2F005B50CD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1DDBA345303E9A2F005B50CD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1DDBA341303E9A2F005B50CD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1DDBA331303E9A2E005B50CD /* DClutter */;
+			targetProxy = 1DDBA340303E9A2F005B50CD /* PBXContainerItemProxy */;
+		};
+		1DDBA34B303E9A2F005B50CD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1DDBA331303E9A2E005B50CD /* DClutter */;
+			targetProxy = 1DDBA34A303E9A2F005B50CD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1DDBA351303E9A2F005B50CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1DDBA352303E9A2F005B50CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		1DDBA354303E9A2F005B50CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.djenriquez.DClutter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		1DDBA355303E9A2F005B50CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.djenriquez.DClutter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		1DDBA357303E9A2F005B50CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.djenriquez.DClutterTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DClutter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DClutter";
+			};
+			name = Debug;
+		};
+		1DDBA358303E9A2F005B50CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.djenriquez.DClutterTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DClutter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DClutter";
+			};
+			name = Release;
+		};
+		1DDBA35A303E9A2F005B50CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.djenriquez.DClutterUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = DClutter;
+			};
+			name = Debug;
+		};
+		1DDBA35B303E9A2F005B50CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.djenriquez.DClutterUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = DClutter;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DDBA32D303E9A2E005B50CD /* Build configuration list for PBXProject "DClutter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DDBA351303E9A2F005B50CD /* Debug */,
+				1DDBA352303E9A2F005B50CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DDBA353303E9A2F005B50CD /* Build configuration list for PBXNativeTarget "DClutter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DDBA354303E9A2F005B50CD /* Debug */,
+				1DDBA355303E9A2F005B50CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DDBA356303E9A2F005B50CD /* Build configuration list for PBXNativeTarget "DClutterTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DDBA357303E9A2F005B50CD /* Debug */,
+				1DDBA358303E9A2F005B50CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DDBA359303E9A2F005B50CD /* Build configuration list for PBXNativeTarget "DClutterUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DDBA35A303E9A2F005B50CD /* Debug */,
+				1DDBA35B303E9A2F005B50CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		1DDBA368303E9BE5005B50CD /* XCLocalSwiftPackageReference "DClutterKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = DClutterKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1DDBA369303E9BE5005B50CD /* DClutterCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DClutterCore;
+		};
+		1DDBA36B303E9BE5005B50CD /* DClutterPlatform */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DClutterPlatform;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 1DDBA32A303E9A2E005B50CD /* Project object */;
+}
