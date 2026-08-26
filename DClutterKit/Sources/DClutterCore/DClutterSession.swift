@@ -13,6 +13,7 @@ public final class DClutterSession {
     public let queue: [FileCandidate]
     public private(set) var states: [URL: FileState] = [:]
     private var deferred: Set<URL> = []
+    private var history: [Decision] = []
     let persistenceURL: URL
 
     public init(candidates: [FileCandidate], persistenceURL: URL) {
@@ -33,4 +34,59 @@ public final class DClutterSession {
     }
 
     public var totalCount: Int { queue.count }
+}
+
+private enum Decision {
+    case keep(URL)
+    case stage(URL)
+    case skip(URL)
+}
+
+extension DClutterSession {
+    public var canUndo: Bool { !history.isEmpty }
+
+    public func keep() {
+        guard let url = current?.url else { return }
+        states[url] = .kept
+        history.append(.keep(url))
+    }
+
+    public func stage() {
+        guard let url = current?.url else { return }
+        states[url] = .staged
+        history.append(.stage(url))
+    }
+
+    public func skip() {
+        guard let url = current?.url else { return }
+        deferred.insert(url)
+        history.append(.skip(url))
+    }
+
+    public func undo() {
+        guard let last = history.popLast() else { return }
+        switch last {
+        case .keep(let url), .stage(let url):
+            states.removeValue(forKey: url)
+        case .skip(let url):
+            deferred.remove(url)
+        }
+    }
+
+    public func stagedForCommit() -> [FileCandidate] {
+        queue.filter { states[$0.url] == .staged }
+    }
+
+    /// Called once trashing succeeds for the given URLs. Transitions them
+    /// from .staged to the terminal .trashed state and clears undo history
+    /// entirely — a committed file cannot be un-trashed via ⌘Z (that would
+    /// need M4's real file-recovery logic), and history may reference
+    /// decisions from before the commit boundary that no longer make sense
+    /// to reverse in isolation.
+    public func commitTrashed(_ urls: Set<URL>) {
+        for url in urls where states[url] == .staged {
+            states[url] = .trashed
+        }
+        history.removeAll()
+    }
 }
