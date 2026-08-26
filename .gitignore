@@ -1,3 +1,30 @@
+## macOS
+.DS_Store
+
+## Xcode
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+build/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.perspectivev3
+!default.perspectivev3
+
+## Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+## Misc
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## User Defined
 /plandocs
 .env
-.DS_Store
