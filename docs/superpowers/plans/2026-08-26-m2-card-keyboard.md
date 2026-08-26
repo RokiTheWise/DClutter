@@ -1263,7 +1263,7 @@ import SwiftUI
 /// §2 principle 4: lists every staged file, requires explicit confirm,
 /// reports a count — never bytes reclaimed (§0).
 struct CommitSheet: View {
-    @Bindable var viewModel: SessionViewModel
+    let viewModel: SessionViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
