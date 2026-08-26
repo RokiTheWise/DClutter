@@ -16,5 +16,6 @@ let package = Package(
         .target(name: "DClutterPlatform", dependencies: ["DClutterCore"]),
 
         .testTarget(name: "DClutterCoreTests", dependencies: ["DClutterCore"]),
+        .testTarget(name: "DClutterPlatformTests", dependencies: ["DClutterPlatform"]),
     ]
 )
