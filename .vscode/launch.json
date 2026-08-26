@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:DClutter}/DClutterKit",
+            "name": "Debug DClutterGateCheck (DClutterKit)",
+            "target": "DClutterGateCheck",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug DClutterGateCheck (DClutterKit)"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:DClutter}/DClutterKit",
+            "name": "Release DClutterGateCheck (DClutterKit)",
+            "target": "DClutterGateCheck",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release DClutterGateCheck (DClutterKit)"
+        }
+    ]
+}

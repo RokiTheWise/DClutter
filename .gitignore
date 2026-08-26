@@ -28,3 +28,6 @@ Package.resolved
 ## User Defined
 /plandocs
 .env
+
+##Claude
+CLAUDE.md
