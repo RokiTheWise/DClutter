@@ -2,21 +2,26 @@
 //  ContentView.swift
 //  DClutter
 //
-//  Created by Dexter Jethro Enriquez on 8/26/26.
-//
 
 import SwiftUI
-import DClutterCore
+import DClutterUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        TriageView(folder: Self.downloadsFolder)
+    }
+
+    /// In a sandboxed app, `homeDirectoryForCurrentUser` returns the
+    /// container path (~/Library/Containers/dev.djenriquez.DClutter/Data),
+    /// not the real home — appending "Downloads" to it would scan an empty
+    /// folder inside the container. `.downloadsDirectory` is what the
+    /// `com.apple.security.files.downloads.read-write` entitlement (§7)
+    /// actually redirects to the real ~/Downloads. The fallback only matters
+    /// if that lookup itself throws, which the entitled, standard-domain
+    /// case shouldn't.
+    private static var downloadsFolder: URL {
+        (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false))
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
     }
 }
 
