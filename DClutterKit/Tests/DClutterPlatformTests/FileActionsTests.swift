@@ -7,7 +7,7 @@ import Foundation
         nonisolated(unsafe) var calledWith: URL?
     }
     let capture = Capture()
-    let actions = FileActions(executor: { url in capture.calledWith = url })
+    let actions = FileActions(executor: { url in capture.calledWith = url; return nil })
     let target = URL(fileURLWithPath: "/tmp/example.pdf")
     try actions.trash(target)
     #expect(capture.calledWith == target)
@@ -23,7 +23,10 @@ import Foundation
 
 @Test func realTrashMovesFileOutOfItsFolderNotDeletesIt() throws {
     // Invariant 1 evidence: the real executor must use trashItem, not
-    // removeItem — proven by the file surviving, just relocated.
+    // removeItem — proven by the file surviving, just relocated. Asserting
+    // only that it's gone from the old path is NOT sufficient: removeItem
+    // would pass that same assertion. The file must actually exist at the
+    // resulting (Trash) location.
     let folder = FileManager.default.temporaryDirectory.appendingPathComponent("FileActionsTests-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: folder) }
@@ -31,10 +34,11 @@ import Foundation
     try Data("x".utf8).write(to: fileURL)
 
     let actions = FileActions()
-    try actions.trash(fileURL)
+    let resultingURL = try actions.trash(fileURL)
 
     #expect(!FileManager.default.fileExists(atPath: fileURL.path)) // gone from original location
-    // trashItem always succeeds by relocating, never by unlinking; a thrown
-    // error above would already have failed this test, so reaching here is
-    // itself the proof removeItem's silent-hard-delete path wasn't taken.
+    let resulting = try #require(resultingURL)
+    defer { try? FileManager.default.removeItem(at: resulting) }
+    #expect(FileManager.default.fileExists(atPath: resulting.path)) // and survives, relocated
+    #expect(try Data(contentsOf: resulting) == Data("x".utf8)) // same content, not a different file
 }

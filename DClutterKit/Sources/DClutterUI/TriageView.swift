@@ -12,6 +12,14 @@ public struct TriageView: View {
     @State private var viewModel: SessionViewModel?
     @State private var context: QueueContext?
     @State private var loadError: String?
+    // This is a keyboard-first app: .onKeyPress only fires on a focused
+    // view, and nothing else in the window claims focus, so the triage
+    // surface must explicitly take it — both at launch and again whenever
+    // the commit sheet dismisses (a sheet steals focus while presented).
+    @FocusState private var isFocused: Bool
+    // §7: which key decided the card currently animating out, so CardView
+    // can translate the exit in that direction.
+    @State private var lastDecision: DecisionDirection?
     let folder: URL
 
     public init(folder: URL) {
@@ -30,8 +38,11 @@ public struct TriageView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(DesignTokens.ColorToken.textSecondary)
                     Button("Try Again") {
+                        // Clearing loadError re-renders into the ProgressView
+                        // branch, whose own .task fires loadSession() — do
+                        // not also kick one off here, or two concurrent
+                        // scans race to write the same persistence file.
                         self.loadError = nil
-                        Task { await loadSession() }
                     }
                 }
                 .padding(DesignTokens.Spacing.cardMargin)
@@ -49,7 +60,7 @@ public struct TriageView: View {
                 CardView(candidate: current, context: context, previewFocused: Binding(
                     get: { viewModel.previewFocused },
                     set: { viewModel.previewFocused = $0 }
-                ))
+                ), lastDecision: lastDecision)
             } else {
                 Text("All done.")
                     .foregroundStyle(DesignTokens.ColorToken.textSecondary)
@@ -69,19 +80,29 @@ public struct TriageView: View {
         .background(DesignTokens.ColorToken.surface)
         .focusable()
         .focusEffectDisabled()
+        .focused($isFocused)
         .onKeyPress { press in handle(press, viewModel: viewModel) }
+        .onAppear { isFocused = true }
         .sheet(isPresented: Bindable(viewModel).showCommitSheet) {
             CommitSheet(viewModel: viewModel)
+        }
+        .onChange(of: viewModel.showCommitSheet) { _, isPresented in
+            if !isPresented { isFocused = true }
         }
     }
 
     private func handle(_ press: KeyPress, viewModel: SessionViewModel) -> KeyPress.Result {
-        if press.modifiers.contains(.command) {
+        // Lowercased so Caps Lock doesn't break the letter bindings below.
+        let letter = press.key.character.lowercased()
+        // Exact modifier set, not `.contains(.command)` — otherwise e.g.
+        // ⌥⌘Z would also count as undo.
+        if press.modifiers == .command {
             switch press.key {
-            case "z": viewModel.undo(); return .handled
             case .return: viewModel.showCommitSheet = true; return .handled
-            default: return .ignored
+            default: break
             }
+            if letter == "z" { viewModel.undo(); return .handled }
+            return .ignored
         }
         // §6: Esc "returns control to triage", so while the preview is
         // focused the triage keys must not fire — only Esc is live.
@@ -93,12 +114,31 @@ public struct TriageView: View {
             return .ignored
         }
         switch press.key {
-        case .rightArrow, "k": viewModel.keep(); return .handled
-        case .leftArrow, "x": viewModel.stage(); return .handled
+        case .rightArrow: decide(.keep, using: viewModel); return .handled
+        case .leftArrow: decide(.stage, using: viewModel); return .handled
         case .upArrow: viewModel.previewFocused = true; return .handled
         case .escape: viewModel.previewFocused = false; return .handled
-        case .space: viewModel.skip(); return .handled
+        case .space: decide(.skip, using: viewModel); return .handled
+        default: break
+        }
+        switch letter {
+        case "k": decide(.keep, using: viewModel); return .handled
+        case "x": decide(.stage, using: viewModel); return .handled
         default: return .ignored
+        }
+    }
+
+    /// §7: ~180-200ms card-advance animation. `lastDecision` is recorded
+    /// first so CardView's `.transition` (evaluated for the outgoing card)
+    /// already reflects the direction by the time this animates.
+    private func decide(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
+        lastDecision = direction
+        withAnimation(.easeInOut(duration: 0.19)) {
+            switch direction {
+            case .keep: viewModel.keep()
+            case .stage: viewModel.stage()
+            case .skip: viewModel.skip()
+            }
         }
     }
 

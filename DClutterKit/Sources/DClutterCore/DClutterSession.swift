@@ -12,7 +12,11 @@ import Foundation
 public final class DClutterSession {
     public let queue: [FileCandidate]
     public private(set) var states: [URL: FileState] = [:]
-    private var deferred: Set<URL> = []
+    /// Ordered by deferral: skip() moves a URL to the end of this array, so
+    /// re-skipping an already-deferred file genuinely rotates it further
+    /// back instead of being a no-op (see §Fix note in the task list — this
+    /// used to be a Set, which made re-skipping the last pending file hang).
+    private var deferred: [URL] = []
     private var history: [Decision] = []
     let persistenceURL: URL
 
@@ -25,12 +29,16 @@ public final class DClutterSession {
                 guard known.contains(entry.key), let url = URL(string: entry.key) else { return }
                 result[url] = entry.value
             }
-            self.deferred = Set(snapshot.deferred.compactMap { known.contains($0) ? URL(string: $0) : nil })
+            self.deferred = snapshot.deferred.compactMap { known.contains($0) ? URL(string: $0) : nil }
         }
     }
 
     private var effectiveOrder: [FileCandidate] {
-        queue.filter { !deferred.contains($0.url) } + queue.filter { deferred.contains($0.url) }
+        let deferredSet = Set(deferred)
+        let undeferred = queue.filter { !deferredSet.contains($0.url) }
+        let byURL = Dictionary(uniqueKeysWithValues: queue.map { ($0.url, $0) })
+        let deferredInOrder = deferred.compactMap { byURL[$0] }
+        return undeferred + deferredInOrder
     }
 
     public var current: FileCandidate? {
@@ -92,8 +100,17 @@ extension DClutterSession {
 
     public func skip() {
         guard let url = current?.url else { return }
-        deferred.insert(url)
-        history.append(.skip(url))
+        let previousCurrent = url
+        if let existing = deferred.firstIndex(of: url) {
+            deferred.remove(at: existing)
+        }
+        deferred.append(url)
+        // A skip that doesn't actually move the visible candidate (e.g. this
+        // is the only pending file left) shouldn't leave a dead undo entry —
+        // otherwise ⌘Z appears to do nothing for several presses in a row.
+        if current?.url != previousCurrent {
+            history.append(.skip(url))
+        }
         persist()
     }
 
@@ -103,7 +120,9 @@ extension DClutterSession {
         case .keep(let url), .stage(let url):
             states.removeValue(forKey: url)
         case .skip(let url):
-            deferred.remove(url)
+            if let index = deferred.firstIndex(of: url) {
+                deferred.remove(at: index)
+            }
         }
         persist()
     }
@@ -119,10 +138,14 @@ extension DClutterSession {
     /// decisions from before the commit boundary that no longer make sense
     /// to reverse in isolation.
     public func commitTrashed(_ urls: Set<URL>) {
+        var trashedAny = false
         for url in urls where states[url] == .staged {
             states[url] = .trashed
+            trashedAny = true
         }
-        history.removeAll()
+        if trashedAny {
+            history.removeAll()
+        }
         persist()
     }
 }

@@ -34,7 +34,7 @@ struct CommitSheet: View {
                 Button("Trash \(viewModel.stagedForCommit.count) Files") {
                     viewModel.confirmCommit()
                 }
-                .keyboardShortcut(.defaultAction)
+                .disabled(viewModel.stagedForCommit.isEmpty)
                 .tint(DesignTokens.ColorToken.consequence)
             }
         }

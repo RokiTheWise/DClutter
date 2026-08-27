@@ -115,10 +115,77 @@ private func tempPersistenceURL() -> URL {
 }
 
 @MainActor
+@Test func reSkippingAnAlreadyDeferredFileRotatesItRatherThanHanging() {
+    // Regression for the tail-of-session hang: once every remaining pending
+    // file has been skipped, pressing skip again on the (now front-of-
+    // deferred) candidate must rotate it to the back, not no-op.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf"); let c = candidate("c.pdf")
+    let session = DClutterSession(candidates: [a, b, c], persistenceURL: tempPersistenceURL())
+    session.skip() // defers a; current -> b
+    session.skip() // defers b; current -> c
+    session.skip() // defers c; nothing undeferred left, current -> a (first deferred)
+    #expect(session.current?.id == a.id)
+
+    session.skip() // re-skip a: rotates it to the back of the deferred list
+    #expect(session.current?.id == b.id)
+}
+
+@MainActor
+@Test func skippingTheOnlyRemainingPendingFileDoesNotGrowCanUndo() {
+    // Since the file resurfaces immediately as `current` regardless of
+    // where it sits in `deferred`, this skip is invisible to the user and
+    // must not record a dead undo entry.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.keep() // decides a; only b remains pending
+    #expect(session.canUndo)
+    session.undo()
+    session.keep() // decides a again via a fresh history entry
+    #expect(session.current?.id == b.id)
+
+    session.skip() // b is the only pending file left; skip is a no-op on position
+    #expect(session.current?.id == b.id)
+    #expect(session.canUndo) // still true from the keep() above, not from skip()
+
+    session.undo() // reverts the keep(), not a dead skip entry
+    #expect(session.current?.id == a.id)
+    #expect(!session.canUndo)
+}
+
+@MainActor
+@Test func multiFileSkipOrderIsPreservedFirstSkippedResurfacesFirst() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf"); let c = candidate("c.pdf")
+    let session = DClutterSession(candidates: [a, b, c], persistenceURL: tempPersistenceURL())
+    session.skip() // defers a; current -> b
+    session.skip() // defers b; current -> c
+    session.keep() // decides c
+
+    #expect(session.current?.id == a.id) // a was deferred first, resurfaces first
+    session.keep() // decides a
+    #expect(session.current?.id == b.id)
+}
+
+@MainActor
 @Test func commitTrashedIgnoresURLsThatWerentStaged() {
     let a = candidate("a.pdf")
     let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
     session.commitTrashed([a.url]) // a is still .pending — nothing to commit
+    #expect(session.current?.id == a.id)
+}
+
+@MainActor
+@Test func commitTrashedWithNothingActuallyTrashedPreservesUndoHistory() {
+    // Reachable via ⌘⏎ with zero staged files, or a commit where every
+    // trash attempt failed — neither should silently wipe the undo stack.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.keep() // decides a; history now [keep(a)]
+    #expect(session.canUndo)
+
+    session.commitTrashed([]) // nothing staged, nothing trashed
+
+    #expect(session.canUndo) // history must survive
+    session.undo()
     #expect(session.current?.id == a.id)
 }
 
