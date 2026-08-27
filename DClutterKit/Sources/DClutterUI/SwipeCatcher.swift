@@ -34,6 +34,11 @@ final class SwipeMonitorController {
     var onSnapBack: (() -> Void)?
     var isEnabled: Bool = true
 
+    /// Fraction of a full gesture that commits a decision. Low enough to
+    /// fire early in a deliberate flick, high enough that a stray
+    /// horizontal wobble during a scroll doesn't decide a file.
+    private static let threshold: CGFloat = 0.4
+
     func start() {
         guard monitor == nil else { return }
         monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
@@ -74,17 +79,18 @@ final class SwipeMonitorController {
             // Live tracking: follow the fingers exactly, unanimated.
             self.onProgress?(amount)
 
-            guard phase == .ended || isComplete else { return }
-
-            if amount <= -0.5 {
+            // Commit as soon as the threshold is crossed, mid-gesture,
+            // rather than waiting for the fingers to lift. Waiting was what
+            // made a swipe feel sluggish next to a key press: the decision
+            // could not start until the gesture ended, so the delay was the
+            // user's own release, not the animation.
+            if amount <= -Self.threshold {
                 committed = true
-                // Hand over cleanly: stop the tracker dead so it cannot keep
-                // animating `amount` underneath the exit animation. Past the
-                // threshold the gesture is over and the card simply finishes
-                // the throw, exactly as a key press would.
+                // Stop the tracker dead, so it cannot keep animating
+                // `amount` underneath the exit that is about to play.
                 stop.pointee = true
                 self.onCommit?(.stage)
-            } else if amount >= 0.5 {
+            } else if amount >= Self.threshold {
                 committed = true
                 stop.pointee = true
                 self.onCommit?(.keep)
