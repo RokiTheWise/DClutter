@@ -6,6 +6,9 @@ import Foundation
 
 public enum FileActionError: Error {
     case trashFailed(URL, underlying: Error)
+    case renameFailed(URL, underlying: Error)
+    case nameAlreadyTaken(String)
+    case invalidName(String)
 }
 
 /// The only place in DClutter that may touch a user file destructively —
@@ -31,6 +34,32 @@ public struct FileActions: Sendable {
         } catch {
             throw FileActionError.trashFailed(url, underlying: error)
         }
+    }
+
+    /// Renames a file in place. `newName` is treated as a bare filename:
+    /// any path components are stripped, so a name like "../elsewhere.pdf"
+    /// cannot relocate the file out of the folder it lives in — the app is
+    /// only ever entitled to ~/Downloads.
+    @discardableResult
+    public func rename(_ url: URL, to newName: String) throws -> URL {
+        let bare = (newName as NSString).lastPathComponent
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !bare.isEmpty, bare != ".", bare != ".." else {
+            throw FileActionError.invalidName(newName)
+        }
+
+        let destination = url.deletingLastPathComponent().appendingPathComponent(bare)
+        guard destination.standardizedFileURL != url.standardizedFileURL else { return url }
+        guard !FileManager.default.fileExists(atPath: destination.path) else {
+            throw FileActionError.nameAlreadyTaken(bare)
+        }
+
+        do {
+            try FileManager.default.moveItem(at: url, to: destination)
+        } catch {
+            throw FileActionError.renameFailed(url, underlying: error)
+        }
+        return destination
     }
 
     private static func systemTrash(_ url: URL) throws -> URL? {

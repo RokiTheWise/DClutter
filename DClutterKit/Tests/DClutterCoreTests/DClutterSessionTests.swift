@@ -456,3 +456,61 @@ private func tempPersistenceURL() -> URL {
     session.reset()
     #expect(session.sortedSinceLastCommit == 0)
 }
+
+// MARK: - Rename
+
+@MainActor
+@Test func renameMovesQueueStateOntoTheNewURL() {
+    // Everything in the session is keyed by URL, so a rename has to carry
+    // the candidate's state, deferral and history across or the file is
+    // orphaned and re-queued as if never seen.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    let renamed = a.url.deletingLastPathComponent().appendingPathComponent("grades-2024.pdf")
+
+    session.rename(a.url, to: renamed)
+
+    #expect(session.current?.url == renamed)
+    #expect(session.current?.id == a.id)      // same candidate, new name
+    #expect(session.totalCount == 2)
+}
+
+@MainActor
+@Test func renamePreservesAnExistingDecision() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.stage()   // stages a
+    let renamed = a.url.deletingLastPathComponent().appendingPathComponent("renamed.pdf")
+
+    session.rename(a.url, to: renamed)
+
+    #expect(session.stagedForCommit().map(\.url) == [renamed])
+    #expect(session.states[renamed] == .staged)
+    #expect(session.states[a.url] == nil)     // no orphan left behind
+}
+
+@MainActor
+@Test func renameFollowsAFileThroughUndo() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.keep()
+    let renamed = a.url.deletingLastPathComponent().appendingPathComponent("renamed.pdf")
+    session.rename(a.url, to: renamed)
+
+    session.undo()
+
+    #expect(session.current?.url == renamed)  // undo restores the renamed file
+    #expect(session.remainingCount == 2)
+}
+
+@MainActor
+@Test func renamingAnUnknownURLDoesNothing() {
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    let stranger = URL(fileURLWithPath: "/tmp/downloads/not-in-queue.pdf")
+
+    session.rename(stranger, to: URL(fileURLWithPath: "/tmp/downloads/x.pdf"))
+
+    #expect(session.totalCount == 1)
+    #expect(session.current?.url == a.url)
+}

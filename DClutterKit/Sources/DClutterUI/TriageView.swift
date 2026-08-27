@@ -25,6 +25,8 @@ public struct TriageView: View {
     /// Live swipe position, -1..1, so the card tracks the fingers.
     @State private var swipeProgress: CGFloat = 0
     @State private var swipeMonitor = SwipeMonitorController()
+    @State private var draftName = ""
+    @FocusState private var renameFieldFocused: Bool
     let folder: URL
 
     public init(folder: URL) {
@@ -66,16 +68,19 @@ public struct TriageView: View {
                 CardView(candidate: current, context: context, previewFocused: Binding(
                     get: { viewModel.previewFocused },
                     set: { viewModel.previewFocused = $0 }
-                ), lastDecision: lastDecision, onOpen: { viewModel.openCurrentInDefaultApp() })
-                    .offset(x: swipeProgress * 90)
-                    .rotationEffect(.degrees(swipeProgress * 2))
-                    .opacity(1 - min(abs(swipeProgress) * 0.35, 0.35))
+                ), lastDecision: lastDecision,
+                   onOpen: { viewModel.openCurrentInDefaultApp() },
+                   swipeOffset: swipeProgress)
             } else {
                 Text("All done.")
                     .foregroundStyle(DesignTokens.ColorToken.textSecondary)
             }
             Spacer()
-            statusBar(viewModel: viewModel)
+            if viewModel.isRenaming {
+                renameField(viewModel: viewModel)
+            } else {
+                statusBar(viewModel: viewModel)
+            }
         }
         .padding(DesignTokens.Spacing.cardMargin)
         .background(DesignTokens.ColorToken.surface)
@@ -101,10 +106,19 @@ public struct TriageView: View {
             isFocused = true
             swipeMonitor.onProgress = { amount in swipeProgress = amount }
             swipeMonitor.onCommit = { direction in
-                // Zero it before the decision so the incoming card starts
-                // at rest instead of wherever the fingers left off.
+                // The departing card keeps the offset it was rendered with
+                // (see CardView.swipeOffset), so it carries on out from
+                // where the fingers left it. Resetting here only affects
+                // the incoming card, which starts at rest.
+                lastDecision = direction
                 swipeProgress = 0
-                decide(direction, using: viewModel)
+                withAnimation(.easeOut(duration: 0.19)) {
+                    switch direction {
+                    case .keep: viewModel.keep()
+                    case .stage: viewModel.stage()
+                    case .skip: viewModel.skip()
+                    }
+                }
             }
             swipeMonitor.onSnapBack = {
                 withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
@@ -116,7 +130,13 @@ public struct TriageView: View {
         .onDisappear { swipeMonitor.stop() }
         .onChange(of: viewModel.previewFocused) { _, focused in
             // While the preview has focus the gesture is the preview's.
-            swipeMonitor.isEnabled = !focused
+            swipeMonitor.isEnabled = !focused && !viewModel.isRenaming
+        }
+        .onChange(of: viewModel.isRenaming) { _, renaming in
+            // A swipe landing mid-rename would decide the very file being
+            // renamed, out from under the text field.
+            swipeMonitor.isEnabled = !renaming && !viewModel.previewFocused
+            if !renaming { isFocused = true }
         }
         .confirmationDialog(
             "Start over?",
@@ -169,6 +189,13 @@ public struct TriageView: View {
         case .rightArrow: decide(.keep, using: viewModel); return .handled
         case .leftArrow: decide(.stage, using: viewModel); return .handled
         case .upArrow: viewModel.previewFocused = true; return .handled
+        case .downArrow:
+            guard let current = viewModel.current else { return .handled }
+            draftName = current.url.lastPathComponent
+            viewModel.renameError = nil
+            viewModel.isRenaming = true
+            renameFieldFocused = true
+            return .handled
         case .escape: viewModel.previewFocused = false; return .handled
         case .space: decide(.skip, using: viewModel); return .handled
         default: break
@@ -251,6 +278,39 @@ public struct TriageView: View {
         .foregroundStyle(DesignTokens.ColorToken.textTertiary)
     }
 
+    /// §2 principle 2 warns that a text field mid-session kills the loop,
+    /// so this is deliberately cheap to leave: Return commits, Esc cancels,
+    /// and it replaces the status bar rather than displacing the card.
+    @ViewBuilder
+    private func renameField(viewModel: SessionViewModel) -> some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.unit) {
+            HStack(spacing: DesignTokens.Spacing.small) {
+                Text("RENAME")
+                    .font(.system(size: 11, design: .monospaced))
+                    .kerning(0.5)
+                    .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+                TextField("", text: $draftName)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 13))
+                    .focused($renameFieldFocused)
+                    .onSubmit { viewModel.renameCurrent(to: draftName) }
+                Text("↩ rename · esc cancel")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+            }
+            if let error = viewModel.renameError {
+                Text(error)
+                    .font(.system(size: 11))
+                    .foregroundStyle(DesignTokens.ColorToken.consequence)
+            }
+        }
+        .onExitCommand {
+            viewModel.isRenaming = false
+            viewModel.renameError = nil
+            isFocused = true
+        }
+    }
+
     private var helpCard: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.small) {
             Text("Controls").font(.system(size: 13, weight: .semibold))
@@ -274,6 +334,7 @@ public struct TriageView: View {
         ("←  or  X", "Stage for trash, next card"),
         ("Space", "Skip — comes back at the end"),
         ("↑", "Focus the preview"),
+        ("↓", "Rename this file"),
         ("Esc", "Back to triage"),
         ("⌘Z", "Undo"),
         ("⇧⌘Z", "Redo"),

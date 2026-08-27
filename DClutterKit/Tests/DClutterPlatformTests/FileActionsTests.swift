@@ -42,3 +42,50 @@ import Foundation
     #expect(FileManager.default.fileExists(atPath: resulting.path)) // and survives, relocated
     #expect(try Data(contentsOf: resulting) == Data("x".utf8)) // same content, not a different file
 }
+
+@Test func renameMovesTheFileAndReturnsItsNewURL() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("RenameTests-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("before.txt")
+    try Data("payload".utf8).write(to: original)
+
+    let actions = FileActions()
+    let renamed = try actions.rename(original, to: "after.txt")
+
+    #expect(renamed.lastPathComponent == "after.txt")
+    #expect(!FileManager.default.fileExists(atPath: original.path))
+    #expect(try Data(contentsOf: renamed) == Data("payload".utf8))  // same file, moved
+}
+
+@Test func renameRefusesToOverwriteAnExistingFile() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("RenameTests-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("before.txt")
+    let occupied = folder.appendingPathComponent("taken.txt")
+    try Data("mine".utf8).write(to: original)
+    try Data("someone else's".utf8).write(to: occupied)
+
+    let actions = FileActions()
+    #expect(throws: FileActionError.self) {
+        _ = try actions.rename(original, to: "taken.txt")
+    }
+    // The bystander must be untouched — a rename may never clobber.
+    #expect(try Data(contentsOf: occupied) == Data("someone else's".utf8))
+}
+
+@Test func renameKeepsTheFileInItsOwnFolder() throws {
+    // A name containing path separators must not be able to relocate the
+    // file out of ~/Downloads.
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("RenameTests-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("before.txt")
+    try Data("x".utf8).write(to: original)
+
+    let actions = FileActions()
+    let renamed = try actions.rename(original, to: "../escaped.txt")
+
+    #expect(renamed.deletingLastPathComponent().standardizedFileURL == folder.standardizedFileURL)
+}

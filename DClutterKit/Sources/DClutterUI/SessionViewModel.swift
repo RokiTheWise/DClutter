@@ -25,6 +25,8 @@ final class SessionViewModel {
     var previewFocused = false
     var showCommitSheet = false
     var commitError: String?
+    var isRenaming = false
+    var renameError: String?
 
     init(session: DClutterSession, fileActions: FileActions = FileActions()) {
         self.session = session
@@ -76,6 +78,26 @@ final class SessionViewModel {
         NSWorkspace.shared.open(url)
     }
     func toggleFocus() { previewFocused.toggle() }
+
+    /// Renames the current file on disk and re-points the session onto the
+    /// new URL. Both halves must happen together: the session is keyed by
+    /// URL, so a disk rename without the migration orphans the candidate.
+    func renameCurrent(to newName: String) {
+        guard let candidate = session.current else { return }
+        do {
+            let renamed = try fileActions.rename(candidate.url, to: newName)
+            session.rename(candidate.url, to: renamed)
+            renameError = nil
+            isRenaming = false
+        } catch FileActionError.nameAlreadyTaken(let name) {
+            renameError = "\(name) already exists in this folder."
+        } catch FileActionError.invalidName {
+            renameError = "That isn't a usable filename."
+        } catch {
+            renameError = error.localizedDescription
+        }
+        version += 1
+    }
 
     /// Trashes every staged file, transitions the successful ones to
     /// .trashed (never .pending again — see FileState/commitTrashed), and

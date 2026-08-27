@@ -10,7 +10,7 @@ import Foundation
 /// and reconciliation on relaunch simple.
 @MainActor
 public final class DClutterSession {
-    public let queue: [FileCandidate]
+    public private(set) var queue: [FileCandidate]
     public private(set) var states: [URL: FileState] = [:]
     /// Ordered by deferral: skip() moves a URL to the end of this array, so
     /// re-skipping an already-deferred file genuinely rotates it further
@@ -71,6 +71,16 @@ private enum Decision {
     case keep(URL)
     case stage(URL)
     case skip(URL)
+
+    /// Rewrites this decision's target after a rename, so undo and redo
+    /// still reach the file they were recorded against.
+    func repointing(_ old: URL, to new: URL) -> Decision {
+        switch self {
+        case .keep(let url): return url == old ? .keep(new) : self
+        case .stage(let url): return url == old ? .stage(new) : self
+        case .skip(let url): return url == old ? .skip(new) : self
+        }
+    }
 }
 
 struct SessionSnapshot: Codable {
@@ -189,6 +199,36 @@ extension DClutterSession {
             }
             deferred.append(url)
         }
+    }
+
+    /// Re-points every piece of session state from `old` to `new` after the
+    /// file has been renamed on disk. The session is keyed by URL
+    /// throughout — queue, states, deferral order and both undo stacks — so
+    /// without this the renamed file is orphaned: its decision is lost and
+    /// on relaunch reconciliation drops it and re-queues it as unseen.
+    ///
+    /// The candidate keeps its identity; only its URL changes.
+    public func rename(_ old: URL, to new: URL) {
+        guard let index = queue.firstIndex(where: { $0.url == old }) else { return }
+
+        let existing = queue[index]
+        queue[index] = FileCandidate(
+            id: existing.id,
+            url: new,
+            bytes: existing.bytes,
+            lastOpened: existing.lastOpened,
+            created: existing.created,
+            modified: existing.modified,
+            sourceURL: existing.sourceURL,
+            contentType: existing.contentType,
+            isDirectory: existing.isDirectory
+        )
+
+        if let state = states.removeValue(forKey: old) { states[new] = state }
+        if let position = deferred.firstIndex(of: old) { deferred[position] = new }
+        history = history.map { $0.repointing(old, to: new) }
+        redoStack = redoStack.map { $0.repointing(old, to: new) }
+        persist()
     }
 
     /// Un-stages files the user unticked in the commit sheet. They become

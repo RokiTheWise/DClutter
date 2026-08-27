@@ -26,6 +26,11 @@ struct CardView: View {
     /// move-to-destination in M4, and a single-click action would
     /// collide with the start of that gesture.
     var onOpen: (() -> Void)?
+    /// Live swipe position, -1...1. Applied here rather than by the parent
+    /// so a departing card keeps the offset it was rendered with: driven
+    /// from shared state in the parent, the outgoing card would re-read the
+    /// reset value, snap back to centre and only then play its exit.
+    var swipeOffset: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
@@ -64,6 +69,9 @@ struct CardView: View {
         // tuned for the 520-wide minimum and looks marooned on a large
         // display, so it may grow a little before the margin takes over.
         .frame(maxWidth: 620)
+        .offset(x: swipeOffset * 90)
+        .rotationEffect(.degrees(swipeOffset * 2))
+        .opacity(1 - min(abs(swipeOffset) * 0.35, 0.35))
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { onOpen?() }
         .help("Double-click to open this file")
