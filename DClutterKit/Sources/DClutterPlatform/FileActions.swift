@@ -9,6 +9,8 @@ public enum FileActionError: Error {
     case renameFailed(URL, underlying: Error)
     case nameAlreadyTaken(String)
     case invalidName(String)
+    case moveFailed(URL, underlying: Error)
+    case destinationUnavailable(URL)
 }
 
 /// The only place in DClutter that may touch a user file destructively —
@@ -71,6 +73,64 @@ public struct FileActions: Sendable {
             throw FileActionError.renameFailed(url, underlying: error)
         }
         return destination
+    }
+
+    /// Moves a file into a destination folder, holding the folder's
+    /// security scope for exactly the duration of the move.
+    ///
+    /// §7 warns that security-scoped bookmarks "silently fail if you forget
+    /// startAccessingSecurityScopedResource()", and asks for a helper so
+    /// this cannot be forgotten at a call site. Every write to a destination
+    /// goes through here; the `defer` releases the scope on every path,
+    /// including the throwing ones.
+    @discardableResult
+    public func move(_ url: URL, intoFolder folder: URL) throws -> URL {
+        let scoped = folder.startAccessingSecurityScopedResource()
+        defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
+
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            throw FileActionError.destinationUnavailable(folder)
+        }
+
+        let destination = uniqueDestination(for: url.lastPathComponent, in: folder)
+        do {
+            try FileManager.default.moveItem(at: url, to: destination)
+        } catch {
+            throw FileActionError.moveFailed(url, underlying: error)
+        }
+        return destination
+    }
+
+    /// Moves a file back to an exact path, for undo. The destination folder
+    /// is the one being left, so its scope is the one that must be held.
+    public func moveBack(_ url: URL, to original: URL) throws {
+        let folder = url.deletingLastPathComponent()
+        let scoped = folder.startAccessingSecurityScopedResource()
+        defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
+        do {
+            try FileManager.default.moveItem(at: url, to: original)
+        } catch {
+            throw FileActionError.moveFailed(url, underlying: error)
+        }
+    }
+
+    /// Never overwrite a file that is already there — suffix instead, the
+    /// way Finder does.
+    private func uniqueDestination(for name: String, in folder: URL) -> URL {
+        let candidate = folder.appendingPathComponent(name)
+        guard FileManager.default.fileExists(atPath: candidate.path) else { return candidate }
+
+        let stem = (name as NSString).deletingPathExtension
+        let ext = (name as NSString).pathExtension
+        var counter = 2
+        while true {
+            let suffixed = ext.isEmpty ? "\(stem) \(counter)" : "\(stem) \(counter).\(ext)"
+            let next = folder.appendingPathComponent(suffixed)
+            if !FileManager.default.fileExists(atPath: next.path) { return next }
+            counter += 1
+        }
     }
 
     private static func systemTrash(_ url: URL) throws -> URL? {

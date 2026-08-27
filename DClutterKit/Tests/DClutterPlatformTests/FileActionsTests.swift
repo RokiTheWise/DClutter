@@ -118,3 +118,76 @@ import Foundation
 
     #expect(renamed.lastPathComponent == "notes.md")
 }
+
+// MARK: - Move to destination
+
+private func makeScratch() throws -> URL {
+    let folder = FileManager.default.temporaryDirectory
+        .appendingPathComponent("MoveTests-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    return folder
+}
+
+@Test func moveRelocatesTheFileIntoTheDestination() throws {
+    let scratch = try makeScratch()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    let source = scratch.appendingPathComponent("source.pdf")
+    let target = scratch.appendingPathComponent("Receipts", isDirectory: true)
+    try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+    try Data("payload".utf8).write(to: source)
+
+    let moved = try FileActions().move(source, intoFolder: target)
+
+    #expect(moved.deletingLastPathComponent().standardizedFileURL == target.standardizedFileURL)
+    #expect(!FileManager.default.fileExists(atPath: source.path))
+    #expect(try Data(contentsOf: moved) == Data("payload".utf8))
+}
+
+@Test func moveSuffixesRatherThanOverwritingAnExistingFile() throws {
+    // Never clobber. A file already sitting in the destination belongs to
+    // the user just as much as the one being filed.
+    let scratch = try makeScratch()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    let source = scratch.appendingPathComponent("notes.txt")
+    let target = scratch.appendingPathComponent("Receipts", isDirectory: true)
+    try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+    try Data("incoming".utf8).write(to: source)
+    let occupied = target.appendingPathComponent("notes.txt")
+    try Data("already here".utf8).write(to: occupied)
+
+    let moved = try FileActions().move(source, intoFolder: target)
+
+    #expect(moved.lastPathComponent == "notes 2.txt")
+    #expect(try Data(contentsOf: occupied) == Data("already here".utf8))  // untouched
+    #expect(try Data(contentsOf: moved) == Data("incoming".utf8))
+}
+
+@Test func moveRefusesAMissingDestination() throws {
+    let scratch = try makeScratch()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    let source = scratch.appendingPathComponent("source.pdf")
+    try Data("x".utf8).write(to: source)
+    let missing = scratch.appendingPathComponent("NotThere", isDirectory: true)
+
+    #expect(throws: FileActionError.self) {
+        _ = try FileActions().move(source, intoFolder: missing)
+    }
+    #expect(FileManager.default.fileExists(atPath: source.path))  // left where it was
+}
+
+@Test func moveBackRestoresTheFileToItsOriginalPath() throws {
+    let scratch = try makeScratch()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    let source = scratch.appendingPathComponent("source.pdf")
+    let target = scratch.appendingPathComponent("Receipts", isDirectory: true)
+    try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+    try Data("payload".utf8).write(to: source)
+
+    let actions = FileActions()
+    let moved = try actions.move(source, intoFolder: target)
+    try actions.moveBack(moved, to: source)
+
+    #expect(FileManager.default.fileExists(atPath: source.path))
+    #expect(!FileManager.default.fileExists(atPath: moved.path))
+    #expect(try Data(contentsOf: source) == Data("payload".utf8))
+}

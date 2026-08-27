@@ -71,6 +71,7 @@ public final class DClutterSession {
 /// out for the folder to match the queue.
 public enum UndoSideEffect: Equatable, Sendable {
     case renameFile(from: URL, to: URL)
+    case moveFile(from: URL, to: URL)
 }
 
 private enum Decision {
@@ -78,6 +79,7 @@ private enum Decision {
     case stage(URL)
     case skip(URL)
     case rename(from: URL, to: URL)
+    case move(URL, to: URL)
 
     /// Rewrites this decision's target after a rename, so undo and redo
     /// still reach the file they were recorded against.
@@ -88,6 +90,8 @@ private enum Decision {
         case .skip(let url): return url == old ? .skip(new) : self
         case .rename(let from, let to):
             return .rename(from: from == old ? new : from, to: to == old ? new : to)
+        case .move(let url, let destination):
+            return url == old ? .move(new, to: destination) : self
         }
     }
 }
@@ -153,6 +157,20 @@ extension DClutterSession {
         persist()
     }
 
+    /// Records the move and advances. §3: `.moved` is already executed and
+    /// lives in the undo stack, so unlike `.staged` it never reaches the
+    /// commit sheet. Invariant 4 requires the undo entry to exist before
+    /// the file is touched, so callers must call this *before* moving on
+    /// disk, not after.
+    public func move(_ url: URL, to destination: URL) {
+        guard states[url] == nil || states[url] == .pending else { return }
+        states[url] = .moved(to: destination)
+        history.append(.move(url, to: destination))
+        sortedSinceLastCommit += 1
+        redoStack.removeAll()
+        persist()
+    }
+
     public var canRedo: Bool { !redoStack.isEmpty }
 
     @discardableResult
@@ -160,6 +178,7 @@ extension DClutterSession {
         guard let last = history.popLast() else { return nil }
         switch last {
         case .skip, .rename: break
+        case .move: sortedSinceLastCommit = max(0, sortedSinceLastCommit - 1)
         default: sortedSinceLastCommit = max(0, sortedSinceLastCommit - 1)
         }
         let effect = revert(last)
@@ -176,6 +195,7 @@ extension DClutterSession {
         guard let next = redoStack.popLast() else { return nil }
         switch next {
         case .skip, .rename: break
+        case .move: sortedSinceLastCommit += 1
         default: sortedSinceLastCommit += 1
         }
         let effect = apply(next)
@@ -189,7 +209,11 @@ extension DClutterSession {
     /// from disk, so re-queuing them would show cards for paths that no
     /// longer exist.
     public func reset() {
-        states = states.filter { $0.value == .trashed }
+        // Trashed and moved files have both left the folder already.
+        states = states.filter { state in
+            if case .moved = state.value { return true }
+            return state.value == .trashed
+        }
         deferred.removeAll()
         history.removeAll()
         redoStack.removeAll()
@@ -208,6 +232,9 @@ extension DClutterSession {
         case .rename(let from, let to):
             rename(to, to: from)
             return .renameFile(from: to, to: from)
+        case .move(let url, let destination):
+            states.removeValue(forKey: url)
+            return .moveFile(from: destination, to: url)
         }
         return nil
     }
@@ -224,6 +251,9 @@ extension DClutterSession {
         case .rename(let from, let to):
             rename(from, to: to)
             return .renameFile(from: from, to: to)
+        case .move(let url, let destination):
+            states[url] = .moved(to: destination)
+            return .moveFile(from: url, to: destination)
         }
         return nil
     }
