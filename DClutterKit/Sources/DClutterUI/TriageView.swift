@@ -21,6 +21,7 @@ public struct TriageView: View {
     // can translate the exit in that direction.
     @State private var lastDecision: DecisionDirection?
     @State private var showResetConfirm = false
+    @State private var showHelp = false
     let folder: URL
 
     public init(folder: URL) {
@@ -56,6 +57,7 @@ public struct TriageView: View {
     @ViewBuilder
     private func content(viewModel: SessionViewModel, context: QueueContext) -> some View {
         VStack(spacing: DesignTokens.Spacing.xLarge) {
+            controlBar(viewModel: viewModel)
             Spacer()
             if let current = viewModel.current {
                 CardView(candidate: current, context: context, previewFocused: Binding(
@@ -67,7 +69,7 @@ public struct TriageView: View {
                     .foregroundStyle(DesignTokens.ColorToken.textSecondary)
             }
             Spacer()
-            controlBar(viewModel: viewModel)
+            statusBar(viewModel: viewModel)
         }
         .padding(DesignTokens.Spacing.cardMargin)
         .background(DesignTokens.ColorToken.surface)
@@ -120,12 +122,12 @@ public struct TriageView: View {
             case .return: viewModel.showCommitSheet = true; return .handled
             default: break
             }
-            if letter == "z" { viewModel.undo(); return .handled }
+            if letter == "z" { undo(viewModel); return .handled }
             return .ignored
         }
         // ⇧⌘Z is the macOS redo convention (⌘Y is the Windows one).
         if press.modifiers.subtracting(.capsLock) == [.command, .shift] {
-            if letter == "z" { viewModel.redo(); return .handled }
+            if letter == "z" { redo(viewModel); return .handled }
             return .ignored
         }
         // §6: Esc "returns control to triage", so while the preview is
@@ -145,6 +147,7 @@ public struct TriageView: View {
         case .space: decide(.skip, using: viewModel); return .handled
         default: break
         }
+        if press.key.character == "?" { showHelp.toggle(); return .handled }
         switch letter {
         case "k": decide(.keep, using: viewModel); return .handled
         case "x": decide(.stage, using: viewModel); return .handled
@@ -159,9 +162,11 @@ public struct TriageView: View {
     @ViewBuilder
     private func controlBar(viewModel: SessionViewModel) -> some View {
         HStack(spacing: DesignTokens.Spacing.small) {
-            Text("\(viewModel.totalCount - viewModel.remainingCount) of \(viewModel.totalCount)")
-                .font(.system(size: 13, design: .monospaced))
-                .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+            // Logo slot — replace the placeholder with the real mark.
+            Image(systemName: "square.stack.3d.up")
+                .font(.system(size: 15))
+                .foregroundStyle(DesignTokens.ColorToken.textSecondary)
+                .help("DClutter")
 
             Spacer()
 
@@ -180,11 +185,11 @@ public struct TriageView: View {
             }
 
             controlButton("Undo", systemImage: "arrow.uturn.backward", shortcut: "⌘Z") {
-                viewModel.undo()
+                undo(viewModel)
             }
             .disabled(!viewModel.canUndo)
             controlButton("Redo", systemImage: "arrow.uturn.forward", shortcut: "⇧⌘Z") {
-                viewModel.redo()
+                redo(viewModel)
             }
             .disabled(!viewModel.canRedo)
             controlButton("Start Over", systemImage: "arrow.counterclockwise", shortcut: nil) {
@@ -197,8 +202,60 @@ public struct TriageView: View {
                 viewModel.showCommitSheet = true
             }
             .disabled(viewModel.stagedForCommit.isEmpty)
+
+            controlButton("Help", systemImage: "questionmark.circle", shortcut: "?") {
+                showHelp.toggle()
+            }
+            .popover(isPresented: $showHelp, arrowEdge: .bottom) { helpCard }
         }
     }
+
+    /// Progress is measured in files, never bytes (§0). `trashedCount` is
+    /// shown separately because staging already advances the decided count,
+    /// so a commit would otherwise move no number on screen at all.
+    private func statusBar(viewModel: SessionViewModel) -> some View {
+        HStack(spacing: DesignTokens.Spacing.medium) {
+            Text("\(viewModel.totalCount - viewModel.remainingCount) of \(viewModel.totalCount)")
+            if viewModel.trashedCount > 0 {
+                Text("·")
+                Text("\(viewModel.trashedCount) trashed")
+            }
+            Spacer()
+            Text("double-click the card to open it")
+        }
+        .font(.system(size: 12, design: .monospaced))
+        .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+    }
+
+    private var helpCard: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.small) {
+            Text("Controls").font(.system(size: 13, weight: .semibold))
+            Grid(alignment: .leading, horizontalSpacing: DesignTokens.Spacing.large, verticalSpacing: 6) {
+                ForEach(Self.helpRows, id: \.0) { key, action in
+                    GridRow {
+                        Text(key)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+                        Text(action).font(.system(size: 12))
+                    }
+                }
+            }
+        }
+        .padding(DesignTokens.Spacing.large)
+        .frame(width: 300)
+    }
+
+    private static let helpRows: [(String, String)] = [
+        ("→  or  K", "Keep, next card"),
+        ("←  or  X", "Stage for trash, next card"),
+        ("Space", "Skip — comes back at the end"),
+        ("↑", "Focus the preview"),
+        ("Esc", "Back to triage"),
+        ("⌘Z", "Undo"),
+        ("⇧⌘Z", "Redo"),
+        ("⌘⏎", "Review and trash staged files"),
+        ("Double-click", "Open the file"),
+    ]
 
     private func controlButton(
         _ label: String,
@@ -231,6 +288,19 @@ public struct TriageView: View {
         Task { @MainActor in
             performDecision(direction, using: viewModel)
         }
+    }
+
+    /// Undo and redo cross-fade rather than sliding: the card is not
+    /// leaving in a direction, it is being replaced, and a directional
+    /// slide would imply a decision that isn't being made.
+    private func undo(_ viewModel: SessionViewModel) {
+        lastDecision = nil
+        withAnimation(.easeInOut(duration: 0.19)) { viewModel.undo() }
+    }
+
+    private func redo(_ viewModel: SessionViewModel) {
+        lastDecision = nil
+        withAnimation(.easeInOut(duration: 0.19)) { viewModel.redo() }
     }
 
     private func performDecision(_ direction: DecisionDirection, using viewModel: SessionViewModel) {

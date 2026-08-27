@@ -53,6 +53,14 @@ public final class DClutterSession {
     }
 
     public var totalCount: Int { queue.count }
+
+    /// Files actually moved to the Trash this session. Distinct from
+    /// "decided": staging already removes a file from `remainingCount`, so
+    /// without this a commit changes no number on screen and reads as
+    /// having done nothing.
+    public var trashedCount: Int {
+        states.values.filter { $0 == .trashed }.count
+    }
 }
 
 private enum Decision {
@@ -172,6 +180,16 @@ extension DClutterSession {
             }
             deferred.append(url)
         }
+    }
+
+    /// Un-stages files the user unticked in the commit sheet. They become
+    /// `.kept` rather than `.pending`: unticking means "keep this one", not
+    /// "ask me again", so the file should not resurface as a card.
+    public func unstage(_ urls: Set<URL>) {
+        for url in urls where states[url] == .staged {
+            states[url] = .kept
+        }
+        persist()
     }
 
     public func stagedForCommit() -> [FileCandidate] {

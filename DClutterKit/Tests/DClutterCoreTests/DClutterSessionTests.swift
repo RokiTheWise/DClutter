@@ -368,3 +368,43 @@ private func tempPersistenceURL() -> URL {
     #expect(second.current?.id == a.id)
     #expect(second.remainingCount == 2)
 }
+
+// MARK: - Trashed count and unstaging
+
+@MainActor
+@Test func trashedCountReflectsCommittedFilesOnly() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.stage()
+    #expect(session.trashedCount == 0)   // staged is not yet trashed
+
+    session.commitTrashed([a.url])
+    #expect(session.trashedCount == 1)
+}
+
+@MainActor
+@Test func unstageReturnsAFileToKeptSoItLeavesTheCommitList() {
+    // Unticking a file in the commit sheet means "actually, keep this" —
+    // it must drop out of stagedForCommit without being trashed, and
+    // without coming back around as an undecided card.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.stage()   // stages a
+    session.stage()   // stages b
+    #expect(session.stagedForCommit().count == 2)
+
+    session.unstage([a.url])
+
+    #expect(session.stagedForCommit().map(\.id) == [b.id])
+    #expect(session.states[a.url] == .kept)
+    #expect(session.remainingCount == 0)   // not resurfaced as pending
+}
+
+@MainActor
+@Test func unstageIgnoresFilesThatArentStaged() {
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    session.keep()
+    session.unstage([a.url])
+    #expect(session.states[a.url] == .kept)   // untouched, not clobbered
+}

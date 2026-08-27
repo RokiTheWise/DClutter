@@ -37,6 +37,25 @@ final class SessionViewModel {
     var canUndo: Bool { _ = version; return session.canUndo }
     var canRedo: Bool { _ = version; return session.canRedo }
     var stagedForCommit: [FileCandidate] { _ = version; return session.stagedForCommit() }
+    var trashedCount: Int { _ = version; return session.trashedCount }
+
+    /// Files the user has unticked in the commit sheet. Kept here rather
+    /// than in the sheet's own @State so it survives the sheet closing and
+    /// reopening, and so confirmCommit is the single place that decides
+    /// what actually gets trashed.
+    var excludedFromCommit: Set<URL> = []
+
+    var filesToTrash: [FileCandidate] {
+        stagedForCommit.filter { !excludedFromCommit.contains($0.url) }
+    }
+
+    func toggleCommitInclusion(_ url: URL) {
+        if excludedFromCommit.contains(url) {
+            excludedFromCommit.remove(url)
+        } else {
+            excludedFromCommit.insert(url)
+        }
+    }
 
     func keep() { previewFocused = false; session.keep(); version += 1 }
     func stage() { previewFocused = false; session.stage(); version += 1 }
@@ -62,6 +81,12 @@ final class SessionViewModel {
     /// keeps the sheet open on any failure so the error is actually visible
     /// instead of being dismissed along with it.
     func confirmCommit() {
+        // Anything the user unticked is kept, not trashed, and drops out
+        // of the staged list before we touch a single file.
+        let excluded = excludedFromCommit
+        if !excluded.isEmpty { session.unstage(excluded) }
+        excludedFromCommit.removeAll()
+
         var trashed: Set<URL> = []
         var anyFailed = false
         for candidate in session.stagedForCommit() {
