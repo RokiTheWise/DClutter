@@ -62,14 +62,19 @@ private struct ThumbnailPreview: NSViewRepresentable {
         coordinator.requestedURL = url
 
         let size = CGSize(width: 400, height: 300)
+        // `.all`, not `.thumbnail`: a zip, a .docx, or anything else with no
+        // renderable content has no content thumbnail, and asking only for
+        // one leaves the well blank — which reads as a broken app rather
+        // than as "this file has no preview". `.all` lets QuickLook fall
+        // back to the file-type icon, and NSWorkspace covers the rest.
         let request = QLThumbnailGenerator.Request(
-            fileAt: url, size: size, scale: 2, representationTypes: .thumbnail
+            fileAt: url, size: size, scale: 2, representationTypes: .all
         )
         Task { @MainActor in
             let thumbnail = try? await QLThumbnailGenerator.shared
                 .generateBestRepresentation(for: request)
             guard coordinator.requestedURL == url else { return }
-            view.image = thumbnail?.nsImage
+            view.image = thumbnail?.nsImage ?? NSWorkspace.shared.icon(forFile: url.path)
         }
     }
 }

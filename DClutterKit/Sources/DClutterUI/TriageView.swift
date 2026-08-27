@@ -148,7 +148,24 @@ public struct TriageView: View {
     /// first so CardView's `.transition` (evaluated for the outgoing card)
     /// already reflects the direction by the time this animates.
     private func decide(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
+        // A removal transition is resolved from the departing view's LAST
+        // COMMITTED render, so setting `lastDecision` in the same pass as
+        // the mutation is too late — the outgoing card would animate in the
+        // *previous* decision's direction (press right then left, and the
+        // left exit still slides right). Commit the direction first, then
+        // mutate on the next pass so the departing card already carries the
+        // correct transition.
+        guard lastDecision != direction else {
+            performDecision(direction, using: viewModel)
+            return
+        }
         lastDecision = direction
+        Task { @MainActor in
+            performDecision(direction, using: viewModel)
+        }
+    }
+
+    private func performDecision(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
         withAnimation(.easeInOut(duration: 0.19)) {
             switch direction {
             case .keep: viewModel.keep()
