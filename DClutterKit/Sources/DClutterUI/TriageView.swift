@@ -22,6 +22,8 @@ public struct TriageView: View {
     @State private var lastDecision: DecisionDirection?
     @State private var showResetConfirm = false
     @State private var showHelp = false
+    /// Live swipe position, -1..1, so the card tracks the fingers.
+    @State private var swipeProgress: CGFloat = 0
     let folder: URL
 
     public init(folder: URL) {
@@ -64,6 +66,9 @@ public struct TriageView: View {
                     get: { viewModel.previewFocused },
                     set: { viewModel.previewFocused = $0 }
                 ), lastDecision: lastDecision, onOpen: { viewModel.openCurrentInDefaultApp() })
+                    .offset(x: swipeProgress * 90)
+                    .rotationEffect(.degrees(swipeProgress * 2))
+                    .opacity(1 - min(abs(swipeProgress) * 0.35, 0.35))
             } else {
                 Text("All done.")
                     .foregroundStyle(DesignTokens.ColorToken.textSecondary)
@@ -90,6 +95,16 @@ public struct TriageView: View {
             .keyboardShortcut(.cancelAction)
             .opacity(0)
             .accessibilityHidden(true)
+        )
+        .onHorizontalSwipe(
+            // While the preview has focus the gesture is the preview's, and
+            // the commit sheet is modal over the whole surface.
+            isEnabled: !viewModel.previewFocused && !viewModel.showCommitSheet,
+            onProgress: { amount in swipeProgress = amount },
+            onCommit: { direction in
+                swipeProgress = 0
+                decide(direction, using: viewModel)
+            }
         )
         .onAppear { isFocused = true }
         .confirmationDialog(
