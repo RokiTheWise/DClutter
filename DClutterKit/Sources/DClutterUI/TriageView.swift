@@ -106,17 +106,30 @@ public struct TriageView: View {
             isFocused = true
             swipeMonitor.onProgress = { amount in swipeProgress = amount }
             swipeMonitor.onCommit = { direction in
-                // The departing card keeps the offset it was rendered with
-                // (see CardView.swipeOffset), so it carries on out from
-                // where the fingers left it. Resetting here only affects
-                // the incoming card, which starts at rest.
-                lastDecision = direction
-                swipeProgress = 0
-                withAnimation(.easeOut(duration: 0.19)) {
-                    switch direction {
-                    case .keep: viewModel.keep()
-                    case .stage: viewModel.stage()
-                    case .skip: viewModel.skip()
+                // Finish the throw the fingers started: carry the card the
+                // rest of the way off screen at a steady speed, then swap
+                // underneath it. Previously the exit transition tried to
+                // play at the same time as the gesture's own settle
+                // animation, and the two fought — which is what made a
+                // swipe feel worse than a key press.
+                withAnimation(.easeOut(duration: 0.16)) {
+                    swipeProgress = direction == .keep ? 4 : -4
+                }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(160))
+                    // The throw WAS the exit, so no directional transition
+                    // on top of it. Zeroing in the same update as the
+                    // decision leaves the departing card off screen (it
+                    // keeps its last rendered offset) and starts the
+                    // incoming one at rest.
+                    lastDecision = nil
+                    swipeProgress = 0
+                    withAnimation(.easeOut(duration: 0.14)) {
+                        switch direction {
+                        case .keep: viewModel.keep()
+                        case .stage: viewModel.stage()
+                        case .skip: viewModel.skip()
+                        }
                     }
                 }
             }

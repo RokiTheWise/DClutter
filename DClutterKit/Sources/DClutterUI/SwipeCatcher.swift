@@ -69,10 +69,7 @@ final class SwipeMonitorController {
             // settles, and letting those through moved the *next* card —
             // the new card inherited the tail of the finished swipe, which
             // is what made releasing feel sticky next to the arrow keys.
-            if committed {
-                if isComplete { stop.pointee = true }
-                return
-            }
+            if committed { return }
 
             // Live tracking: follow the fingers exactly, unanimated.
             self.onProgress?(amount)
@@ -81,9 +78,15 @@ final class SwipeMonitorController {
 
             if amount <= -0.5 {
                 committed = true
+                // Hand over cleanly: stop the tracker dead so it cannot keep
+                // animating `amount` underneath the exit animation. Past the
+                // threshold the gesture is over and the card simply finishes
+                // the throw, exactly as a key press would.
+                stop.pointee = true
                 self.onCommit?(.stage)
             } else if amount >= 0.5 {
                 committed = true
+                stop.pointee = true
                 self.onCommit?(.keep)
             } else if isComplete {
                 // Below threshold: spring the card back rather than
