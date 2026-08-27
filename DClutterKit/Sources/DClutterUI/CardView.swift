@@ -31,6 +31,9 @@ struct CardView: View {
     /// from shared state in the parent, the outgoing card would re-read the
     /// reset value, snap back to centre and only then play its exit.
     var swipeOffset: CGFloat = 0
+    var onReveal: (() -> Void)?
+    var onRename: (() -> Void)?
+    var onCopyName: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
@@ -74,6 +77,16 @@ struct CardView: View {
         .opacity(1 - min(abs(swipeOffset) * 0.35, 0.35))
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { onOpen?() }
+        // Right-click reaches the Finder vocabulary people already know.
+        // It is a different button from the left-click-drag §6 reserves for
+        // move-to-destination, so the two cannot collide.
+        .contextMenu {
+            Button("Open") { onOpen?() }
+            Button("Reveal in Finder") { onReveal?() }
+            Divider()
+            Button("Rename…") { onRename?() }
+            Button("Copy Name") { onCopyName?() }
+        }
         .help("Double-click to open this file")
         .id(candidate.id) // forces a fresh identity so .transition fires on advance
         .transition(cardTransition)

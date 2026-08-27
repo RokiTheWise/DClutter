@@ -70,7 +70,10 @@ public struct TriageView: View {
                     set: { viewModel.previewFocused = $0 }
                 ), lastDecision: lastDecision,
                    onOpen: { viewModel.openCurrentInDefaultApp() },
-                   swipeOffset: swipeProgress)
+                   swipeOffset: swipeProgress,
+                   onReveal: { viewModel.revealCurrentInFinder() },
+                   onRename: { beginRename(viewModel: viewModel) },
+                   onCopyName: { viewModel.copyCurrentName() })
             } else {
                 Text("All done.")
                     .foregroundStyle(DesignTokens.ColorToken.textSecondary)
@@ -148,6 +151,16 @@ public struct TriageView: View {
         }
     }
 
+    private func beginRename(viewModel: SessionViewModel) {
+        guard let current = viewModel.current else { return }
+        // Stem only — the extension is preserved automatically and is not
+        // the user's to accidentally delete.
+        draftName = current.url.deletingPathExtension().lastPathComponent
+        viewModel.renameError = nil
+        viewModel.isRenaming = true
+        renameFieldFocused = true
+    }
+
     private func handle(_ press: KeyPress, viewModel: SessionViewModel) -> KeyPress.Result {
         // The rename field owns the keyboard while it is open: Space is a
         // space, not a skip, and every other binding would act on the very
@@ -188,13 +201,7 @@ public struct TriageView: View {
         case .leftArrow: decide(.stage, using: viewModel); return .handled
         case .upArrow: viewModel.previewFocused = true; return .handled
         case .downArrow:
-            guard let current = viewModel.current else { return .handled }
-            // Stem only — the extension is preserved automatically and
-            // is not the user's to accidentally delete.
-            draftName = current.url.deletingPathExtension().lastPathComponent
-            viewModel.renameError = nil
-            viewModel.isRenaming = true
-            renameFieldFocused = true
+            beginRename(viewModel: viewModel)
             return .handled
         case .escape: viewModel.previewFocused = false; return .handled
         case .space: decide(.skip, using: viewModel); return .handled

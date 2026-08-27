@@ -86,6 +86,19 @@ final class SessionViewModel {
     }
     func toggleFocus() { previewFocused.toggle() }
 
+    /// Selects the file in Finder. Read-only, like opening it — the queue
+    /// is untouched, so this never counts as a decision.
+    func revealCurrentInFinder() {
+        guard let url = session.current?.url else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    func copyCurrentName() {
+        guard let url = session.current?.url else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.lastPathComponent, forType: .string)
+    }
+
     /// Renames the current file on disk and re-points the session onto the
     /// new URL. Both halves must happen together: the session is keyed by
     /// URL, so a disk rename without the migration orphans the candidate.
