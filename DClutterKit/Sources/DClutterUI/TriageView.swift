@@ -24,6 +24,7 @@ public struct TriageView: View {
     @State private var showHelp = false
     /// Live swipe position, -1..1, so the card tracks the fingers.
     @State private var swipeProgress: CGFloat = 0
+    @State private var swipeMonitor = SwipeMonitorController()
     let folder: URL
 
     public init(folder: URL) {
@@ -96,17 +97,27 @@ public struct TriageView: View {
             .opacity(0)
             .accessibilityHidden(true)
         )
-        .onHorizontalSwipe(
-            // While the preview has focus the gesture is the preview's, and
-            // the commit sheet is modal over the whole surface.
-            isEnabled: !viewModel.previewFocused && !viewModel.showCommitSheet,
-            onProgress: { amount in swipeProgress = amount },
-            onCommit: { direction in
+        .onAppear {
+            isFocused = true
+            swipeMonitor.onProgress = { amount in swipeProgress = amount }
+            swipeMonitor.onCommit = { direction in
+                // Zero it before the decision so the incoming card starts
+                // at rest instead of wherever the fingers left off.
                 swipeProgress = 0
                 decide(direction, using: viewModel)
             }
-        )
-        .onAppear { isFocused = true }
+            swipeMonitor.onSnapBack = {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                    swipeProgress = 0
+                }
+            }
+            swipeMonitor.start()
+        }
+        .onDisappear { swipeMonitor.stop() }
+        .onChange(of: viewModel.previewFocused) { _, focused in
+            // While the preview has focus the gesture is the preview's.
+            swipeMonitor.isEnabled = !focused
+        }
         .confirmationDialog(
             "Start over?",
             isPresented: $showResetConfirm,
