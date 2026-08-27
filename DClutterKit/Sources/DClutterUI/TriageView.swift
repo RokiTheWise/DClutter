@@ -82,6 +82,20 @@ public struct TriageView: View {
         .focusEffectDisabled()
         .focused($isFocused)
         .onKeyPress { press in handle(press, viewModel: viewModel) }
+        // Escape hatch. Once the live QLPreviewView takes first responder,
+        // .onKeyPress above stops firing entirely — including for Esc — so
+        // focusing the preview would trap the user with no way back to
+        // triage. A .keyboardShortcut is registered at the window level and
+        // fires regardless of which subview holds focus.
+        .background(
+            Button("") {
+                viewModel.previewFocused = false
+                isFocused = true
+            }
+            .keyboardShortcut(.cancelAction)
+            .opacity(0)
+            .accessibilityHidden(true)
+        )
         .onAppear { isFocused = true }
         .sheet(isPresented: Bindable(viewModel).showCommitSheet) {
             CommitSheet(viewModel: viewModel)
@@ -95,8 +109,10 @@ public struct TriageView: View {
         // Lowercased so Caps Lock doesn't break the letter bindings below.
         let letter = press.key.character.lowercased()
         // Exact modifier set, not `.contains(.command)` — otherwise e.g.
-        // ⌥⌘Z would also count as undo.
-        if press.modifiers == .command {
+        // ⌥⌘Z would also count as undo. Caps Lock is subtracted because it
+        // rides along in the modifier set whenever it happens to be on,
+        // which would otherwise silently kill ⌘Z and ⌘⏎.
+        if press.modifiers.subtracting(.capsLock) == .command {
             switch press.key {
             case .return: viewModel.showCommitSheet = true; return .handled
             default: break

@@ -27,15 +27,21 @@ struct CardView: View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
             PreviewPane(candidate: candidate, focused: $previewFocused)
 
+            // Two lines are always reserved, and the chip row below always
+            // occupies a row's height even when empty. Design spec §4: the
+            // card must not resize between files, or the queue jitters on
+            // every advance.
             Text(candidate.url.lastPathComponent)
                 .font(.system(size: 22, weight: .regular))
                 .kerning(-0.4)
                 .foregroundStyle(DesignTokens.ColorToken.textPrimary)
-                .lineLimit(2)
+                .lineLimit(2, reservesSpace: true)
 
             let chips = ChipBuilder.chips(for: candidate, in: context)
-            if !chips.isEmpty {
-                HStack(spacing: DesignTokens.Spacing.small) {
+            HStack(spacing: DesignTokens.Spacing.small) {
+                if chips.isEmpty {
+                    Chip(text: " ").hidden()
+                } else {
                     ForEach(chips, id: \.self) { Chip(text: $0) }
                 }
             }

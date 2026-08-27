@@ -11,14 +11,17 @@ import DClutterCore
 struct MetadataPanel: View {
     let candidate: FileCandidate
 
+    /// Always the same four rows, in the same order — an absent source
+    /// renders as a dash rather than collapsing the row. Design spec §4:
+    /// the card must not change height between files, or the queue jitters
+    /// on every advance.
     private var rows: [(String, String)] {
-        var result = [("SIZE", Self.byteFormatter.string(fromByteCount: candidate.bytes))]
-        result.append(("LAST OPENED", candidate.lastOpened.map(Self.dateFormatter.string) ?? "Never"))
-        if let host = candidate.sourceURL?.host {
-            result.append(("FROM", host))
-        }
-        result.append(("ADDED", Self.dateFormatter.string(from: candidate.created)))
-        return result
+        [
+            ("SIZE", Self.byteFormatter.string(fromByteCount: candidate.bytes)),
+            ("LAST OPENED", candidate.lastOpened.map(Self.dateFormatter.string) ?? "Never"),
+            ("FROM", candidate.sourceURL?.host ?? "—"),
+            ("ADDED", Self.dateFormatter.string(from: candidate.created)),
+        ]
     }
 
     var body: some View {
