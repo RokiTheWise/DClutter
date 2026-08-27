@@ -162,3 +162,25 @@ private func setWhereFroms(_ urls: [String], on fileURL: URL) throws {
     #expect(candidate.created >= before && candidate.created <= after)
     #expect(candidate.modified != nil)
 }
+
+@Test func providerEnumeratesThroughASymlinkedDirectory() async throws {
+    // A sandboxed app reaches ~/Downloads through a symlink in its
+    // container, and the URL-based contentsOfDirectory(at:) does NOT
+    // follow symlinks the way the path-based one does — it fails with
+    // POSIX ENOTDIR ("Not a directory"). The provider must resolve the
+    // symlink so a symlinked folder enumerates like a real one.
+    let real = try makeTempFolder()
+    defer { try? FileManager.default.removeItem(at: real) }
+    try Data("hello".utf8).write(to: real.appendingPathComponent("a.txt"))
+
+    let link = FileManager.default.temporaryDirectory
+        .appendingPathComponent("DClutterLink-\(UUID().uuidString)")
+    try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+    defer { try? FileManager.default.removeItem(at: link) }
+
+    let provider = DirectoryMetadataProvider()
+    let candidates = try await provider.candidates(in: link)
+
+    #expect(candidates.count == 1)
+    #expect(candidates.first?.url.lastPathComponent == "a.txt")
+}

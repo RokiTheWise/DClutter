@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1D567D76303F3815004FC18F /* DClutterUI in Frameworks */ = {isa = PBXBuildFile; productRef = 1D567D75303F3815004FC18F /* DClutterUI */; };
 		1DDBA36A303E9BE5005B50CD /* DClutterCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1DDBA369303E9BE5005B50CD /* DClutterCore */; };
 		1DDBA36C303E9BE5005B50CD /* DClutterPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = 1DDBA36B303E9BE5005B50CD /* DClutterPlatform */; };
 /* End PBXBuildFile section */
@@ -57,6 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1D567D76303F3815004FC18F /* DClutterUI in Frameworks */,
 				1DDBA36C303E9BE5005B50CD /* DClutterPlatform in Frameworks */,
 				1DDBA36A303E9BE5005B50CD /* DClutterCore in Frameworks */,
 			);
@@ -79,12 +81,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1D567D74303F3815004FC18F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		1DDBA329303E9A2E005B50CD = {
 			isa = PBXGroup;
 			children = (
 				1DDBA334303E9A2E005B50CD /* DClutter */,
 				1DDBA342303E9A2F005B50CD /* DClutterTests */,
 				1DDBA34C303E9A2F005B50CD /* DClutterUITests */,
+				1D567D74303F3815004FC18F /* Frameworks */,
 				1DDBA333303E9A2E005B50CD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -121,6 +131,7 @@
 			packageProductDependencies = (
 				1DDBA369303E9BE5005B50CD /* DClutterCore */,
 				1DDBA36B303E9BE5005B50CD /* DClutterPlatform */,
+				1D567D75303F3815004FC18F /* DClutterUI */,
 			);
 			productName = DClutter;
 			productReference = 1DDBA332303E9A2E005B50CD /* DClutter.app */;
@@ -606,6 +617,11 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1D567D75303F3815004FC18F /* DClutterUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1DDBA368303E9BE5005B50CD /* XCLocalSwiftPackageReference "DClutterKit" */;
+			productName = DClutterUI;
+		};
 		1DDBA369303E9BE5005B50CD /* DClutterCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DClutterCore;

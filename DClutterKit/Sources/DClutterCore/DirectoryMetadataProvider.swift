@@ -42,6 +42,12 @@ public struct DirectoryMetadataProvider: FileMetadataProvider {
     ]
 
     public func candidates(in folder: URL) async throws -> [FileCandidate] {
+        // Resolve symlinks first. A sandboxed app reaches ~/Downloads through
+        // a symlink inside its container, and unlike the path-based API, the
+        // URL-based contentsOfDirectory(at:) does not follow one — it fails
+        // with POSIX ENOTDIR ("Not a directory"), which surfaces as the very
+        // unhelpful "The file "Downloads" couldn't be opened."
+        let folder = folder.resolvingSymlinksInPath()
         let urls = try FileManager.default.contentsOfDirectory(
             at: folder,
             includingPropertiesForKeys: Array(Self.resourceKeys),

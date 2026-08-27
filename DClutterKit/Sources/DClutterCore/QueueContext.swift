@@ -10,9 +10,12 @@ import Foundation
 public struct QueueContext: Sendable {
     private let redundantCopyIDs: Set<UUID>
     private let extractedArchiveIDs: Set<UUID>
+    private let clusterSizeByID: [UUID: Int]
 
     public init(candidates: [FileCandidate]) {
-        redundantCopyIDs = Self.findRedundantCopies(in: candidates)
+        let (redundant, clusterSize) = Self.findDuplicateInfo(in: candidates)
+        redundantCopyIDs = redundant
+        clusterSizeByID = clusterSize
         extractedArchiveIDs = Self.findExtractedArchives(in: candidates)
     }
 
@@ -22,6 +25,10 @@ public struct QueueContext: Sendable {
 
     public func isExtractedArchive(_ candidate: FileCandidate) -> Bool {
         extractedArchiveIDs.contains(candidate.id)
+    }
+
+    public func duplicateCount(for candidate: FileCandidate) -> Int {
+        clusterSizeByID[candidate.id] ?? 1
     }
 
     // MARK: - Duplicate detection (filename + size, no hashing)
@@ -48,7 +55,7 @@ public struct QueueContext: Sendable {
         return NormalizedName(normalized: result, hadCopySuffix: hadSuffix)
     }
 
-    private static func findRedundantCopies(in candidates: [FileCandidate]) -> Set<UUID> {
+    private static func findDuplicateInfo(in candidates: [FileCandidate]) -> (redundant: Set<UUID>, clusterSize: [UUID: Int]) {
         struct ClusterKey: Hashable {
             let normalizedName: String
             let bucketedKB: Int64
@@ -72,6 +79,7 @@ public struct QueueContext: Sendable {
         }
 
         var redundant: Set<UUID> = []
+        var clusterSize: [UUID: Int] = [:]
         for members in clusters.values where members.count > 1 {
             let unsuffixed = members.filter { !$0.hadCopySuffix }
             let keeper: FileCandidate
@@ -82,11 +90,15 @@ public struct QueueContext: Sendable {
             } else {
                 keeper = members.min { $0.candidate.created < $1.candidate.created }!.candidate
             }
-            for member in members where member.candidate.id != keeper.id {
-                redundant.insert(member.candidate.id)
+            let clusterCount = members.count
+            for member in members {
+                clusterSize[member.candidate.id] = clusterCount
+                if member.candidate.id != keeper.id {
+                    redundant.insert(member.candidate.id)
+                }
             }
         }
-        return redundant
+        return (redundant: redundant, clusterSize: clusterSize)
     }
 
     // MARK: - Extracted archive detection

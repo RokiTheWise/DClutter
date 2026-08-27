@@ -99,3 +99,19 @@ private func candidate(_ name: String, bytes: Int64, isDirectory: Bool = false, 
     let ctx = QueueContext(candidates: [dir, zip])
     #expect(!ctx.isExtractedArchive(dir))
 }
+
+@Test func duplicateCountReflectsFullClusterSize() {
+    let a = candidate("Report.pdf", bytes: 10_000)
+    let b = candidate("Report (2).pdf", bytes: 10_000)
+    let c = candidate("Report (3).pdf", bytes: 10_000)
+    let ctx = QueueContext(candidates: [a, b, c])
+    #expect(ctx.duplicateCount(for: a) == 3)
+    #expect(ctx.duplicateCount(for: b) == 3)
+    #expect(ctx.duplicateCount(for: c) == 3)
+}
+
+@Test func duplicateCountIsOneForNonClusteredFile() {
+    let a = candidate("Report.pdf", bytes: 10_000)
+    let ctx = QueueContext(candidates: [a])
+    #expect(ctx.duplicateCount(for: a) == 1)
+}
