@@ -4,6 +4,7 @@
 
 import SwiftUI
 import DClutterCore
+import DClutterPlatform
 
 /// §6 keyboard table (M2 subset — 1-3/move and gestures are M4):
 /// →/K keep, ←/X stage, ⌘Z undo, Space skip, ⌘⏎ commit sheet,
@@ -27,6 +28,11 @@ public struct TriageView: View {
     @State private var swipeMonitor = SwipeMonitorController()
     @State private var draftName = ""
     @FocusState private var renameFieldFocused: Bool
+    /// Drag-up shelf state. §6 puts move on a click-drag, never a
+    /// two-finger swipe up — that arrives as scrollWheel and is
+    /// indistinguishable from scrolling the preview.
+    @State private var dragHeight: CGFloat = 0
+    @State private var dragX: CGFloat = 0
     let folder: URL
 
     public init(folder: URL) {
@@ -63,6 +69,13 @@ public struct TriageView: View {
     private func content(viewModel: SessionViewModel, context: QueueContext) -> some View {
         VStack(spacing: DesignTokens.Spacing.xLarge) {
             controlBar(viewModel: viewModel)
+            DestinationShelf(
+                destinations: viewModel.destinations,
+                revealed: shelfReveal,
+                highlighted: highlightedBin(viewModel: viewModel),
+                onChooseFolder: { viewModel.chooseDestinationFolder() }
+            )
+            .frame(height: shelfReveal > 0 ? nil : 0)
             Spacer()
             if let current = viewModel.current {
                 CardView(candidate: current, context: context, previewFocused: Binding(
@@ -74,6 +87,8 @@ public struct TriageView: View {
                    onReveal: { viewModel.revealCurrentInFinder() },
                    onRename: { beginRename(viewModel: viewModel) },
                    onCopyName: { viewModel.copyCurrentName() })
+                    .offset(y: -dragHeight)
+                    .gesture(shelfDrag(viewModel: viewModel))
             } else {
                 Text("All done.")
                     .foregroundStyle(DesignTokens.ColorToken.textSecondary)
@@ -151,6 +166,54 @@ public struct TriageView: View {
         }
     }
 
+    /// 0 at rest, 1 fully revealed — proportional to the drag so the shelf
+    /// feels attached to it rather than triggered by it (§6).
+    private var shelfReveal: CGFloat {
+        min(max((dragHeight - 20) / 90, 0), 1)
+    }
+
+    /// Only one bin is ever highlighted; §6 forbids an ambiguous middle
+    /// state, so this picks a single index from the pointer's x position.
+    private func highlightedBin(viewModel: SessionViewModel) -> Int? {
+        guard shelfReveal > 0.99 else { return nil }
+        let count = max(viewModel.destinations.count, 1)
+        let width: CGFloat = 132 + DesignTokens.Spacing.medium
+        let slot = Int(((dragX + (width * CGFloat(count)) / 2) / width).rounded(.down))
+        return (0..<count).contains(slot) ? slot : nil
+    }
+
+    private func shelfDrag(viewModel: SessionViewModel) -> some Gesture {
+        DragGesture(minimumDistance: 8)
+            .onChanged { value in
+                dragHeight = max(0, -value.translation.height)
+                dragX = value.translation.width
+            }
+            .onEnded { _ in
+                let target = highlightedBin(viewModel: viewModel)
+                let reveal = shelfReveal
+                withAnimation(.spring(response: 0.26, dampingFraction: 0.8)) {
+                    dragHeight = 0
+                    dragX = 0
+                }
+                // Released over a bin commits; anywhere else cancels, and
+                // §6 insists cancelling be as easy as committing.
+                guard reveal > 0.99, let target else { return }
+                if viewModel.destinations.isEmpty {
+                    viewModel.chooseDestinationFolder()
+                } else {
+                    fileAway(target, viewModel: viewModel)
+                }
+            }
+    }
+
+    private func fileAway(_ index: Int, viewModel: SessionViewModel) {
+        guard viewModel.destinations.indices.contains(index) else { return }
+        lastDecision = nil
+        withAnimation(.easeOut(duration: 0.19)) {
+            viewModel.moveCurrent(toDestinationAt: index)
+        }
+    }
+
     private func beginRename(viewModel: SessionViewModel) {
         guard let current = viewModel.current else { return }
         // Stem only — the extension is preserved automatically and is not
@@ -180,6 +243,9 @@ public struct TriageView: View {
             if letter == "z" { undo(viewModel); return .handled }
             // ⌘Y mirrors ⇧⌘Z for anyone arriving from Windows.
             if letter == "y" { redo(viewModel); return .handled }
+            // §6: add a destination mid-session, so hitting an
+            // unclassifiable file doesn't send the user to Finder.
+            if letter == "n" { viewModel.chooseDestinationFolder(); return .handled }
             return .ignored
         }
         // ⇧⌘Z is the macOS redo convention (⌘Y is the Windows one).
@@ -208,6 +274,10 @@ public struct TriageView: View {
         default: break
         }
         if press.key.character == "?" { showHelp.toggle(); return .handled }
+        if let slot = Int(letter), (1...DestinationStore.maximumDestinations).contains(slot) {
+            fileAway(slot - 1, viewModel: viewModel)
+            return .handled
+        }
         switch letter {
         case "k": decide(.keep, using: viewModel); return .handled
         case "x": decide(.stage, using: viewModel); return .handled
@@ -346,6 +416,9 @@ public struct TriageView: View {
         ("Space", "Skip — comes back at the end"),
         ("↑", "Focus the preview"),
         ("↓", "Rename this file"),
+        ("1 – 3", "File into a destination folder"),
+        ("drag up", "Reveal the destination shelf"),
+        ("⌘N", "Add a destination folder"),
         ("Esc", "Back to triage"),
         ("⌘Z", "Undo"),
         ("⇧⌘Z  or  ⌘Y", "Redo"),

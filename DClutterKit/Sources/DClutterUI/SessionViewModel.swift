@@ -26,11 +26,16 @@ final class SessionViewModel {
     var showCommitSheet = false
     var commitError: String?
     var isRenaming = false
+    var destinations: [Destination] = []
+    var moveError: String?
     var renameError: String?
+
+    private let destinationStore = DestinationStore()
 
     init(session: DClutterSession, fileActions: FileActions = FileActions()) {
         self.session = session
         self.fileActions = fileActions
+        self.destinations = destinationStore.load()
     }
 
     var current: FileCandidate? { _ = version; return session.current }
@@ -69,8 +74,20 @@ final class SessionViewModel {
     /// Core reports disk work it cannot do itself; without carrying it out
     /// the queue and the folder would disagree about a file's name.
     private func perform(_ effect: UndoSideEffect?) {
-        guard case .renameFile(let from, let to) = effect else { return }
-        _ = try? fileActions.rename(from, to: to.lastPathComponent)
+        switch effect {
+        case .renameFile(let from, let to):
+            _ = try? fileActions.rename(from, to: to.lastPathComponent)
+        case .moveFile(let from, let to):
+            // Undo pulls the file back out of the destination; redo files it
+            // away again. Both need the destination folder's scope, which
+            // FileActions holds around each call.
+            if to.deletingLastPathComponent().lastPathComponent.isEmpty == false,
+               (try? fileActions.moveBack(from, to: to)) == nil {
+                moveError = "Couldn't move \(from.lastPathComponent) back."
+            }
+        case .none:
+            break
+        }
     }
 
     /// Discards every undecided decision and restarts the queue.
@@ -85,6 +102,60 @@ final class SessionViewModel {
         NSWorkspace.shared.open(url)
     }
     func toggleFocus() { previewFocused.toggle() }
+
+    /// Files the current card into the destination at `index`.
+    ///
+    /// Invariant 4: the undo entry is registered *before* the file is
+    /// touched. The session records the move first; only if the disk
+    /// operation then succeeds does the record stand, and if it fails the
+    /// record is rolled back so the queue never claims a move that did not
+    /// happen.
+    func moveCurrent(toDestinationAt index: Int) {
+        guard let candidate = session.current,
+              destinations.indices.contains(index) else { return }
+        let folder = destinations[index].url
+
+        session.move(candidate.url, to: folder.appendingPathComponent(candidate.url.lastPathComponent))
+        do {
+            let landed = try fileActions.move(candidate.url, intoFolder: folder)
+            // Correct the recorded path if the destination suffixed the name
+            // to avoid clobbering a file already there, so undo looks in the
+            // right place. Amends the existing entry rather than adding one.
+            session.amendLastMove(of: candidate.url, to: landed)
+            moveError = nil
+        } catch {
+            session.undo()      // withdraw the record; nothing moved
+            moveError = "Couldn't file \(candidate.url.lastPathComponent): \(error.localizedDescription)"
+        }
+        previewFocused = false
+        version += 1
+    }
+
+    /// §6: up to three folders, chosen by the user through an open panel so
+    /// the sandbox grants access to them at all.
+    func chooseDestinationFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Use Folder"
+        panel.message = "Pick a folder to file things into."
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        if destinations.count >= DestinationStore.maximumDestinations {
+            destinations.removeLast()
+        }
+        destinations.append(Destination(url: url))
+        destinationStore.save(destinations)
+        version += 1
+    }
+
+    func removeDestination(at index: Int) {
+        guard destinations.indices.contains(index) else { return }
+        destinations.remove(at: index)
+        destinationStore.save(destinations)
+        version += 1
+    }
 
     /// Selects the file in Finder. Read-only, like opening it — the queue
     /// is untouched, so this never counts as a decision.

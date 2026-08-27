@@ -621,3 +621,22 @@ private func tempPersistenceURL() -> URL {
     #expect(session.current?.id == b.id)
     #expect(session.remainingCount == 1)
 }
+
+@MainActor
+@Test func amendingAMoveCorrectsWhereUndoWillLookWithoutAddingHistory() {
+    // The destination may suffix the name to avoid clobbering, so the path
+    // recorded before the move can differ from where the file actually
+    // landed. Undo has to follow the real one.
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    let intended = URL(fileURLWithPath: "/tmp/Receipts/a.pdf")
+    let actual = URL(fileURLWithPath: "/tmp/Receipts/a 2.pdf")
+
+    session.move(a.url, to: intended)
+    session.amendLastMove(of: a.url, to: actual)
+
+    #expect(session.states[a.url] == .moved(to: actual))
+    session.undo()
+    #expect(session.canUndo == false)          // one entry, not two
+    #expect(session.current?.id == a.id)
+}

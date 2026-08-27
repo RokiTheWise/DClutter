@@ -171,6 +171,20 @@ extension DClutterSession {
         persist()
     }
 
+    /// Corrects the destination recorded for a move already registered.
+    /// A destination folder may suffix the filename to avoid overwriting
+    /// something already there, so where the file actually landed can
+    /// differ from what was recorded before it was touched — and undo must
+    /// follow the real path. Amends in place: no new history entry.
+    public func amendLastMove(of url: URL, to actual: URL) {
+        guard case .moved = states[url] else { return }
+        states[url] = .moved(to: actual)
+        if case .move(let recorded, _) = history.last, recorded == url {
+            history[history.count - 1] = .move(url, to: actual)
+        }
+        persist()
+    }
+
     public var canRedo: Bool { !redoStack.isEmpty }
 
     @discardableResult
