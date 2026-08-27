@@ -408,3 +408,51 @@ private func tempPersistenceURL() -> URL {
     session.unstage([a.url])
     #expect(session.states[a.url] == .kept)   // untouched, not clobbered
 }
+
+// MARK: - Sorted-since-commit counter
+
+@MainActor
+@Test func sortedCountRisesWithDecisionsAndResetsOnCommit() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf"); let c = candidate("c.pdf")
+    let session = DClutterSession(candidates: [a, b, c], persistenceURL: tempPersistenceURL())
+    session.keep()
+    session.stage()
+    #expect(session.sortedSinceLastCommit == 2)
+
+    session.commitTrashed([b.url])
+    #expect(session.sortedSinceLastCommit == 0)   // commit is the checkpoint
+    #expect(session.remainingCount == 1)          // only c is still undecided
+}
+
+@MainActor
+@Test func sortedCountFollowsUndoAndRedo() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.keep()
+    #expect(session.sortedSinceLastCommit == 1)
+
+    session.undo()
+    #expect(session.sortedSinceLastCommit == 0)
+
+    session.redo()
+    #expect(session.sortedSinceLastCommit == 1)
+}
+
+@MainActor
+@Test func skippingIsNotSorting() {
+    // A skip defers a decision rather than making one, so it must not
+    // inflate the "sorted" figure.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.skip()
+    #expect(session.sortedSinceLastCommit == 0)
+}
+
+@MainActor
+@Test func resetClearsTheSortedCount() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.keep()
+    session.reset()
+    #expect(session.sortedSinceLastCommit == 0)
+}

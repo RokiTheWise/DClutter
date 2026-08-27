@@ -38,6 +38,7 @@ final class SessionViewModel {
     var canRedo: Bool { _ = version; return session.canRedo }
     var stagedForCommit: [FileCandidate] { _ = version; return session.stagedForCommit() }
     var trashedCount: Int { _ = version; return session.trashedCount }
+    var sortedSinceLastCommit: Int { _ = version; return session.sortedSinceLastCommit }
 
     /// Files the user has unticked in the commit sheet. Kept here rather
     /// than in the sheet's own @State so it survives the sheet closing and

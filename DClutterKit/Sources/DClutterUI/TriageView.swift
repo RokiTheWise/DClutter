@@ -215,11 +215,9 @@ public struct TriageView: View {
     /// so a commit would otherwise move no number on screen at all.
     private func statusBar(viewModel: SessionViewModel) -> some View {
         HStack(spacing: DesignTokens.Spacing.medium) {
-            Text("\(viewModel.totalCount - viewModel.remainingCount) of \(viewModel.totalCount)")
-            if viewModel.trashedCount > 0 {
-                Text("·")
-                Text("\(viewModel.trashedCount) trashed")
-            }
+            Text("\(viewModel.remainingCount) left")
+            Text("·")
+            Text("\(viewModel.sortedSinceLastCommit) sorted")
             Spacer()
             Text("double-click the card to open it")
         }

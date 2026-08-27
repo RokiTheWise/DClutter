@@ -59,7 +59,11 @@ struct CardView: View {
             RoundedRectangle(cornerRadius: DesignTokens.Radius.card)
                 .strokeBorder(DesignTokens.ColorToken.hairline)
         )
-        .frame(maxWidth: 480)
+        // Design §4 keeps the card centred with generous margin — the
+        // emptiness is deliberate, one decision at a time. But 480 was
+        // tuned for the 520-wide minimum and looks marooned on a large
+        // display, so it may grow a little before the margin takes over.
+        .frame(maxWidth: 620)
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { onOpen?() }
         .help("Double-click to open this file")

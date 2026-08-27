@@ -21,6 +21,10 @@ public final class DClutterSession {
     /// Decisions undone and not yet re-applied. Any fresh decision
     /// clears it — branching discards the undone future.
     private var redoStack: [Decision] = []
+    /// Decisions made since the last commit. A commit is the natural
+    /// checkpoint — "67 sorted" means nothing once those files are gone,
+    /// so it resets and the remaining count carries the running total.
+    public private(set) var sortedSinceLastCommit = 0
     let persistenceURL: URL
 
     public init(candidates: [FileCandidate], persistenceURL: URL) {
@@ -99,6 +103,7 @@ extension DClutterSession {
         guard let url = current?.url else { return }
         states[url] = .kept
         history.append(.keep(url))
+        sortedSinceLastCommit += 1
         redoStack.removeAll()
         persist()
     }
@@ -107,6 +112,7 @@ extension DClutterSession {
         guard let url = current?.url else { return }
         states[url] = .staged
         history.append(.stage(url))
+        sortedSinceLastCommit += 1
         redoStack.removeAll()
         persist()
     }
@@ -132,6 +138,7 @@ extension DClutterSession {
 
     public func undo() {
         guard let last = history.popLast() else { return }
+        if case .skip = last {} else { sortedSinceLastCommit = max(0, sortedSinceLastCommit - 1) }
         revert(last)
         redoStack.append(last)
         persist()
@@ -142,6 +149,7 @@ extension DClutterSession {
     /// semantics: branching discards the future you undid your way out of.
     public func redo() {
         guard let next = redoStack.popLast() else { return }
+        if case .skip = next {} else { sortedSinceLastCommit += 1 }
         apply(next)
         history.append(next)
         persist()
@@ -156,6 +164,7 @@ extension DClutterSession {
         deferred.removeAll()
         history.removeAll()
         redoStack.removeAll()
+        sortedSinceLastCommit = 0
         persist()
     }
 
@@ -211,6 +220,7 @@ extension DClutterSession {
         if trashedAny {
             history.removeAll()
             redoStack.removeAll()
+            sortedSinceLastCommit = 0
         }
         persist()
     }
