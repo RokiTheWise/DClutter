@@ -3,6 +3,7 @@
 //  Licensed under the Apache License, Version 2.0.
 
 import Foundation
+import AppKit
 import Observation
 import DClutterCore
 import DClutterPlatform
@@ -34,12 +35,26 @@ final class SessionViewModel {
     var remainingCount: Int { _ = version; return session.remainingCount }
     var totalCount: Int { _ = version; return session.totalCount }
     var canUndo: Bool { _ = version; return session.canUndo }
+    var canRedo: Bool { _ = version; return session.canRedo }
     var stagedForCommit: [FileCandidate] { _ = version; return session.stagedForCommit() }
 
     func keep() { previewFocused = false; session.keep(); version += 1 }
     func stage() { previewFocused = false; session.stage(); version += 1 }
     func skip() { previewFocused = false; session.skip(); version += 1 }
-    func undo() { session.undo(); version += 1 }
+    func undo() { previewFocused = false; session.undo(); version += 1 }
+    func redo() { previewFocused = false; session.redo(); version += 1 }
+
+    /// Discards every undecided decision and restarts the queue.
+    /// Already-trashed files stay trashed — see DClutterSession.reset.
+    func reset() { previewFocused = false; session.reset(); version += 1 }
+
+    /// Opens the current file in whatever app owns it, for when the
+    /// preview and metadata aren't enough to decide. Read-only: it never
+    /// changes the file's state in the queue.
+    func openCurrentInDefaultApp() {
+        guard let url = session.current?.url else { return }
+        NSWorkspace.shared.open(url)
+    }
     func toggleFocus() { previewFocused.toggle() }
 
     /// Trashes every staged file, transitions the successful ones to

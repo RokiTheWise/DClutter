@@ -20,6 +20,7 @@ public struct TriageView: View {
     // §7: which key decided the card currently animating out, so CardView
     // can translate the exit in that direction.
     @State private var lastDecision: DecisionDirection?
+    @State private var showResetConfirm = false
     let folder: URL
 
     public init(folder: URL) {
@@ -60,21 +61,13 @@ public struct TriageView: View {
                 CardView(candidate: current, context: context, previewFocused: Binding(
                     get: { viewModel.previewFocused },
                     set: { viewModel.previewFocused = $0 }
-                ), lastDecision: lastDecision)
+                ), lastDecision: lastDecision, onOpen: { viewModel.openCurrentInDefaultApp() })
             } else {
                 Text("All done.")
                     .foregroundStyle(DesignTokens.ColorToken.textSecondary)
             }
             Spacer()
-            HStack {
-                Text("\(viewModel.totalCount - viewModel.remainingCount) of \(viewModel.totalCount)")
-                    .font(.system(size: 13, design: .monospaced))
-                    .foregroundStyle(DesignTokens.ColorToken.textTertiary)
-                Spacer()
-                Text("⌘⏎ commit")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(DesignTokens.ColorToken.textTertiary)
-            }
+            controlBar(viewModel: viewModel)
         }
         .padding(DesignTokens.Spacing.cardMargin)
         .background(DesignTokens.ColorToken.surface)
@@ -97,6 +90,16 @@ public struct TriageView: View {
             .accessibilityHidden(true)
         )
         .onAppear { isFocused = true }
+        .confirmationDialog(
+            "Start over?",
+            isPresented: $showResetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Start Over", role: .destructive) { viewModel.reset() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Every keep, trash and skip decision is discarded and the queue restarts. Files already moved to the Trash stay there.")
+        }
         .sheet(isPresented: Bindable(viewModel).showCommitSheet) {
             CommitSheet(viewModel: viewModel)
         }
@@ -118,6 +121,11 @@ public struct TriageView: View {
             default: break
             }
             if letter == "z" { viewModel.undo(); return .handled }
+            return .ignored
+        }
+        // ⇧⌘Z is the macOS redo convention (⌘Y is the Windows one).
+        if press.modifiers.subtracting(.capsLock) == [.command, .shift] {
+            if letter == "z" { viewModel.redo(); return .handled }
             return .ignored
         }
         // §6: Esc "returns control to triage", so while the preview is
@@ -144,9 +152,69 @@ public struct TriageView: View {
         }
     }
 
-    /// §7: ~180-200ms card-advance animation. `lastDecision` is recorded
-    /// first so CardView's `.transition` (evaluated for the outgoing card)
-    /// already reflects the direction by the time this animates.
+    /// Every decision is reachable by pointer as well as by key. §2
+    /// principle 5 says keyboard wins where the two conflict — it does not
+    /// say pointer users get nothing, and a first-time user has no way to
+    /// discover the bindings otherwise. Keys stay primary; these mirror them.
+    @ViewBuilder
+    private func controlBar(viewModel: SessionViewModel) -> some View {
+        HStack(spacing: DesignTokens.Spacing.small) {
+            Text("\(viewModel.totalCount - viewModel.remainingCount) of \(viewModel.totalCount)")
+                .font(.system(size: 13, design: .monospaced))
+                .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+
+            Spacer()
+
+            if viewModel.current != nil {
+                controlButton("Trash", systemImage: "trash", shortcut: "←") {
+                    decide(.stage, using: viewModel)
+                }
+                .foregroundStyle(DesignTokens.ColorToken.consequence)
+                controlButton("Skip", systemImage: "arrow.uturn.right", shortcut: "Space") {
+                    decide(.skip, using: viewModel)
+                }
+                controlButton("Keep", systemImage: "checkmark", shortcut: "→") {
+                    decide(.keep, using: viewModel)
+                }
+                Divider().frame(height: 16)
+            }
+
+            controlButton("Undo", systemImage: "arrow.uturn.backward", shortcut: "⌘Z") {
+                viewModel.undo()
+            }
+            .disabled(!viewModel.canUndo)
+            controlButton("Redo", systemImage: "arrow.uturn.forward", shortcut: "⇧⌘Z") {
+                viewModel.redo()
+            }
+            .disabled(!viewModel.canRedo)
+            controlButton("Start Over", systemImage: "arrow.counterclockwise", shortcut: nil) {
+                showResetConfirm = true
+            }
+
+            Divider().frame(height: 16)
+
+            controlButton("Commit", systemImage: "tray.and.arrow.down", shortcut: "⌘⏎") {
+                viewModel.showCommitSheet = true
+            }
+            .disabled(viewModel.stagedForCommit.isEmpty)
+        }
+    }
+
+    private func controlButton(
+        _ label: String,
+        systemImage: String,
+        shortcut: String?,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(label, systemImage: systemImage)
+                .font(.system(size: 11))
+                .labelStyle(.titleAndIcon)
+        }
+        .buttonStyle(.accessoryBar)
+        .help(shortcut.map { "\(label)  (\($0))" } ?? label)
+    }
+
     private func decide(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
         // A removal transition is resolved from the departing view's LAST
         // COMMITTED render, so setting `lastDecision` in the same pass as

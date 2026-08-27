@@ -22,6 +22,10 @@ struct CardView: View {
     let context: QueueContext
     @Binding var previewFocused: Bool
     var lastDecision: DecisionDirection?
+    /// Double-click, not single: §6 reserves click-drag-upward for
+    /// move-to-destination in M4, and a single-click action would
+    /// collide with the start of that gesture.
+    var onOpen: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
@@ -56,6 +60,9 @@ struct CardView: View {
                 .strokeBorder(DesignTokens.ColorToken.hairline)
         )
         .frame(maxWidth: 480)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { onOpen?() }
+        .help("Double-click to open this file")
         .id(candidate.id) // forces a fresh identity so .transition fires on advance
         .transition(cardTransition)
     }

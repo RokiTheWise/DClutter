@@ -18,6 +18,9 @@ public final class DClutterSession {
     /// used to be a Set, which made re-skipping the last pending file hang).
     private var deferred: [URL] = []
     private var history: [Decision] = []
+    /// Decisions undone and not yet re-applied. Any fresh decision
+    /// clears it — branching discards the undone future.
+    private var redoStack: [Decision] = []
     let persistenceURL: URL
 
     public init(candidates: [FileCandidate], persistenceURL: URL) {
@@ -88,6 +91,7 @@ extension DClutterSession {
         guard let url = current?.url else { return }
         states[url] = .kept
         history.append(.keep(url))
+        redoStack.removeAll()
         persist()
     }
 
@@ -95,6 +99,7 @@ extension DClutterSession {
         guard let url = current?.url else { return }
         states[url] = .staged
         history.append(.stage(url))
+        redoStack.removeAll()
         persist()
     }
 
@@ -111,12 +116,43 @@ extension DClutterSession {
         if current?.url != previousCurrent {
             history.append(.skip(url))
         }
+        redoStack.removeAll()
         persist()
     }
 
+    public var canRedo: Bool { !redoStack.isEmpty }
+
     public func undo() {
         guard let last = history.popLast() else { return }
-        switch last {
+        revert(last)
+        redoStack.append(last)
+        persist()
+    }
+
+    /// Re-applies the most recently undone decision. Any fresh decision
+    /// clears the stack (keep/stage/skip each reset it) — standard undo/redo
+    /// semantics: branching discards the future you undid your way out of.
+    public func redo() {
+        guard let next = redoStack.popLast() else { return }
+        apply(next)
+        history.append(next)
+        persist()
+    }
+
+    /// Returns every still-decidable file to `.pending` and clears both
+    /// stacks. `.trashed` files are deliberately left alone: they are gone
+    /// from disk, so re-queuing them would show cards for paths that no
+    /// longer exist.
+    public func reset() {
+        states = states.filter { $0.value == .trashed }
+        deferred.removeAll()
+        history.removeAll()
+        redoStack.removeAll()
+        persist()
+    }
+
+    private func revert(_ decision: Decision) {
+        switch decision {
         case .keep(let url), .stage(let url):
             states.removeValue(forKey: url)
         case .skip(let url):
@@ -124,7 +160,18 @@ extension DClutterSession {
                 deferred.remove(at: index)
             }
         }
-        persist()
+    }
+
+    private func apply(_ decision: Decision) {
+        switch decision {
+        case .keep(let url): states[url] = .kept
+        case .stage(let url): states[url] = .staged
+        case .skip(let url):
+            if let existing = deferred.firstIndex(of: url) {
+                deferred.remove(at: existing)
+            }
+            deferred.append(url)
+        }
     }
 
     public func stagedForCommit() -> [FileCandidate] {
@@ -145,6 +192,7 @@ extension DClutterSession {
         }
         if trashedAny {
             history.removeAll()
+            redoStack.removeAll()
         }
         persist()
     }

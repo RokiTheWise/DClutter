@@ -242,3 +242,129 @@ private func tempPersistenceURL() -> URL {
     #expect(second.totalCount == 1)
     #expect(second.current?.id == a.id) // deferred state also reconciled
 }
+
+// MARK: - Redo
+
+@MainActor
+@Test func redoReappliesAnUndoneKeep() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.keep()
+    session.undo()
+    #expect(session.current?.id == a.id)
+    #expect(session.canRedo)
+
+    session.redo()
+    #expect(session.current?.id == b.id)   // a is decided again
+    #expect(!session.canRedo)
+}
+
+@MainActor
+@Test func redoReappliesAnUndoneStageIncludingItsCommitState() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.stage()
+    session.undo()
+    #expect(session.stagedForCommit().isEmpty)
+
+    session.redo()
+    #expect(session.stagedForCommit().map(\.id) == [a.id])
+}
+
+@MainActor
+@Test func redoReappliesAnUndoneSkip() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.skip()
+    session.undo()
+    #expect(session.current?.id == a.id)
+
+    session.redo()
+    #expect(session.current?.id == b.id)   // a deferred again
+}
+
+@MainActor
+@Test func makingANewDecisionClearsTheRedoStack() {
+    // Standard undo/redo semantics: branching discards the redone future.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.keep()
+    session.undo()
+    #expect(session.canRedo)
+
+    session.stage()          // a new decision on the same candidate
+    #expect(!session.canRedo)
+}
+
+@MainActor
+@Test func redoWithNothingUndoneIsANoOp() {
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    session.redo()
+    #expect(session.current?.id == a.id)
+    #expect(!session.canRedo)
+}
+
+@MainActor
+@Test func commitClearsRedoAlongsideUndo() {
+    // A committed file must not be reachable by redo any more than by undo.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.stage()
+    session.undo()
+    #expect(session.canRedo)
+
+    session.stage()                       // re-stage a
+    session.commitTrashed([a.url])
+    #expect(!session.canRedo)
+    #expect(!session.canUndo)
+}
+
+// MARK: - Reset
+
+@MainActor
+@Test func resetReturnsEveryUndecidedFileToPending() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf"); let c = candidate("c.pdf")
+    let session = DClutterSession(candidates: [a, b, c], persistenceURL: tempPersistenceURL())
+    session.keep()
+    session.stage()
+    session.skip()
+
+    session.reset()
+
+    #expect(session.current?.id == a.id)
+    #expect(session.remainingCount == 3)
+    #expect(session.stagedForCommit().isEmpty)
+    #expect(!session.canUndo)
+    #expect(!session.canRedo)
+}
+
+@MainActor
+@Test func resetNeverRevivesAlreadyTrashedFiles() {
+    // The files are gone from disk — bringing them back into the queue
+    // would show cards for paths that no longer exist.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    session.stage()
+    session.commitTrashed([a.url])
+
+    session.reset()
+
+    #expect(session.current?.id == b.id)
+    #expect(session.remainingCount == 1)
+    #expect(session.states[a.url] == .trashed)
+}
+
+@MainActor
+@Test func resetIsPersistedSoItSurvivesRelaunch() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let url = tempPersistenceURL()
+    defer { try? FileManager.default.removeItem(at: url) }
+    let first = DClutterSession(candidates: [a, b], persistenceURL: url)
+    first.keep()
+    first.reset()
+
+    let second = DClutterSession(candidates: [a, b], persistenceURL: url)
+    #expect(second.current?.id == a.id)
+    #expect(second.remainingCount == 2)
+}
