@@ -22,6 +22,15 @@ struct CardView: View {
     let context: QueueContext
     @Binding var previewFocused: Bool
     var lastDecision: DecisionDirection?
+    /// Double-click, not single: §6 reserves click-drag-upward for
+    /// move-to-destination in M4, and a single-click action would
+    /// collide with the start of that gesture.
+    var onOpen: (() -> Void)?
+    /// Live swipe position, -1...1. Applied here rather than by the parent
+    /// so a departing card keeps the offset it was rendered with: driven
+    /// from shared state in the parent, the outgoing card would re-read the
+    /// reset value, snap back to centre and only then play its exit.
+    var swipeOffset: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
@@ -55,7 +64,17 @@ struct CardView: View {
             RoundedRectangle(cornerRadius: DesignTokens.Radius.card)
                 .strokeBorder(DesignTokens.ColorToken.hairline)
         )
-        .frame(maxWidth: 480)
+        // Design §4 keeps the card centred with generous margin — the
+        // emptiness is deliberate, one decision at a time. But 480 was
+        // tuned for the 520-wide minimum and looks marooned on a large
+        // display, so it may grow a little before the margin takes over.
+        .frame(maxWidth: 620)
+        .offset(x: swipeOffset * 90)
+        .rotationEffect(.degrees(swipeOffset * 2))
+        .opacity(1 - min(abs(swipeOffset) * 0.35, 0.35))
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { onOpen?() }
+        .help("Double-click to open this file")
         .id(candidate.id) // forces a fresh identity so .transition fires on advance
         .transition(cardTransition)
     }

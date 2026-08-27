@@ -46,6 +46,14 @@ private struct ThumbnailPreview: NSViewRepresentable {
     func makeNSView(context: Context) -> NSImageView {
         let view = NSImageView()
         view.imageScaling = .scaleProportionallyUpOrDown
+        // NSImageView reports the image's own size as its intrinsic content
+        // size. A file-type icon is 512pt square, which blew the card's
+        // layout out and pushed the control bar off screen. Let the
+        // SwiftUI aspect box drive the size instead of the image.
+        view.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        view.setContentHuggingPriority(.defaultLow, for: .vertical)
+        view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        view.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
         loadThumbnail(into: view, coordinator: context.coordinator)
         return view
     }
@@ -74,7 +82,14 @@ private struct ThumbnailPreview: NSViewRepresentable {
             let thumbnail = try? await QLThumbnailGenerator.shared
                 .generateBestRepresentation(for: request)
             guard coordinator.requestedURL == url else { return }
-            view.image = thumbnail?.nsImage ?? NSWorkspace.shared.icon(forFile: url.path)
+            if let rendered = thumbnail?.nsImage {
+                view.image = rendered
+            } else {
+                // Clamp the generic icon too — it ships at 512pt.
+                let icon = NSWorkspace.shared.icon(forFile: url.path)
+                icon.size = NSSize(width: 160, height: 160)
+                view.image = icon
+            }
         }
     }
 }

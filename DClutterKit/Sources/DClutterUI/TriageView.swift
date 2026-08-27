@@ -20,6 +20,13 @@ public struct TriageView: View {
     // §7: which key decided the card currently animating out, so CardView
     // can translate the exit in that direction.
     @State private var lastDecision: DecisionDirection?
+    @State private var showResetConfirm = false
+    @State private var showHelp = false
+    /// Live swipe position, -1..1, so the card tracks the fingers.
+    @State private var swipeProgress: CGFloat = 0
+    @State private var swipeMonitor = SwipeMonitorController()
+    @State private var draftName = ""
+    @FocusState private var renameFieldFocused: Bool
     let folder: URL
 
     public init(folder: URL) {
@@ -55,25 +62,24 @@ public struct TriageView: View {
     @ViewBuilder
     private func content(viewModel: SessionViewModel, context: QueueContext) -> some View {
         VStack(spacing: DesignTokens.Spacing.xLarge) {
+            controlBar(viewModel: viewModel)
             Spacer()
             if let current = viewModel.current {
                 CardView(candidate: current, context: context, previewFocused: Binding(
                     get: { viewModel.previewFocused },
                     set: { viewModel.previewFocused = $0 }
-                ), lastDecision: lastDecision)
+                ), lastDecision: lastDecision,
+                   onOpen: { viewModel.openCurrentInDefaultApp() },
+                   swipeOffset: swipeProgress)
             } else {
                 Text("All done.")
                     .foregroundStyle(DesignTokens.ColorToken.textSecondary)
             }
             Spacer()
-            HStack {
-                Text("\(viewModel.totalCount - viewModel.remainingCount) of \(viewModel.totalCount)")
-                    .font(.system(size: 13, design: .monospaced))
-                    .foregroundStyle(DesignTokens.ColorToken.textTertiary)
-                Spacer()
-                Text("⌘⏎ commit")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+            if viewModel.isRenaming {
+                renameField(viewModel: viewModel)
+            } else {
+                statusBar(viewModel: viewModel)
             }
         }
         .padding(DesignTokens.Spacing.cardMargin)
@@ -96,7 +102,44 @@ public struct TriageView: View {
             .opacity(0)
             .accessibilityHidden(true)
         )
-        .onAppear { isFocused = true }
+        .onAppear {
+            isFocused = true
+            swipeMonitor.onProgress = { amount in swipeProgress = amount }
+            swipeMonitor.onCommit = { direction in
+                // Exactly the keyboard's path — the gesture has already been
+                // stopped, so nothing competes with the exit and a swipe
+                // resolves the same way a key press does.
+                swipeProgress = 0
+                decide(direction, using: viewModel)
+            }
+            swipeMonitor.onSnapBack = {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                    swipeProgress = 0
+                }
+            }
+            swipeMonitor.start()
+        }
+        .onDisappear { swipeMonitor.stop() }
+        .onChange(of: viewModel.previewFocused) { _, focused in
+            // While the preview has focus the gesture is the preview's.
+            swipeMonitor.isEnabled = !focused && !viewModel.isRenaming
+        }
+        .onChange(of: viewModel.isRenaming) { _, renaming in
+            // A swipe landing mid-rename would decide the very file being
+            // renamed, out from under the text field.
+            swipeMonitor.isEnabled = !renaming && !viewModel.previewFocused
+            if !renaming { isFocused = true }
+        }
+        .confirmationDialog(
+            "Start over?",
+            isPresented: $showResetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Start Over", role: .destructive) { viewModel.reset() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Every keep, trash and skip decision is discarded and the queue restarts. Files already moved to the Trash stay there.")
+        }
         .sheet(isPresented: Bindable(viewModel).showCommitSheet) {
             CommitSheet(viewModel: viewModel)
         }
@@ -106,6 +149,10 @@ public struct TriageView: View {
     }
 
     private func handle(_ press: KeyPress, viewModel: SessionViewModel) -> KeyPress.Result {
+        // The rename field owns the keyboard while it is open: Space is a
+        // space, not a skip, and every other binding would act on the very
+        // file being renamed. Esc is handled by the field's own exit command.
+        if viewModel.isRenaming { return .ignored }
         // Lowercased so Caps Lock doesn't break the letter bindings below.
         let letter = press.key.character.lowercased()
         // Exact modifier set, not `.contains(.command)` — otherwise e.g.
@@ -117,7 +164,14 @@ public struct TriageView: View {
             case .return: viewModel.showCommitSheet = true; return .handled
             default: break
             }
-            if letter == "z" { viewModel.undo(); return .handled }
+            if letter == "z" { undo(viewModel); return .handled }
+            // ⌘Y mirrors ⇧⌘Z for anyone arriving from Windows.
+            if letter == "y" { redo(viewModel); return .handled }
+            return .ignored
+        }
+        // ⇧⌘Z is the macOS redo convention (⌘Y is the Windows one).
+        if press.modifiers.subtracting(.capsLock) == [.command, .shift] {
+            if letter == "z" { redo(viewModel); return .handled }
             return .ignored
         }
         // §6: Esc "returns control to triage", so while the preview is
@@ -133,10 +187,20 @@ public struct TriageView: View {
         case .rightArrow: decide(.keep, using: viewModel); return .handled
         case .leftArrow: decide(.stage, using: viewModel); return .handled
         case .upArrow: viewModel.previewFocused = true; return .handled
+        case .downArrow:
+            guard let current = viewModel.current else { return .handled }
+            // Stem only — the extension is preserved automatically and
+            // is not the user's to accidentally delete.
+            draftName = current.url.deletingPathExtension().lastPathComponent
+            viewModel.renameError = nil
+            viewModel.isRenaming = true
+            renameFieldFocused = true
+            return .handled
         case .escape: viewModel.previewFocused = false; return .handled
         case .space: decide(.skip, using: viewModel); return .handled
         default: break
         }
+        if press.key.character == "?" { showHelp.toggle(); return .handled }
         switch letter {
         case "k": decide(.keep, using: viewModel); return .handled
         case "x": decide(.stage, using: viewModel); return .handled
@@ -144,9 +208,159 @@ public struct TriageView: View {
         }
     }
 
-    /// §7: ~180-200ms card-advance animation. `lastDecision` is recorded
-    /// first so CardView's `.transition` (evaluated for the outgoing card)
-    /// already reflects the direction by the time this animates.
+    /// Every decision is reachable by pointer as well as by key. §2
+    /// principle 5 says keyboard wins where the two conflict — it does not
+    /// say pointer users get nothing, and a first-time user has no way to
+    /// discover the bindings otherwise. Keys stay primary; these mirror them.
+    @ViewBuilder
+    private func controlBar(viewModel: SessionViewModel) -> some View {
+        HStack(spacing: DesignTokens.Spacing.small) {
+            // Logo slot — replace the placeholder with the real mark.
+            Image(systemName: "square.stack.3d.up")
+                .font(.system(size: 15))
+                .foregroundStyle(DesignTokens.ColorToken.textSecondary)
+                .help("DClutter")
+
+            Spacer()
+
+            if viewModel.current != nil {
+                controlButton("Trash", systemImage: "trash", shortcut: "←") {
+                    decide(.stage, using: viewModel)
+                }
+                .foregroundStyle(DesignTokens.ColorToken.consequence)
+                controlButton("Skip", systemImage: "arrow.uturn.right", shortcut: "Space") {
+                    decide(.skip, using: viewModel)
+                }
+                controlButton("Keep", systemImage: "checkmark", shortcut: "→") {
+                    decide(.keep, using: viewModel)
+                }
+                Divider().frame(height: 16)
+            }
+
+            controlButton("Undo", systemImage: "arrow.uturn.backward", shortcut: "⌘Z") {
+                undo(viewModel)
+            }
+            .disabled(!viewModel.canUndo)
+            controlButton("Redo", systemImage: "arrow.uturn.forward", shortcut: "⇧⌘Z or ⌘Y") {
+                redo(viewModel)
+            }
+            .disabled(!viewModel.canRedo)
+            controlButton("Start Over", systemImage: "arrow.counterclockwise", shortcut: nil) {
+                showResetConfirm = true
+            }
+
+            Divider().frame(height: 16)
+
+            controlButton("Commit", systemImage: "tray.and.arrow.down", shortcut: "⌘⏎") {
+                viewModel.showCommitSheet = true
+            }
+            .disabled(viewModel.stagedForCommit.isEmpty)
+
+            controlButton("Help", systemImage: "questionmark.circle", shortcut: "?") {
+                showHelp.toggle()
+            }
+            .popover(isPresented: $showHelp, arrowEdge: .bottom) { helpCard }
+        }
+    }
+
+    /// Progress is measured in files, never bytes (§0). `trashedCount` is
+    /// shown separately because staging already advances the decided count,
+    /// so a commit would otherwise move no number on screen at all.
+    private func statusBar(viewModel: SessionViewModel) -> some View {
+        HStack(spacing: DesignTokens.Spacing.medium) {
+            Text("\(viewModel.remainingCount) left")
+            Text("·")
+            Text("\(viewModel.sortedSinceLastCommit) sorted")
+            Spacer()
+            Text("double-click the card to open it")
+        }
+        .font(.system(size: 12, design: .monospaced))
+        .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+    }
+
+    /// §2 principle 2 warns that a text field mid-session kills the loop,
+    /// so this is deliberately cheap to leave: Return commits, Esc cancels,
+    /// and it replaces the status bar rather than displacing the card.
+    @ViewBuilder
+    private func renameField(viewModel: SessionViewModel) -> some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.unit) {
+            HStack(spacing: DesignTokens.Spacing.small) {
+                Text("RENAME")
+                    .font(.system(size: 11, design: .monospaced))
+                    .kerning(0.5)
+                    .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+                TextField("", text: $draftName)
+                    .onExitCommand {
+                        viewModel.isRenaming = false
+                        viewModel.renameError = nil
+                    }
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 13))
+                    .focused($renameFieldFocused)
+                    .onSubmit { viewModel.renameCurrent(to: draftName) }
+                Text("↩ rename · esc cancel")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+            }
+            if let error = viewModel.renameError {
+                Text(error)
+                    .font(.system(size: 11))
+                    .foregroundStyle(DesignTokens.ColorToken.consequence)
+            }
+        }
+        .onExitCommand {
+            viewModel.isRenaming = false
+            viewModel.renameError = nil
+            isFocused = true
+        }
+    }
+
+    private var helpCard: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.small) {
+            Text("Controls").font(.system(size: 13, weight: .semibold))
+            Grid(alignment: .leading, horizontalSpacing: DesignTokens.Spacing.large, verticalSpacing: 6) {
+                ForEach(Self.helpRows, id: \.0) { key, action in
+                    GridRow {
+                        Text(key)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+                        Text(action).font(.system(size: 12))
+                    }
+                }
+            }
+        }
+        .padding(DesignTokens.Spacing.large)
+        .frame(width: 300)
+    }
+
+    private static let helpRows: [(String, String)] = [
+        ("→  or  K", "Keep, next card"),
+        ("←  or  X", "Stage for trash, next card"),
+        ("Space", "Skip — comes back at the end"),
+        ("↑", "Focus the preview"),
+        ("↓", "Rename this file"),
+        ("Esc", "Back to triage"),
+        ("⌘Z", "Undo"),
+        ("⇧⌘Z  or  ⌘Y", "Redo"),
+        ("⌘⏎", "Review and trash staged files"),
+        ("Double-click", "Open the file"),
+    ]
+
+    private func controlButton(
+        _ label: String,
+        systemImage: String,
+        shortcut: String?,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(label, systemImage: systemImage)
+                .font(.system(size: 11))
+                .labelStyle(.titleAndIcon)
+        }
+        .buttonStyle(.accessoryBar)
+        .help(shortcut.map { "\(label)  (\($0))" } ?? label)
+    }
+
     private func decide(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
         // A removal transition is resolved from the departing view's LAST
         // COMMITTED render, so setting `lastDecision` in the same pass as
@@ -163,6 +377,19 @@ public struct TriageView: View {
         Task { @MainActor in
             performDecision(direction, using: viewModel)
         }
+    }
+
+    /// Undo and redo cross-fade rather than sliding: the card is not
+    /// leaving in a direction, it is being replaced, and a directional
+    /// slide would imply a decision that isn't being made.
+    private func undo(_ viewModel: SessionViewModel) {
+        lastDecision = nil
+        withAnimation(.easeInOut(duration: 0.19)) { viewModel.undo() }
+    }
+
+    private func redo(_ viewModel: SessionViewModel) {
+        lastDecision = nil
+        withAnimation(.easeInOut(duration: 0.19)) { viewModel.redo() }
     }
 
     private func performDecision(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
