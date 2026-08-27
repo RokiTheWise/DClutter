@@ -63,8 +63,15 @@ final class SessionViewModel {
     func keep() { previewFocused = false; session.keep(); version += 1 }
     func stage() { previewFocused = false; session.stage(); version += 1 }
     func skip() { previewFocused = false; session.skip(); version += 1 }
-    func undo() { previewFocused = false; session.undo(); version += 1 }
-    func redo() { previewFocused = false; session.redo(); version += 1 }
+    func undo() { previewFocused = false; perform(session.undo()); version += 1 }
+    func redo() { previewFocused = false; perform(session.redo()); version += 1 }
+
+    /// Core reports disk work it cannot do itself; without carrying it out
+    /// the queue and the folder would disagree about a file's name.
+    private func perform(_ effect: UndoSideEffect?) {
+        guard case .renameFile(let from, let to) = effect else { return }
+        _ = try? fileActions.rename(from, to: to.lastPathComponent)
+    }
 
     /// Discards every undecided decision and restarts the queue.
     /// Already-trashed files stay trashed — see DClutterSession.reset.
@@ -86,7 +93,7 @@ final class SessionViewModel {
         guard let candidate = session.current else { return }
         do {
             let renamed = try fileActions.rename(candidate.url, to: newName)
-            session.rename(candidate.url, to: renamed)
+            session.rename(candidate.url, to: renamed, recordUndo: true)
             renameError = nil
             isRenaming = false
         } catch FileActionError.nameAlreadyTaken(let name) {

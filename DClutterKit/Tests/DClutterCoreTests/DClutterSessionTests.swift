@@ -514,3 +514,41 @@ private func tempPersistenceURL() -> URL {
     #expect(session.totalCount == 1)
     #expect(session.current?.url == a.url)
 }
+
+@MainActor
+@Test func undoingARenameAsksTheCallerToRenameTheFileBack() {
+    // Core cannot touch the filesystem, so undo reports the disk work its
+    // caller must do — otherwise the queue and the folder disagree.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    let renamed = a.url.deletingLastPathComponent().appendingPathComponent("new.pdf")
+    session.rename(a.url, to: renamed, recordUndo: true)
+    #expect(session.canUndo)
+
+    let effect = session.undo()
+
+    #expect(effect == .renameFile(from: renamed, to: a.url))
+    #expect(session.current?.url == a.url)   // queue is back on the old name
+}
+
+@MainActor
+@Test func redoingARenameAsksTheCallerToRenameForwardAgain() {
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    let renamed = a.url.deletingLastPathComponent().appendingPathComponent("new.pdf")
+    session.rename(a.url, to: renamed, recordUndo: true)
+    _ = session.undo()
+
+    let effect = session.redo()
+
+    #expect(effect == .renameFile(from: a.url, to: renamed))
+    #expect(session.current?.url == renamed)
+}
+
+@MainActor
+@Test func undoingADecisionReportsNoDiskWork() {
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    session.keep()
+    #expect(session.undo() == nil)
+}

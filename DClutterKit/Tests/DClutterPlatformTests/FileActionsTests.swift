@@ -89,3 +89,32 @@ import Foundation
 
     #expect(renamed.deletingLastPathComponent().standardizedFileURL == folder.standardizedFileURL)
 }
+
+@Test func renameKeepsTheOriginalExtensionWhenTheNewNameOmitsIt() throws {
+    // Dropping the extension leaves the bytes intact but makes the file
+    // unopenable — macOS can no longer identify it and hands it to a text
+    // editor. The user is renaming, not changing the file's type.
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("RenameTests-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("photo.webp")
+    try Data("x".utf8).write(to: original)
+
+    let actions = FileActions()
+    let renamed = try actions.rename(original, to: "Ammarrah")
+
+    #expect(renamed.lastPathComponent == "Ammarrah.webp")
+}
+
+@Test func renameHonoursAnExplicitlyDifferentExtension() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("RenameTests-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("notes.txt")
+    try Data("x".utf8).write(to: original)
+
+    let actions = FileActions()
+    let renamed = try actions.rename(original, to: "notes.md")
+
+    #expect(renamed.lastPathComponent == "notes.md")
+}

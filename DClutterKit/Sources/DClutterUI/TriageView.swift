@@ -157,6 +157,10 @@ public struct TriageView: View {
     }
 
     private func handle(_ press: KeyPress, viewModel: SessionViewModel) -> KeyPress.Result {
+        // The rename field owns the keyboard while it is open: Space is a
+        // space, not a skip, and every other binding would act on the very
+        // file being renamed. Esc is handled by the field's own exit command.
+        if viewModel.isRenaming { return .ignored }
         // Lowercased so Caps Lock doesn't break the letter bindings below.
         let letter = press.key.character.lowercased()
         // Exact modifier set, not `.contains(.command)` — otherwise e.g.
@@ -169,6 +173,8 @@ public struct TriageView: View {
             default: break
             }
             if letter == "z" { undo(viewModel); return .handled }
+            // ⌘Y mirrors ⇧⌘Z for anyone arriving from Windows.
+            if letter == "y" { redo(viewModel); return .handled }
             return .ignored
         }
         // ⇧⌘Z is the macOS redo convention (⌘Y is the Windows one).
@@ -191,7 +197,9 @@ public struct TriageView: View {
         case .upArrow: viewModel.previewFocused = true; return .handled
         case .downArrow:
             guard let current = viewModel.current else { return .handled }
-            draftName = current.url.lastPathComponent
+            // Stem only — the extension is preserved automatically and
+            // is not the user's to accidentally delete.
+            draftName = current.url.deletingPathExtension().lastPathComponent
             viewModel.renameError = nil
             viewModel.isRenaming = true
             renameFieldFocused = true
@@ -241,7 +249,7 @@ public struct TriageView: View {
                 undo(viewModel)
             }
             .disabled(!viewModel.canUndo)
-            controlButton("Redo", systemImage: "arrow.uturn.forward", shortcut: "⇧⌘Z") {
+            controlButton("Redo", systemImage: "arrow.uturn.forward", shortcut: "⇧⌘Z or ⌘Y") {
                 redo(viewModel)
             }
             .disabled(!viewModel.canRedo)
@@ -290,6 +298,10 @@ public struct TriageView: View {
                     .kerning(0.5)
                     .foregroundStyle(DesignTokens.ColorToken.textTertiary)
                 TextField("", text: $draftName)
+                    .onExitCommand {
+                        viewModel.isRenaming = false
+                        viewModel.renameError = nil
+                    }
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 13))
                     .focused($renameFieldFocused)
@@ -337,7 +349,7 @@ public struct TriageView: View {
         ("↓", "Rename this file"),
         ("Esc", "Back to triage"),
         ("⌘Z", "Undo"),
-        ("⇧⌘Z", "Redo"),
+        ("⇧⌘Z  or  ⌘Y", "Redo"),
         ("⌘⏎", "Review and trash staged files"),
         ("Double-click", "Open the file"),
     ]

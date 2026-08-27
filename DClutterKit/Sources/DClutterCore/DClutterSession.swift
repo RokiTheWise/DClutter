@@ -67,10 +67,17 @@ public final class DClutterSession {
     }
 }
 
+/// Disk work that Core cannot perform itself but that a caller must carry
+/// out for the folder to match the queue.
+public enum UndoSideEffect: Equatable, Sendable {
+    case renameFile(from: URL, to: URL)
+}
+
 private enum Decision {
     case keep(URL)
     case stage(URL)
     case skip(URL)
+    case rename(from: URL, to: URL)
 
     /// Rewrites this decision's target after a rename, so undo and redo
     /// still reach the file they were recorded against.
@@ -79,6 +86,8 @@ private enum Decision {
         case .keep(let url): return url == old ? .keep(new) : self
         case .stage(let url): return url == old ? .stage(new) : self
         case .skip(let url): return url == old ? .skip(new) : self
+        case .rename(let from, let to):
+            return .rename(from: from == old ? new : from, to: to == old ? new : to)
         }
     }
 }
@@ -146,23 +155,33 @@ extension DClutterSession {
 
     public var canRedo: Bool { !redoStack.isEmpty }
 
-    public func undo() {
-        guard let last = history.popLast() else { return }
-        if case .skip = last {} else { sortedSinceLastCommit = max(0, sortedSinceLastCommit - 1) }
-        revert(last)
+    @discardableResult
+    public func undo() -> UndoSideEffect? {
+        guard let last = history.popLast() else { return nil }
+        switch last {
+        case .skip, .rename: break
+        default: sortedSinceLastCommit = max(0, sortedSinceLastCommit - 1)
+        }
+        let effect = revert(last)
         redoStack.append(last)
         persist()
+        return effect
     }
 
     /// Re-applies the most recently undone decision. Any fresh decision
     /// clears the stack (keep/stage/skip each reset it) — standard undo/redo
     /// semantics: branching discards the future you undid your way out of.
-    public func redo() {
-        guard let next = redoStack.popLast() else { return }
-        if case .skip = next {} else { sortedSinceLastCommit += 1 }
-        apply(next)
+    @discardableResult
+    public func redo() -> UndoSideEffect? {
+        guard let next = redoStack.popLast() else { return nil }
+        switch next {
+        case .skip, .rename: break
+        default: sortedSinceLastCommit += 1
+        }
+        let effect = apply(next)
         history.append(next)
         persist()
+        return effect
     }
 
     /// Returns every still-decidable file to `.pending` and clears both
@@ -178,7 +197,7 @@ extension DClutterSession {
         persist()
     }
 
-    private func revert(_ decision: Decision) {
+    private func revert(_ decision: Decision) -> UndoSideEffect? {
         switch decision {
         case .keep(let url), .stage(let url):
             states.removeValue(forKey: url)
@@ -186,10 +205,14 @@ extension DClutterSession {
             if let index = deferred.firstIndex(of: url) {
                 deferred.remove(at: index)
             }
+        case .rename(let from, let to):
+            rename(to, to: from)
+            return .renameFile(from: to, to: from)
         }
+        return nil
     }
 
-    private func apply(_ decision: Decision) {
+    private func apply(_ decision: Decision) -> UndoSideEffect? {
         switch decision {
         case .keep(let url): states[url] = .kept
         case .stage(let url): states[url] = .staged
@@ -198,7 +221,11 @@ extension DClutterSession {
                 deferred.remove(at: existing)
             }
             deferred.append(url)
+        case .rename(let from, let to):
+            rename(from, to: to)
+            return .renameFile(from: from, to: to)
         }
+        return nil
     }
 
     /// Re-points every piece of session state from `old` to `new` after the
@@ -208,7 +235,7 @@ extension DClutterSession {
     /// on relaunch reconciliation drops it and re-queues it as unseen.
     ///
     /// The candidate keeps its identity; only its URL changes.
-    public func rename(_ old: URL, to new: URL) {
+    public func rename(_ old: URL, to new: URL, recordUndo: Bool = false) {
         guard let index = queue.firstIndex(where: { $0.url == old }) else { return }
 
         let existing = queue[index]
@@ -228,6 +255,10 @@ extension DClutterSession {
         if let position = deferred.firstIndex(of: old) { deferred[position] = new }
         history = history.map { $0.repointing(old, to: new) }
         redoStack = redoStack.map { $0.repointing(old, to: new) }
+        if recordUndo {
+            history.append(.rename(from: old, to: new))
+            redoStack.removeAll()
+        }
         persist()
     }
 

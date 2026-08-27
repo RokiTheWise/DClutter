@@ -48,7 +48,18 @@ public struct FileActions: Sendable {
             throw FileActionError.invalidName(newName)
         }
 
-        let destination = url.deletingLastPathComponent().appendingPathComponent(bare)
+        // Preserve the extension unless the user supplied one. Dropping it
+        // leaves the bytes intact but macOS can no longer identify the file,
+        // which looks exactly like corruption to the person who renamed it.
+        let originalExtension = url.pathExtension
+        let finalName: String
+        if (bare as NSString).pathExtension.isEmpty && !originalExtension.isEmpty {
+            finalName = bare + "." + originalExtension
+        } else {
+            finalName = bare
+        }
+
+        let destination = url.deletingLastPathComponent().appendingPathComponent(finalName)
         guard destination.standardizedFileURL != url.standardizedFileURL else { return url }
         guard !FileManager.default.fileExists(atPath: destination.path) else {
             throw FileActionError.nameAlreadyTaken(bare)
