@@ -9,11 +9,17 @@
 One file at a time, with a real preview and the metadata that actually decides
 its fate. Keep it, trash it, or file it — with a gesture or a keystroke.
 
-[![CI](https://github.com/RokiTheWise/DClutter/actions/workflows/ci.yml/badge.svg)](https://github.com/RokiTheWise/DClutter/actions/workflows/ci.yml)
-[![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-lightgrey)](https://www.apple.com/macos/)
-[![Swift](https://img.shields.io/badge/Swift-6-orange?logo=swift&logoColor=white)](https://swift.org)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/RokiTheWise/DClutter?style=flat)](https://github.com/RokiTheWise/DClutter/stargazers)
+[![CI](https://img.shields.io/github/actions/workflow/status/RokiTheWise/DClutter/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI&labelColor=24292e)](https://github.com/RokiTheWise/DClutter/actions/workflows/ci.yml)
+[![Platform](https://img.shields.io/badge/macOS-14%2B-lightgrey.svg?style=flat-square&logo=apple&logoColor=white&labelColor=24292e)](https://www.apple.com/macos/)
+[![Swift](https://img.shields.io/badge/Swift-6-orange.svg?style=flat-square&logo=swift&logoColor=white&labelColor=24292e)](https://swift.org)
+[![Stars](https://img.shields.io/github/stars/RokiTheWise/DClutter.svg?style=flat-square&logo=github&logoColor=white&labelColor=24292e&color=yellow)](https://github.com/RokiTheWise/DClutter/stargazers)
+[![License](https://img.shields.io/github/license/RokiTheWise/DClutter.svg?style=flat-square&logo=apache&logoColor=white&labelColor=24292e&color=blue)](LICENSE)
+
+<!-- Uncomment once the first release is tagged — until then both render
+     "no releases", which looks broken rather than early.
+[![Release](https://img.shields.io/github/v/release/RokiTheWise/DClutter?include_prereleases&style=flat-square&logo=github&logoColor=white&labelColor=24292e&color=orange)](https://github.com/RokiTheWise/DClutter/releases)
+[![Downloads](https://img.shields.io/github/downloads/RokiTheWise/DClutter/total.svg?style=flat-square&logo=docsdotrs&logoColor=white&labelColor=24292e&color=blue)](https://github.com/RokiTheWise/DClutter/releases)
+-->
 
 </div>
 
