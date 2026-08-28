@@ -163,7 +163,7 @@ public struct TriageView: View {
             Button("Start Over", role: .destructive) { viewModel.reset() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Every keep, trash and skip decision is discarded and the queue restarts. Files already moved to the Trash stay there.")
+            Text(resetMessage(viewModel: viewModel))
         }
         .sheet(isPresented: Bindable(viewModel).showCommitSheet) {
             CommitSheet(viewModel: viewModel)
@@ -171,6 +171,23 @@ public struct TriageView: View {
         .onChange(of: viewModel.showCommitSheet) { _, isPresented in
             if !isPresented { isFocused = true }
         }
+    }
+
+    /// Says what Start Over will actually do to files on disk. A count
+    /// matters here in a way it doesn't for a single undo: nobody can
+    /// eyeball twenty files coming back.
+    private func resetMessage(viewModel: SessionViewModel) -> String {
+        let filed = viewModel.filedThisSessionCount
+        var lines = ["Every keep, trash and skip decision becomes undecided again."]
+        if filed == 1 {
+            lines.append("1 file you filed into a folder moves back to Downloads.")
+        } else if filed > 1 {
+            lines.append("\(filed) files you filed into folders move back to Downloads.")
+        }
+        if viewModel.trashedCount > 0 {
+            lines.append("Files already in the Trash stay there — committing to the Trash ends a session.")
+        }
+        return lines.joined(separator: " ")
     }
 
     private func openShelf(viewModel: SessionViewModel) {

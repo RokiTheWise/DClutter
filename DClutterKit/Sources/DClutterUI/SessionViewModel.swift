@@ -98,7 +98,38 @@ final class SessionViewModel {
 
     /// Discards every undecided decision and restarts the queue.
     /// Already-trashed files stay trashed — see DClutterSession.reset.
-    func reset() { session.reset(); version += 1 }
+    /// Undoes this session: files put into folders come back, and every
+    /// keep, trash-stage and skip becomes undecided again. Anything already
+    /// committed to the Trash stays there — that commit closed a session.
+    func reset() {
+        var stranded: [String] = []
+        for effect in session.reset() {
+            guard case .moveFile(let from, let to) = effect else { continue }
+            let scoped = destinations.first { from.path.hasPrefix($0.url.path + "/") }?.url
+            do {
+                try fileActions.moveBack(from, to: to, scopedFolder: scoped)
+            } catch {
+                // Put the record back rather than claiming a file is in
+                // Downloads when it isn't — the same rule single-file undo
+                // follows.
+                session.restoreMove(of: to, to: from)
+                stranded.append(from.lastPathComponent)
+            }
+        }
+        moveError = stranded.isEmpty ? nil : strandedMessage(stranded)
+        version += 1
+    }
+
+    private func strandedMessage(_ names: [String]) -> String {
+        if names.count == 1 {
+            return "Couldn't bring \(names[0]) back — it's still in its folder."
+        }
+        return "Couldn't bring \(names.count) files back — they're still in their folders."
+    }
+
+    /// How many files this session filed into folders, for the confirmation
+    /// to say what Start Over will actually do.
+    var filedThisSessionCount: Int { _ = version; return session.movesThisSession }
 
     /// Opens the current file in whatever app owns it, for when the
     /// preview and metadata aren't enough to decide. Read-only: it never

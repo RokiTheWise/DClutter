@@ -122,6 +122,14 @@ extension DClutterSession {
 extension DClutterSession {
     public var canUndo: Bool { !history.isEmpty }
 
+    /// Files filed into a folder since the last commit — the ones a reset
+    /// would bring back.
+    public var movesThisSession: Int {
+        history.reduce(into: 0) { count, decision in
+            if case .move = decision { count += 1 }
+        }
+    }
+
     public func keep() {
         guard let url = current?.url else { return }
         states[url] = .kept
@@ -222,8 +230,23 @@ extension DClutterSession {
     /// stacks. `.trashed` files are deliberately left alone: they are gone
     /// from disk, so re-queuing them would show cards for paths that no
     /// longer exist.
-    public func reset() {
-        // Trashed and moved files have both left the folder already.
+    /// Undoes everything still undoable and reports the disk work that
+    /// needs doing to match.
+    ///
+    /// A commit ends a session, so `history` — which a commit clears — is
+    /// exactly this session's work. Files filed into a folder since then
+    /// come back; anything trashed, or filed before the last commit,
+    /// belongs to a session that is already closed and is left alone.
+    @discardableResult
+    public func reset() -> [UndoSideEffect] {
+        var effects: [UndoSideEffect] = []
+        for decision in history.reversed() {
+            guard case .move(let url, let destination) = decision else { continue }
+            states.removeValue(forKey: url)
+            effects.append(.moveFile(from: destination, to: url))
+        }
+        // Everything else this session decided simply becomes undecided;
+        // trashed and older moved files keep their terminal state.
         states = states.filter { state in
             if case .moved = state.value { return true }
             return state.value == .trashed
@@ -232,6 +255,14 @@ extension DClutterSession {
         history.removeAll()
         redoStack.removeAll()
         sortedSinceLastCommit = 0
+        persist()
+        return effects
+    }
+
+    /// Puts a move back on the record after the file could not be returned,
+    /// so the queue never claims a file is in Downloads when it isn't.
+    public func restoreMove(of url: URL, to destination: URL) {
+        states[url] = .moved(to: destination)
         persist()
     }
 
