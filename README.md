@@ -25,8 +25,8 @@ its fate. Keep it, trash it, or file it — with a gesture or a keystroke.
 ## What this is
 
 A Downloads folder tends to fill up with files we're undecided about. Measuring
-a real 771-item one, every duplicate in it combined wasted 27 MB — half a
-percent. That led somewhere I didn't expect: space wasn't the problem, the 771
+a real 771-item one, I found that every duplicate in it combined wasted 27 MB — half a
+percent. That led me to believe that for this one, space wasn't the problem, but the 771
 unmade decisions were.
 
 So DClutter is a **decluttering tool, not a disk-space tool**. It shows you one
