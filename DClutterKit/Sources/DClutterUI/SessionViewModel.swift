@@ -130,6 +130,12 @@ final class SessionViewModel {
     /// §6: up to three folders, chosen by the user through an open panel so
     /// the sandbox grants access to them at all.
     func chooseDestinationFolder() {
+        // §6 caps this at three. Silently dropping one to make room loses
+        // a setup the user chose, so refuse and say which key frees a slot.
+        guard destinations.count < DestinationStore.maximumDestinations else {
+            moveError = "Three folders is the maximum. Highlight one on the shelf and press ⌫ to free a slot."
+            return
+        }
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
@@ -138,16 +144,15 @@ final class SessionViewModel {
         panel.message = "Pick a folder to file things into."
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
-        if destinations.count >= DestinationStore.maximumDestinations {
-            destinations.removeLast()
-        }
         destinations.append(Destination(url: url))
         destinationStore.save(destinations)
+        moveError = nil
         version += 1
     }
 
     func removeDestination(at index: Int) {
         guard destinations.indices.contains(index) else { return }
+        moveError = nil
         destinations.remove(at: index)
         destinationStore.save(destinations)
         version += 1

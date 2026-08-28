@@ -24,6 +24,9 @@ struct DestinationShelf: View {
     /// Index of the bin under the pointer, or nil.
     let highlighted: Int?
     let onChooseFolder: () -> Void
+    /// Forget a destination, freeing its slot. The folder on disk and
+    /// anything already filed into it are untouched.
+    var onRemove: ((Int) -> Void)?
 
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.medium) {
@@ -42,6 +45,18 @@ struct DestinationShelf: View {
                         isHighlighted: highlighted == index,
                         shortcut: "\(index + 1)"
                     )
+                    .overlay(alignment: .topTrailing) {
+                        Button {
+                            onRemove?(index)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 13))
+                                .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(6)
+                        .help("Remove \(destination.name) — the folder itself is left alone")
+                    }
                 }
                 // Adding a folder is part of the same row rather than a
                 // separate setting, so filling the three bins is something

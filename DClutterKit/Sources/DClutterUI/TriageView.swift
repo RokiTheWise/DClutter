@@ -79,7 +79,11 @@ public struct TriageView: View {
                 destinations: viewModel.destinations,
                 revealed: shelfOpen ? 1 : 0,
                 highlighted: shelfOpen ? selectedBin : nil,
-                onChooseFolder: { viewModel.chooseDestinationFolder() }
+                onChooseFolder: { viewModel.chooseDestinationFolder() },
+                onRemove: { index in
+                    viewModel.removeDestination(at: index)
+                    selectedBin = min(selectedBin, max(binCount(viewModel) - 1, 0))
+                }
             )
             .frame(height: shelfOpen ? nil : 0)
             Spacer()
@@ -251,6 +255,14 @@ public struct TriageView: View {
                 shelfOpen = false
                 swipeMonitor.endShelfSteering()
                 return .handled
+            case .delete, .deleteForward:
+                // Frees a slot for a replacement. Removing a destination
+                // only forgets the folder — nothing already filed there
+                // moves, and the folder itself is untouched.
+                guard selectedBin < viewModel.destinations.count else { return .handled }
+                viewModel.removeDestination(at: selectedBin)
+                selectedBin = min(selectedBin, max(binCount(viewModel) - 1, 0))
+                return .handled
             default: return .ignored
             }
         }
@@ -262,6 +274,9 @@ public struct TriageView: View {
             beginRename(viewModel: viewModel)
             return .handled
         case .space: decide(.skip, using: viewModel); return .handled
+        // Opening the file is otherwise mouse-only; ⏎ is the obvious key
+        // for "show me this one properly" and nothing else claims it here.
+        case .return: viewModel.openCurrentInDefaultApp(); return .handled
         default: break
         }
         if press.key.character == "?" { showHelp.toggle(); return .handled }
@@ -335,6 +350,17 @@ public struct TriageView: View {
     /// shown separately because staging already advances the decided count,
     /// so a commit would otherwise move no number on screen at all.
     private func statusBar(viewModel: SessionViewModel) -> some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.unit) {
+            if let moveError = viewModel.moveError {
+                Text(moveError)
+                    .font(.system(size: 11))
+                    .foregroundStyle(DesignTokens.ColorToken.consequence)
+            }
+            statusCounts(viewModel: viewModel)
+        }
+    }
+
+    private func statusCounts(viewModel: SessionViewModel) -> some View {
         HStack(spacing: DesignTokens.Spacing.medium) {
             Text("\(viewModel.remainingCount) left")
             Text("·")
@@ -409,6 +435,8 @@ public struct TriageView: View {
         ("←  →  then ⏎", "Choose a folder and file it"),
         ("↓", "Rename this file"),
         ("1 – 3", "File into a destination folder"),
+        ("⌫", "Remove the highlighted folder"),
+        ("⏎", "Open this file"),
         ("⌘N", "Add a destination folder"),
         ("Esc  or  ↓", "Close the shelf"),
         ("⌘Z", "Undo"),
