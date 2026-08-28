@@ -220,6 +220,10 @@ public struct TriageView: View {
         // space, not a skip, and every other binding would act on the very
         // file being renamed. Esc is handled by the field's own exit command.
         if viewModel.isRenaming { return .ignored }
+        // A message about destinations has been read by the time the user
+        // presses anything else; leaving it up makes it look like a
+        // permanent state rather than a reply to what they just did.
+        if viewModel.moveError != nil { viewModel.moveError = nil }
         // Lowercased so Caps Lock doesn't break the letter bindings below.
         let letter = press.key.character.lowercased()
         // Exact modifier set, not `.contains(.command)` — otherwise e.g.
@@ -255,7 +259,12 @@ public struct TriageView: View {
                 shelfOpen = false
                 swipeMonitor.endShelfSteering()
                 return .handled
-            case .delete, .deleteForward:
+            default: break
+            }
+            // The Mac's Backspace reports U+0008 while KeyEquivalent.delete
+            // is U+007F, so matching the constant alone never fired.
+            if press.key == .delete || press.key == .deleteForward
+                || press.characters == "\u{8}" || press.characters == "\u{7F}" {
                 // Frees a slot for a replacement. Removing a destination
                 // only forgets the folder — nothing already filed there
                 // moves, and the folder itself is untouched.
@@ -263,8 +272,8 @@ public struct TriageView: View {
                 viewModel.removeDestination(at: selectedBin)
                 selectedBin = min(selectedBin, max(binCount(viewModel) - 1, 0))
                 return .handled
-            default: return .ignored
             }
+            return .ignored
         }
         switch press.key {
         case .rightArrow: decide(.keep, using: viewModel); return .handled
