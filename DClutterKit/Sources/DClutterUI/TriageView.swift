@@ -208,9 +208,10 @@ public struct TriageView: View {
 
     private func fileAway(_ index: Int, viewModel: SessionViewModel) {
         guard viewModel.destinations.indices.contains(index) else { return }
-        lastDecision = nil
-        withAnimation(.easeOut(duration: 0.19)) {
-            viewModel.moveCurrent(toDestinationAt: index)
+        clearDirection {
+            withAnimation(.easeOut(duration: 0.19)) {
+                viewModel.moveCurrent(toDestinationAt: index)
+            }
         }
     }
 
@@ -433,9 +434,18 @@ public struct TriageView: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Label(label, systemImage: systemImage)
-                .font(.system(size: 11))
-                .labelStyle(.titleAndIcon)
+            HStack(spacing: DesignTokens.Spacing.unit) {
+                Image(systemName: systemImage)
+                Text(label)
+                if let shortcut {
+                    // The binding is the product (§2 principle 5); showing it
+                    // on the control is how a pointer user learns it.
+                    Text(shortcut)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+                }
+            }
+            .font(.system(size: 11))
         }
         .buttonStyle(.accessoryBar)
         .help(shortcut.map { "\(label)  (\($0))" } ?? label)
@@ -462,14 +472,24 @@ public struct TriageView: View {
     /// Undo and redo cross-fade rather than sliding: the card is not
     /// leaving in a direction, it is being replaced, and a directional
     /// slide would imply a decision that isn't being made.
+    /// Undo and redo cross-fade rather than sliding: the card is being
+    /// replaced, not decided, and a directional slide would imply a
+    /// decision. Clearing `lastDecision` needs its own pass first — a
+    /// removal transition resolves from the departing view's last committed
+    /// render, so clearing it alongside the mutation left the card still
+    /// sliding in the direction of the decision being undone.
     private func undo(_ viewModel: SessionViewModel) {
-        lastDecision = nil
-        withAnimation(.easeInOut(duration: 0.19)) { viewModel.undo() }
+        clearDirection { withAnimation(.easeInOut(duration: 0.19)) { viewModel.undo() } }
     }
 
     private func redo(_ viewModel: SessionViewModel) {
+        clearDirection { withAnimation(.easeInOut(duration: 0.19)) { viewModel.redo() } }
+    }
+
+    private func clearDirection(then work: @escaping () -> Void) {
+        guard lastDecision != nil else { work(); return }
         lastDecision = nil
-        withAnimation(.easeInOut(duration: 0.19)) { viewModel.redo() }
+        Task { @MainActor in work() }
     }
 
     private func performDecision(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
