@@ -164,23 +164,32 @@ public struct TriageView: View {
 
     private func openShelf(viewModel: SessionViewModel) {
         guard viewModel.current != nil else { return }
-        if viewModel.destinations.isEmpty {
-            viewModel.chooseDestinationFolder()
-            return
-        }
-        selectedBin = min(selectedBin, viewModel.destinations.count - 1)
+        selectedBin = min(selectedBin, max(binCount(viewModel) - 1, 0))
         shelfOpen = true
     }
 
+    /// The row may end with an "Add folder…" bin, so selection runs one
+    /// past the configured destinations whenever there is room for another.
+    private func binCount(_ viewModel: SessionViewModel) -> Int {
+        let extra = viewModel.destinations.count < DestinationStore.maximumDestinations ? 1 : 0
+        return viewModel.destinations.count + extra
+    }
+
     private func stepBin(by step: Int, viewModel: SessionViewModel) {
-        guard shelfOpen, !viewModel.destinations.isEmpty else { return }
-        selectedBin = min(max(selectedBin + step, 0), viewModel.destinations.count - 1)
+        guard shelfOpen else { return }
+        selectedBin = min(max(selectedBin + step, 0), max(binCount(viewModel) - 1, 0))
     }
 
     private func confirmShelf(viewModel: SessionViewModel) {
         guard shelfOpen else { return }
         shelfOpen = false
-        fileAway(selectedBin, viewModel: viewModel)
+        swipeMonitor.endShelfSteering()
+        if selectedBin >= viewModel.destinations.count {
+            viewModel.chooseDestinationFolder()
+        } else {
+            fileAway(selectedBin, viewModel: viewModel)
+        }
+        isFocused = true
     }
 
     private func fileAway(_ index: Int, viewModel: SessionViewModel) {
@@ -238,7 +247,10 @@ public struct TriageView: View {
             case .leftArrow: stepBin(by: -1, viewModel: viewModel); return .handled
             case .rightArrow: stepBin(by: 1, viewModel: viewModel); return .handled
             case .return: confirmShelf(viewModel: viewModel); return .handled
-            case .escape, .upArrow: shelfOpen = false; return .handled
+            case .escape, .upArrow, .downArrow:
+                shelfOpen = false
+                swipeMonitor.endShelfSteering()
+                return .handled
             default: return .ignored
             }
         }
@@ -398,7 +410,7 @@ public struct TriageView: View {
         ("↓", "Rename this file"),
         ("1 – 3", "File into a destination folder"),
         ("⌘N", "Add a destination folder"),
-        ("Esc", "Close the shelf"),
+        ("Esc  or  ↓", "Close the shelf"),
         ("⌘Z", "Undo"),
         ("⇧⌘Z  or  ⌘Y", "Redo"),
         ("⌘⏎", "Review and trash staged files"),
@@ -465,9 +477,15 @@ public struct TriageView: View {
     }
 
     private func clearDirection(then work: @escaping () -> Void) {
+        // Reclaim focus: an undo can leave the triage surface without it,
+        // and every binding here is dead the moment that happens.
+        defer { isFocused = true }
         guard lastDecision != nil else { work(); return }
         lastDecision = nil
-        Task { @MainActor in work() }
+        Task { @MainActor in
+            work()
+            isFocused = true
+        }
     }
 
     private func performDecision(_ direction: DecisionDirection, using viewModel: SessionViewModel) {

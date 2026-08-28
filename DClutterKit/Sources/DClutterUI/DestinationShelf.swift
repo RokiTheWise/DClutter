@@ -43,6 +43,18 @@ struct DestinationShelf: View {
                         shortcut: "\(index + 1)"
                     )
                 }
+                // Adding a folder is part of the same row rather than a
+                // separate setting, so filling the three bins is something
+                // you do while triaging instead of before it.
+                if destinations.count < DestinationStore.maximumDestinations {
+                    bin(
+                        label: "Add folder…",
+                        systemImage: "folder.badge.plus",
+                        isHighlighted: highlighted == destinations.count,
+                        shortcut: "⌘N"
+                    )
+                    .onTapGesture(perform: onChooseFolder)
+                }
             }
         }
         .padding(DesignTokens.Spacing.large)

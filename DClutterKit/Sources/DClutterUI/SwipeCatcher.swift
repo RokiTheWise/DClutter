@@ -28,6 +28,7 @@ import SwiftUI
 @MainActor
 final class SwipeMonitorController {
     private var monitor: Any?
+    private var steeringMonitor: Any?
     var onProgress: ((CGFloat) -> Void)?
     var onCommit: ((DecisionDirection) -> Void)?
     /// Gesture released below the threshold — return the card to rest.
@@ -63,28 +64,38 @@ final class SwipeMonitorController {
     func stop() {
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
+        endShelfSteering()
     }
 
-    /// Steers the highlighted bin while the shelf is open, and files into
-    /// it when the fingers lift — the "swipe up, slide across, let go"
-    /// flow, without ever needing an absolute pointer position.
-    private func trackShelfSteering(_ event: NSEvent) {
+    /// Steers the highlighted bin using the raw scroll deltas of the very
+    /// gesture that opened the shelf, and files into the highlighted bin
+    /// when the fingers lift. `trackSwipeEvent` reports a single dominant
+    /// axis, so it cannot follow a gesture that starts vertical and then
+    /// moves sideways — which is exactly the "up, across, let go" motion.
+    private func beginShelfSteering() {
+        guard steeringMonitor == nil else { return }
         var travelled: CGFloat = 0
-        event.trackSwipeEvent(
-            options: [],
-            dampenAmountThresholdMin: -1,
-            max: 1
-        ) { [weak self] amount, phase, isComplete, _ in
-            guard let self else { return }
-            // One bin per fifth of a full gesture, so a small nudge moves
-            // one bin rather than skidding across all three.
-            let steps = ((amount - travelled) / 0.2).rounded(.towardZero)
-            if steps != 0 {
-                travelled += steps * 0.2
-                self.onShelfStep?(Int(steps))
+        steeringMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            guard let self else { return event }
+            travelled += event.scrollingDeltaX
+            // One bin per 60pt of travel: far enough that a wobble doesn't
+            // skid across the row, close enough to reach bin three easily.
+            while abs(travelled) >= 60 {
+                let step = travelled > 0 ? 1 : -1
+                travelled -= CGFloat(step) * 60
+                self.onShelfStep?(step)
             }
-            if phase == .ended || isComplete { self.onShelfCommit?() }
+            if event.phase == .ended || event.momentumPhase == .ended {
+                self.endShelfSteering()
+                self.onShelfCommit?()
+            }
+            return nil
         }
+    }
+
+    func endShelfSteering() {
+        if let steeringMonitor { NSEvent.removeMonitor(steeringMonitor) }
+        steeringMonitor = nil
     }
 
     /// Returns true when the event was consumed as a swipe.
@@ -94,16 +105,16 @@ final class SwipeMonitorController {
         // mouse wheel does not, and must keep scrolling normally.
         guard event.phase == .began else { return false }
 
-        // While the shelf is open the gesture steers bins instead.
-        if isShelfOpen {
-            trackShelfSteering(event)
-            return true
-        }
+        // Already steering — the steering monitor owns the events.
+        if isShelfOpen { return false }
 
-        // Fingers up reveals the shelf; horizontal decides the card.
+        // Fingers up reveals the shelf, and the very same gesture carries on
+        // into steering so the motion is one continuous "up, across, let
+        // go" rather than two separate swipes.
         if abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX) {
             guard event.scrollingDeltaY < 0 else { return false }
             onShelfOpen?()
+            beginShelfSteering()
             return true
         }
 
