@@ -332,9 +332,7 @@ public struct TriageView: View {
     @ViewBuilder
     private func controlBar(viewModel: SessionViewModel) -> some View {
         HStack(spacing: DesignTokens.Spacing.small) {
-            // Logo slot — replace the placeholder with the real mark.
-            Image(systemName: "square.stack.3d.up")
-                .font(.system(size: 15))
+            BrandMark(size: 18)
                 .foregroundStyle(DesignTokens.ColorToken.textSecondary)
                 .help("DClutter")
 
@@ -368,10 +366,25 @@ public struct TriageView: View {
 
             Divider().frame(height: 16)
 
-            controlButton("Commit", systemImage: "tray.and.arrow.down", shortcut: "⌘⏎") {
+            // The terminal action, and the only one that removes anything:
+            // it reads as the primary control and names the count, per §0
+            // (files, never bytes).
+            Button {
                 viewModel.showCommitSheet = true
+            } label: {
+                HStack(spacing: DesignTokens.Spacing.unit) {
+                    Image(systemName: "trash")
+                    Text(viewModel.stagedForCommit.isEmpty
+                         ? "Nothing staged"
+                         : "Trash \(viewModel.stagedForCommit.count)")
+                        .fixedSize()
+                }
+                .font(.system(size: 11, weight: .medium))
             }
+            .buttonStyle(.borderedProminent)
+            .tint(DesignTokens.ColorToken.consequence)
             .disabled(viewModel.stagedForCommit.isEmpty)
+            .help("Review and trash staged files  (⌘⏎)")
 
             controlButton("Help", systemImage: "questionmark.circle", shortcut: "?") {
                 showHelp.toggle()
@@ -486,16 +499,13 @@ public struct TriageView: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
+            // Icon and label only. The binding lives in the tooltip and the
+            // help card: printing it here a third time made every label
+            // truncate to "Tra…", which costs more than it teaches.
             HStack(spacing: DesignTokens.Spacing.unit) {
                 Image(systemName: systemImage)
                 Text(label)
-                if let shortcut {
-                    // The binding is the product (§2 principle 5); showing it
-                    // on the control is how a pointer user learns it.
-                    Text(shortcut)
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(DesignTokens.ColorToken.textTertiary)
-                }
+                    .fixedSize()
             }
             .font(.system(size: 11))
         }
