@@ -24,10 +24,9 @@ its fate. Keep it, trash it, or file it — with a gesture or a keystroke.
 
 ## What this is
 
-Your Downloads folder isn't a disk-space problem — it's a folder of undecided
-items. Measured against a real 771-item folder, every duplicate in it combined
-wasted 27 MB: half a percent. Space wasn't the problem. The 771 unmade decisions
-were.
+A Downloads folder tends to fill up with files we're undecided about. Measuring
+a real 771-item one, every duplicate in it combined wasted 27 MB — half a
+percent. Space wasn't the problem; the 771 unmade decisions were.
 
 So DClutter is a **decluttering tool, not a disk-space tool**. It shows you one
 file at a time and asks for a single decision. Progress is measured in files
