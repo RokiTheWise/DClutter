@@ -77,12 +77,19 @@ final class SessionViewModel {
         case .renameFile(let from, let to):
             _ = try? fileActions.rename(from, to: to.lastPathComponent)
         case .moveFile(let from, let to):
-            // Undo pulls the file back out of the destination; redo files it
-            // away again. Both need the destination folder's scope, which
-            // FileActions holds around each call.
-            if to.deletingLastPathComponent().lastPathComponent.isEmpty == false,
-               (try? fileActions.moveBack(from, to: to)) == nil {
-                moveError = "Couldn't move \(from.lastPathComponent) back."
+            // The scope belongs to the bookmarked folder the file is sitting
+            // in, so find it rather than trimming the path — a rebuilt URL
+            // grants no access at all.
+            let scoped = destinations.first { from.path.hasPrefix($0.url.path + "/") }?.url
+            do {
+                try fileActions.moveBack(from, to: to, scopedFolder: scoped)
+                moveError = nil
+            } catch {
+                // The file is still where it was, so put the record back:
+                // leaving it reverted would show a card for a file that is
+                // no longer in Downloads, and every later action on it fails.
+                session.redo()
+                moveError = "Couldn't move \(from.lastPathComponent) back — \(error.localizedDescription)"
             }
         case .none:
             break
@@ -122,7 +129,7 @@ final class SessionViewModel {
             moveError = nil
         } catch {
             session.undo()      // withdraw the record; nothing moved
-            moveError = "Couldn't file \(candidate.url.lastPathComponent): \(error.localizedDescription)"
+            moveError = "Couldn't file \(candidate.url.lastPathComponent) — \(error.localizedDescription)"
         }
         version += 1
     }

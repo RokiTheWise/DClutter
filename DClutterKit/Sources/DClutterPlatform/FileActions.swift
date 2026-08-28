@@ -4,13 +4,27 @@
 
 import Foundation
 
-public enum FileActionError: Error {
+public enum FileActionError: Error, LocalizedError {
     case trashFailed(URL, underlying: Error)
     case renameFailed(URL, underlying: Error)
     case nameAlreadyTaken(String)
     case invalidName(String)
     case moveFailed(URL, underlying: Error)
     case destinationUnavailable(URL)
+
+    public var errorDescription: String? {
+        switch self {
+        case .trashFailed(_, let underlying), .renameFailed(_, let underlying),
+             .moveFailed(_, let underlying):
+            return underlying.localizedDescription
+        case .nameAlreadyTaken(let name):
+            return "\(name) already exists there."
+        case .invalidName(let name):
+            return "\(name) isn't a usable filename."
+        case .destinationUnavailable(let url):
+            return "\(url.lastPathComponent) isn't reachable — it may have been moved, renamed, or be on a disk that's disconnected."
+        }
+    }
 }
 
 /// The only place in DClutter that may touch a user file destructively —
@@ -103,10 +117,15 @@ public struct FileActions: Sendable {
         return destination
     }
 
-    /// Moves a file back to an exact path, for undo. The destination folder
-    /// is the one being left, so its scope is the one that must be held.
-    public func moveBack(_ url: URL, to original: URL) throws {
-        let folder = url.deletingLastPathComponent()
+    /// Moves a file back to an exact path, for undo.
+    ///
+    /// `scopedFolder` must be the URL that came out of the bookmark, not one
+    /// rebuilt by trimming the file's path: a security scope is granted to
+    /// that exact URL, so a reconstructed one grants nothing and the move
+    /// is refused. Passing the wrong URL here is what made undoing a file
+    /// fail while leaving the queue believing it had succeeded.
+    public func moveBack(_ url: URL, to original: URL, scopedFolder: URL?) throws {
+        let folder = scopedFolder ?? url.deletingLastPathComponent()
         let scoped = folder.startAccessingSecurityScopedResource()
         defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
         do {

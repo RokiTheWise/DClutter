@@ -207,6 +207,7 @@ public struct TriageView: View {
         guard viewModel.destinations.indices.contains(index) else { return }
         clearDirection {
             withAnimation(.easeOut(duration: 0.19)) {
+                swipeProgress = 0
                 viewModel.moveCurrent(toDestinationAt: index)
             }
         }
@@ -513,11 +514,24 @@ public struct TriageView: View {
     /// render, so clearing it alongside the mutation left the card still
     /// sliding in the direction of the decision being undone.
     private func undo(_ viewModel: SessionViewModel) {
-        clearDirection { withAnimation(.easeInOut(duration: 0.19)) { viewModel.undo() } }
+        clearDirection {
+            withAnimation(.easeInOut(duration: 0.19)) {
+                // Same reason as performDecision: a swipe may have left an
+                // offset behind, and clearing it outside this transaction
+                // leaves the arriving card's slide unanimated.
+                swipeProgress = 0
+                viewModel.undo()
+            }
+        }
     }
 
     private func redo(_ viewModel: SessionViewModel) {
-        clearDirection { withAnimation(.easeInOut(duration: 0.19)) { viewModel.redo() } }
+        clearDirection {
+            withAnimation(.easeInOut(duration: 0.19)) {
+                swipeProgress = 0
+                viewModel.redo()
+            }
+        }
     }
 
     private func clearDirection(then work: @escaping () -> Void) {

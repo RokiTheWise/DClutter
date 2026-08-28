@@ -185,9 +185,24 @@ private func makeScratch() throws -> URL {
 
     let actions = FileActions()
     let moved = try actions.move(source, intoFolder: target)
-    try actions.moveBack(moved, to: source)
+    try actions.moveBack(moved, to: source, scopedFolder: target)
 
     #expect(FileManager.default.fileExists(atPath: source.path))
     #expect(!FileManager.default.fileExists(atPath: moved.path))
     #expect(try Data(contentsOf: source) == Data("payload".utf8))
+}
+
+@Test func moveBackReportsFailureRatherThanSilentlySucceeding() throws {
+    // If the file can't go back, the caller has to know: the session has
+    // already recorded the undo, and a silent failure leaves the queue
+    // showing a card for a file that is no longer in Downloads.
+    let scratch = try makeScratch()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    let target = scratch.appendingPathComponent("Receipts", isDirectory: true)
+    try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+    let moved = target.appendingPathComponent("ghost.pdf")   // never created
+
+    #expect(throws: FileActionError.self) {
+        try FileActions().moveBack(moved, to: scratch.appendingPathComponent("ghost.pdf"), scopedFolder: target)
+    }
 }
