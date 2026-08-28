@@ -37,6 +37,11 @@ public final class DClutterSession {
                 result[url] = entry.value
             }
             self.deferred = snapshot.deferred.compactMap { known.contains($0) ? URL(string: $0) : nil }
+            // Drop entries naming a file that is no longer in the folder,
+            // so undo can never reach for something that isn't there.
+            let present: (URL) -> Bool = { known.contains($0.absoluteString) }
+            self.history = snapshot.history.filter { $0.involvesFile(where: present) }
+            self.redoStack = snapshot.redoStack.filter { $0.involvesFile(where: present) }
         }
     }
 
@@ -74,12 +79,22 @@ public enum UndoSideEffect: Equatable, Sendable {
     case moveFile(from: URL, to: URL)
 }
 
-private enum Decision {
+enum Decision: Codable, Equatable {
     case keep(URL)
     case stage(URL)
     case skip(URL)
     case rename(from: URL, to: URL)
     case move(URL, to: URL)
+
+    /// Whether this decision's subject still exists, used to drop stale
+    /// entries when a session is restored.
+    func involvesFile(where isPresent: (URL) -> Bool) -> Bool {
+        switch self {
+        case .keep(let url), .stage(let url), .skip(let url): return isPresent(url)
+        case .rename(let from, let to): return isPresent(from) || isPresent(to)
+        case .move(let url, _): return isPresent(url)
+        }
+    }
 
     /// Rewrites this decision's target after a rename, so undo and redo
     /// still reach the file they were recorded against.
@@ -100,6 +115,10 @@ struct SessionSnapshot: Codable {
     let queueOrder: [String]      // url.absoluteString, in effective order at save time
     let states: [String: FileState]
     let deferred: [String]
+    /// Undo and redo stacks, so quitting mid-session doesn't cost the
+    /// ability to take back the decision still on screen when you return.
+    var history: [Decision] = []
+    var redoStack: [Decision] = []
 }
 
 extension DClutterSession {
@@ -107,7 +126,9 @@ extension DClutterSession {
         let snapshot = SessionSnapshot(
             queueOrder: queue.map(\.url.absoluteString),
             states: states.reduce(into: [:]) { $0[$1.key.absoluteString] = $1.value },
-            deferred: deferred.map(\.absoluteString)
+            deferred: deferred.map(\.absoluteString),
+            history: history,
+            redoStack: redoStack
         )
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
         try? data.write(to: persistenceURL, options: .atomic)

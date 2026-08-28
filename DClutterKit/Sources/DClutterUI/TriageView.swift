@@ -339,7 +339,11 @@ public struct TriageView: View {
             Spacer()
 
             if viewModel.current != nil {
-                controlButton("Trash", systemImage: "trash", shortcut: "←") {
+                // "Stage", not "Trash": this marks a file for the commit
+                // sheet, while the primary control at the far end is what
+                // actually trashes. Two controls both reading "Trash" made
+                // a staged, reversible decision look like a deletion.
+                controlButton("Stage", systemImage: "trash", shortcut: "←") {
                     decide(.stage, using: viewModel)
                 }
                 .foregroundStyle(DesignTokens.ColorToken.consequence)
@@ -477,6 +481,7 @@ public struct TriageView: View {
     private static let helpRows: [(String, String)] = [
         ("→  or  K", "Keep, next card"),
         ("←  or  X", "Stage for trash, next card"),
+        ("Right-click", "Reveal in Finder, rename, copy name"),
         ("Space", "Skip — comes back at the end"),
         ("↑  or  two fingers up", "Open the destination shelf"),
         ("←  →  then ⏎", "Choose a folder and file it"),

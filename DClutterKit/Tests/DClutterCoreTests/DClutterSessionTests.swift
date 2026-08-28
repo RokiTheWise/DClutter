@@ -676,3 +676,37 @@ private func tempPersistenceURL() -> URL {
     #expect(session.states[a.url] == .moved(to: filed))
     #expect(session.remainingCount == 0)
 }
+
+// MARK: - Undo survives a relaunch
+
+@MainActor
+@Test func undoHistorySurvivesRelaunch() {
+    // Quitting mid-session shouldn't cost the ability to take back the
+    // last decision — the decision is still on screen when you come back.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let url = tempPersistenceURL()
+    defer { try? FileManager.default.removeItem(at: url) }
+    let first = DClutterSession(candidates: [a, b], persistenceURL: url)
+    first.stage()
+
+    let second = DClutterSession(candidates: [a, b], persistenceURL: url)
+    #expect(second.canUndo)
+
+    second.undo()
+    #expect(second.stagedForCommit().isEmpty)
+    #expect(second.current?.id == a.id)
+}
+
+@MainActor
+@Test func restoredHistoryDropsEntriesForFilesNoLongerPresent() {
+    // A file deleted from Downloads between launches must not leave an
+    // undo entry pointing at it.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let url = tempPersistenceURL()
+    defer { try? FileManager.default.removeItem(at: url) }
+    let first = DClutterSession(candidates: [a, b], persistenceURL: url)
+    first.keep()   // decides a
+
+    let second = DClutterSession(candidates: [b], persistenceURL: url)
+    #expect(!second.canUndo)
+}
