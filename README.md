@@ -93,6 +93,9 @@ Keyboard is the primary interface; every action has a pointer equivalent.
 
 **[⬇ Download the latest release](https://github.com/RokiTheWise/DClutter/releases/latest)**
 
+On that page, scroll to **Assets** and click **`DClutter-0.4.0.zip`** — not the
+"Source code" files below it, which are the code rather than the app.
+
 Then, because this build isn't signed by Apple yet, macOS needs you to approve it
 once:
 
