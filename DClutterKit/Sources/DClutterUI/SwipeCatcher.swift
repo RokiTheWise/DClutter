@@ -43,6 +43,9 @@ final class SwipeMonitorController {
     var onShelfStep: ((Int) -> Void)?
     /// Fingers lifted with the shelf open: file into the highlighted bin.
     var onShelfCommit: (() -> Void)?
+    /// Fingers dragged back down: abandon the shelf without filing.
+    /// Cancelling has to be as easy as committing (§6).
+    var onShelfCancel: (() -> Void)?
     /// True while the shelf is showing, so the monitor knows to steer bins
     /// rather than start another decision.
     var isShelfOpen = false
@@ -75,8 +78,19 @@ final class SwipeMonitorController {
     private func beginShelfSteering() {
         guard steeringMonitor == nil else { return }
         var travelled: CGFloat = 0
+        var vertical: CGFloat = 0
         steeringMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
             guard let self else { return event }
+
+            // Dragging back down abandons the shelf — the same fingers that
+            // opened it close it, without having to reach for Escape.
+            vertical += event.scrollingDeltaY
+            if vertical > 50 {
+                self.endShelfSteering()
+                self.onShelfCancel?()
+                return nil
+            }
+
             travelled += event.scrollingDeltaX
             // One bin per 60pt of travel: far enough that a wobble doesn't
             // skid across the row, close enough to reach bin three easily.

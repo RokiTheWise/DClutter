@@ -122,15 +122,22 @@ public struct TriageView: View {
             isFocused = true
             swipeMonitor.onProgress = { amount in swipeProgress = amount }
             swipeMonitor.onCommit = { direction in
-                // Exactly the keyboard's path — the gesture has already been
-                // stopped, so nothing competes with the exit and a swipe
-                // resolves the same way a key press does.
-                swipeProgress = 0
+                // Exactly the keyboard's path. The offset is cleared inside
+                // performDecision's animation rather than here: zeroing it a
+                // pass early snapped the card back to centre and only then
+                // played the exit, which is the hesitation a key press
+                // doesn't have — and it left the incoming card's slide
+                // outside the animated transaction entirely.
                 decide(direction, using: viewModel)
             }
             swipeMonitor.onShelfOpen = { openShelf(viewModel: viewModel) }
             swipeMonitor.onShelfStep = { step in stepBin(by: step, viewModel: viewModel) }
             swipeMonitor.onShelfCommit = { confirmShelf(viewModel: viewModel) }
+            swipeMonitor.onShelfCancel = {
+                shelfOpen = false
+                swipeMonitor.endShelfSteering()
+                isFocused = true
+            }
             swipeMonitor.onSnapBack = {
                 withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
                     swipeProgress = 0
@@ -527,6 +534,13 @@ public struct TriageView: View {
 
     private func performDecision(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
         withAnimation(.easeInOut(duration: 0.19)) {
+            // Cleared in the same transaction as the swap: the departing
+            // card keeps the offset it was rendered with, and the arriving
+            // one starts at rest. Clearing it a pass earlier snapped the
+            // card back to centre before the exit — the hesitation a key
+            // press doesn't have — and left the incoming card's slide
+            // outside the animated transaction.
+            swipeProgress = 0
             switch direction {
             case .keep: viewModel.keep()
             case .stage: viewModel.stage()
