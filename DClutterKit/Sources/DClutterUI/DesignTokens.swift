@@ -8,11 +8,7 @@ import SwiftUI
 /// hex values, so light/dark/increased-contrast all adapt for free.
 enum DesignTokens {
     enum ColorToken {
-        /// Deliberately the *under-page* background rather than the window
-        /// background: in light appearance the window background and the
-        /// control background are both near-white, so a card sitting on it
-        /// had almost nothing to separate it from the page.
-        static let surface = Color(nsColor: .underPageBackgroundColor)
+        static let surface = Color(nsColor: .windowBackgroundColor)
         static let cardSurface = Color(nsColor: .controlBackgroundColor)
         static let hairline = Color(nsColor: .separatorColor)
         static let textPrimary = Color(nsColor: .labelColor)
