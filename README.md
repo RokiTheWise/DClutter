@@ -33,18 +33,20 @@ wasted 27 MB: half a percent. Space wasn't the problem. The 771 unmade decisions
 were.
 
 So DClutter is a **decluttering tool, not a disk-space tool**. It shows you one
-file at a time, ordered so the obviously-actionable things come first, and asks
-for a single decision. Progress is measured in files resolved, never in bytes
-reclaimed.
+file at a time and asks for a single decision. Progress is measured in files
+resolved, never in bytes reclaimed.
 
 It reads `~/Downloads` and nothing else.
 
 ## How it works
 
-Files are ranked, not listed alphabetically. The score is additive — size,
+Files are ranked rather than listed alphabetically. The score is additive — size,
 staleness, whether it was ever opened, whether it's a redundant copy, whether
 it's an archive you already extracted — so no single signal can drown out the
 others. Duplicates are found by filename and size, no hashing.
+
+Whether that ordering actually surfaces the right things first is the open
+question, and the main thing worth telling me about.
 
 Then you decide:
 

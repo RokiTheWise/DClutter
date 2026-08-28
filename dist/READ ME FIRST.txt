@@ -79,3 +79,12 @@ SOMETHING WRONG?
 It's an early build, so quite possibly. Please tell me what happened:
 
     https://github.com/RokiTheWise/DClutter/issues
+
+
+Any comments, suggestions, or feedback are highly appreciated — including
+the small annoyances you'd normally not bother mentioning. Those are
+usually the most useful ones.
+
+Thank you for giving this a try.
+
+    — DJ Enriquez :)
