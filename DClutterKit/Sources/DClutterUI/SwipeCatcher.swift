@@ -32,6 +32,19 @@ final class SwipeMonitorController {
     var onCommit: ((DecisionDirection) -> Void)?
     /// Gesture released below the threshold — return the card to rest.
     var onSnapBack: (() -> Void)?
+    /// Two fingers up: reveal the destination shelf. Safe on the same
+    /// event stream as the horizontal swipe now that nothing else wants
+    /// vertical — the live preview that §6 was protecting is gone, so the
+    /// two gestures are separated by axis alone.
+    var onShelfOpen: (() -> Void)?
+    /// Fingers moved horizontally while the shelf is open: -1 or +1 to
+    /// step the highlighted bin.
+    var onShelfStep: ((Int) -> Void)?
+    /// Fingers lifted with the shelf open: file into the highlighted bin.
+    var onShelfCommit: (() -> Void)?
+    /// True while the shelf is showing, so the monitor knows to steer bins
+    /// rather than start another decision.
+    var isShelfOpen = false
     var isEnabled: Bool = true
 
     /// Fraction of a full gesture that commits a decision. Low enough to
@@ -52,16 +65,50 @@ final class SwipeMonitorController {
         monitor = nil
     }
 
+    /// Steers the highlighted bin while the shelf is open, and files into
+    /// it when the fingers lift — the "swipe up, slide across, let go"
+    /// flow, without ever needing an absolute pointer position.
+    private func trackShelfSteering(_ event: NSEvent) {
+        var travelled: CGFloat = 0
+        event.trackSwipeEvent(
+            options: [],
+            dampenAmountThresholdMin: -1,
+            max: 1
+        ) { [weak self] amount, phase, isComplete, _ in
+            guard let self else { return }
+            // One bin per fifth of a full gesture, so a small nudge moves
+            // one bin rather than skidding across all three.
+            let steps = ((amount - travelled) / 0.2).rounded(.towardZero)
+            if steps != 0 {
+                travelled += steps * 0.2
+                self.onShelfStep?(Int(steps))
+            }
+            if phase == .ended || isComplete { self.onShelfCommit?() }
+        }
+    }
+
     /// Returns true when the event was consumed as a swipe.
     private func handle(_ event: NSEvent) -> Bool {
         guard isEnabled else { return false }
         // Only a genuine trackpad gesture carries phase information; a
         // mouse wheel does not, and must keep scrolling normally.
         guard event.phase == .began else { return false }
-        // Vertical belongs to the preview's scroller (§6).
-        guard abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) else { return false }
+
+        // While the shelf is open the gesture steers bins instead.
+        if isShelfOpen {
+            trackShelfSteering(event)
+            return true
+        }
+
+        // Fingers up reveals the shelf; horizontal decides the card.
+        if abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX) {
+            guard event.scrollingDeltaY < 0 else { return false }
+            onShelfOpen?()
+            return true
+        }
 
         var committed = false
+        var stepAccumulator: CGFloat = 0
         event.trackSwipeEvent(
             options: .lockDirection,
             dampenAmountThresholdMin: -1,

@@ -22,7 +22,6 @@ final class SessionViewModel {
     /// See the task note above — without this, SwiftUI never re-renders.
     private var version = 0
 
-    var previewFocused = false
     var showCommitSheet = false
     var commitError: String?
     var isRenaming = false
@@ -65,11 +64,11 @@ final class SessionViewModel {
         }
     }
 
-    func keep() { previewFocused = false; session.keep(); version += 1 }
-    func stage() { previewFocused = false; session.stage(); version += 1 }
-    func skip() { previewFocused = false; session.skip(); version += 1 }
-    func undo() { previewFocused = false; perform(session.undo()); version += 1 }
-    func redo() { previewFocused = false; perform(session.redo()); version += 1 }
+    func keep() { session.keep(); version += 1 }
+    func stage() { session.stage(); version += 1 }
+    func skip() { session.skip(); version += 1 }
+    func undo() { perform(session.undo()); version += 1 }
+    func redo() { perform(session.redo()); version += 1 }
 
     /// Core reports disk work it cannot do itself; without carrying it out
     /// the queue and the folder would disagree about a file's name.
@@ -92,7 +91,7 @@ final class SessionViewModel {
 
     /// Discards every undecided decision and restarts the queue.
     /// Already-trashed files stay trashed — see DClutterSession.reset.
-    func reset() { previewFocused = false; session.reset(); version += 1 }
+    func reset() { session.reset(); version += 1 }
 
     /// Opens the current file in whatever app owns it, for when the
     /// preview and metadata aren't enough to decide. Read-only: it never
@@ -101,8 +100,6 @@ final class SessionViewModel {
         guard let url = session.current?.url else { return }
         NSWorkspace.shared.open(url)
     }
-    func toggleFocus() { previewFocused.toggle() }
-
     /// Files the current card into the destination at `index`.
     ///
     /// Invariant 4: the undo entry is registered *before* the file is
@@ -127,7 +124,6 @@ final class SessionViewModel {
             session.undo()      // withdraw the record; nothing moved
             moveError = "Couldn't file \(candidate.url.lastPathComponent): \(error.localizedDescription)"
         }
-        previewFocused = false
         version += 1
     }
 

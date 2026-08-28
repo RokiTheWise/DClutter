@@ -6,9 +6,13 @@ import SwiftUI
 import DClutterCore
 import DClutterPlatform
 
-/// §6 keyboard table (M2 subset — 1-3/move and gestures are M4):
-/// →/K keep, ←/X stage, ⌘Z undo, Space skip, ⌘⏎ commit sheet,
-/// ↑ focus preview, Esc unfocus.
+/// →/K keep, ←/X stage, Space skip, 1-3 file into a destination,
+/// ↑ open the shelf then ←/→ and ⏎, ⌘Z undo, ⇧⌘Z or ⌘Y redo,
+/// ⌘⏎ commit sheet, ⌘N add a destination, ↓ rename, ? help.
+///
+/// §6 assigned ↑ to focusing the preview. That focus is gone: it trapped
+/// the keyboard, and it was the sole reason two-finger vertical could not
+/// be used for the shelf.
 public struct TriageView: View {
     @State private var viewModel: SessionViewModel?
     @State private var context: QueueContext?
@@ -28,11 +32,13 @@ public struct TriageView: View {
     @State private var swipeMonitor = SwipeMonitorController()
     @State private var draftName = ""
     @FocusState private var renameFieldFocused: Bool
-    /// Drag-up shelf state. §6 puts move on a click-drag, never a
-    /// two-finger swipe up — that arrives as scrollWheel and is
-    /// indistinguishable from scrolling the preview.
-    @State private var dragHeight: CGFloat = 0
-    @State private var dragX: CGFloat = 0
+    /// Destination shelf. Opened by two fingers up or ↑, steered by the
+    /// fingers or ←/→, committed by lifting or Return. §6 originally put
+    /// this on a click-drag to avoid colliding with preview scrolling —
+    /// that collision is gone now that the preview is never focusable, so
+    /// the gesture can live on the axis people reach for.
+    @State private var shelfOpen = false
+    @State private var selectedBin = 0
     let folder: URL
 
     public init(folder: URL) {
@@ -71,24 +77,26 @@ public struct TriageView: View {
             controlBar(viewModel: viewModel)
             DestinationShelf(
                 destinations: viewModel.destinations,
-                revealed: shelfReveal,
-                highlighted: highlightedBin(viewModel: viewModel),
+                revealed: shelfOpen ? 1 : 0,
+                highlighted: shelfOpen ? selectedBin : nil,
                 onChooseFolder: { viewModel.chooseDestinationFolder() }
             )
-            .frame(height: shelfReveal > 0 ? nil : 0)
+            .frame(height: shelfOpen ? nil : 0)
             Spacer()
             if let current = viewModel.current {
-                CardView(candidate: current, context: context, previewFocused: Binding(
-                    get: { viewModel.previewFocused },
-                    set: { viewModel.previewFocused = $0 }
-                ), lastDecision: lastDecision,
+                CardView(candidate: current, context: context,
+                   lastDecision: lastDecision,
                    onOpen: { viewModel.openCurrentInDefaultApp() },
                    swipeOffset: swipeProgress,
                    onReveal: { viewModel.revealCurrentInFinder() },
                    onRename: { beginRename(viewModel: viewModel) },
                    onCopyName: { viewModel.copyCurrentName() })
-                    .offset(y: -dragHeight)
-                    .gesture(shelfDrag(viewModel: viewModel))
+                    // Shrinks back and fades while choosing a folder, so
+                    // the shelf is unobstructed and the card reads as the
+                    // thing being filed rather than the thing in focus.
+                    .scaleEffect(shelfOpen ? 0.82 : 1)
+                    .opacity(shelfOpen ? 0.45 : 1)
+                    .animation(.spring(response: 0.26, dampingFraction: 0.85), value: shelfOpen)
             } else {
                 Text("All done.")
                     .foregroundStyle(DesignTokens.ColorToken.textSecondary)
@@ -106,20 +114,6 @@ public struct TriageView: View {
         .focusEffectDisabled()
         .focused($isFocused)
         .onKeyPress { press in handle(press, viewModel: viewModel) }
-        // Escape hatch. Once the live QLPreviewView takes first responder,
-        // .onKeyPress above stops firing entirely — including for Esc — so
-        // focusing the preview would trap the user with no way back to
-        // triage. A .keyboardShortcut is registered at the window level and
-        // fires regardless of which subview holds focus.
-        .background(
-            Button("") {
-                viewModel.previewFocused = false
-                isFocused = true
-            }
-            .keyboardShortcut(.cancelAction)
-            .opacity(0)
-            .accessibilityHidden(true)
-        )
         .onAppear {
             isFocused = true
             swipeMonitor.onProgress = { amount in swipeProgress = amount }
@@ -130,6 +124,9 @@ public struct TriageView: View {
                 swipeProgress = 0
                 decide(direction, using: viewModel)
             }
+            swipeMonitor.onShelfOpen = { openShelf(viewModel: viewModel) }
+            swipeMonitor.onShelfStep = { step in stepBin(by: step, viewModel: viewModel) }
+            swipeMonitor.onShelfCommit = { confirmShelf(viewModel: viewModel) }
             swipeMonitor.onSnapBack = {
                 withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
                     swipeProgress = 0
@@ -138,15 +135,14 @@ public struct TriageView: View {
             swipeMonitor.start()
         }
         .onDisappear { swipeMonitor.stop() }
-        .onChange(of: viewModel.previewFocused) { _, focused in
-            // While the preview has focus the gesture is the preview's.
-            swipeMonitor.isEnabled = !focused && !viewModel.isRenaming
-        }
         .onChange(of: viewModel.isRenaming) { _, renaming in
             // A swipe landing mid-rename would decide the very file being
             // renamed, out from under the text field.
-            swipeMonitor.isEnabled = !renaming && !viewModel.previewFocused
+            swipeMonitor.isEnabled = !renaming
             if !renaming { isFocused = true }
+        }
+        .onChange(of: shelfOpen) { _, open in
+            swipeMonitor.isShelfOpen = open
         }
         .confirmationDialog(
             "Start over?",
@@ -166,44 +162,25 @@ public struct TriageView: View {
         }
     }
 
-    /// 0 at rest, 1 fully revealed — proportional to the drag so the shelf
-    /// feels attached to it rather than triggered by it (§6).
-    private var shelfReveal: CGFloat {
-        min(max((dragHeight - 20) / 90, 0), 1)
+    private func openShelf(viewModel: SessionViewModel) {
+        guard viewModel.current != nil else { return }
+        if viewModel.destinations.isEmpty {
+            viewModel.chooseDestinationFolder()
+            return
+        }
+        selectedBin = min(selectedBin, viewModel.destinations.count - 1)
+        shelfOpen = true
     }
 
-    /// Only one bin is ever highlighted; §6 forbids an ambiguous middle
-    /// state, so this picks a single index from the pointer's x position.
-    private func highlightedBin(viewModel: SessionViewModel) -> Int? {
-        guard shelfReveal > 0.99 else { return nil }
-        let count = max(viewModel.destinations.count, 1)
-        let width: CGFloat = 132 + DesignTokens.Spacing.medium
-        let slot = Int(((dragX + (width * CGFloat(count)) / 2) / width).rounded(.down))
-        return (0..<count).contains(slot) ? slot : nil
+    private func stepBin(by step: Int, viewModel: SessionViewModel) {
+        guard shelfOpen, !viewModel.destinations.isEmpty else { return }
+        selectedBin = min(max(selectedBin + step, 0), viewModel.destinations.count - 1)
     }
 
-    private func shelfDrag(viewModel: SessionViewModel) -> some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { value in
-                dragHeight = max(0, -value.translation.height)
-                dragX = value.translation.width
-            }
-            .onEnded { _ in
-                let target = highlightedBin(viewModel: viewModel)
-                let reveal = shelfReveal
-                withAnimation(.spring(response: 0.26, dampingFraction: 0.8)) {
-                    dragHeight = 0
-                    dragX = 0
-                }
-                // Released over a bin commits; anywhere else cancels, and
-                // §6 insists cancelling be as easy as committing.
-                guard reveal > 0.99, let target else { return }
-                if viewModel.destinations.isEmpty {
-                    viewModel.chooseDestinationFolder()
-                } else {
-                    fileAway(target, viewModel: viewModel)
-                }
-            }
+    private func confirmShelf(viewModel: SessionViewModel) {
+        guard shelfOpen else { return }
+        shelfOpen = false
+        fileAway(selectedBin, viewModel: viewModel)
     }
 
     private func fileAway(_ index: Int, viewModel: SessionViewModel) {
@@ -254,23 +231,24 @@ public struct TriageView: View {
             if letter == "z" { redo(viewModel); return .handled }
             return .ignored
         }
-        // §6: Esc "returns control to triage", so while the preview is
-        // focused the triage keys must not fire — only Esc is live.
-        if viewModel.previewFocused {
-            if press.key == .escape {
-                viewModel.previewFocused = false
-                return .handled
+        // While the shelf is open the arrows steer it rather than deciding,
+        // and Return files into the highlighted bin.
+        if shelfOpen {
+            switch press.key {
+            case .leftArrow: stepBin(by: -1, viewModel: viewModel); return .handled
+            case .rightArrow: stepBin(by: 1, viewModel: viewModel); return .handled
+            case .return: confirmShelf(viewModel: viewModel); return .handled
+            case .escape, .upArrow: shelfOpen = false; return .handled
+            default: return .ignored
             }
-            return .ignored
         }
         switch press.key {
         case .rightArrow: decide(.keep, using: viewModel); return .handled
         case .leftArrow: decide(.stage, using: viewModel); return .handled
-        case .upArrow: viewModel.previewFocused = true; return .handled
+        case .upArrow: openShelf(viewModel: viewModel); return .handled
         case .downArrow:
             beginRename(viewModel: viewModel)
             return .handled
-        case .escape: viewModel.previewFocused = false; return .handled
         case .space: decide(.skip, using: viewModel); return .handled
         default: break
         }
@@ -415,12 +393,12 @@ public struct TriageView: View {
         ("→  or  K", "Keep, next card"),
         ("←  or  X", "Stage for trash, next card"),
         ("Space", "Skip — comes back at the end"),
-        ("↑", "Focus the preview"),
+        ("↑  or  two fingers up", "Open the destination shelf"),
+        ("←  →  then ⏎", "Choose a folder and file it"),
         ("↓", "Rename this file"),
         ("1 – 3", "File into a destination folder"),
-        ("drag up", "Reveal the destination shelf"),
         ("⌘N", "Add a destination folder"),
-        ("Esc", "Back to triage"),
+        ("Esc", "Close the shelf"),
         ("⌘Z", "Undo"),
         ("⇧⌘Z  or  ⌘Y", "Redo"),
         ("⌘⏎", "Review and trash staged files"),

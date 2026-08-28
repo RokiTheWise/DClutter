@@ -20,11 +20,9 @@ enum DecisionDirection: Equatable {
 struct CardView: View {
     let candidate: FileCandidate
     let context: QueueContext
-    @Binding var previewFocused: Bool
     var lastDecision: DecisionDirection?
-    /// Double-click, not single: §6 reserves click-drag-upward for
-    /// move-to-destination in M4, and a single-click action would
-    /// collide with the start of that gesture.
+    /// Double-click opens the file. This replaced focus-to-preview, which
+    /// is what people were reaching for in the first place.
     var onOpen: (() -> Void)?
     /// Live swipe position, -1...1. Applied here rather than by the parent
     /// so a departing card keeps the offset it was rendered with: driven
@@ -37,7 +35,7 @@ struct CardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
-            PreviewPane(candidate: candidate, focused: $previewFocused)
+            PreviewPane(candidate: candidate)
 
             // Two lines are always reserved, and the chip row below always
             // occupies a row's height even when empty. Design spec §4: the
@@ -78,8 +76,6 @@ struct CardView: View {
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { onOpen?() }
         // Right-click reaches the Finder vocabulary people already know.
-        // It is a different button from the left-click-drag §6 reserves for
-        // move-to-destination, so the two cannot collide.
         .contextMenu {
             Button("Open") { onOpen?() }
             Button("Reveal in Finder") { onReveal?() }

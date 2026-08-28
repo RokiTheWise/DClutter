@@ -3,16 +3,19 @@
 //  Licensed under the Apache License, Version 2.0.
 
 import SwiftUI
-import Quartz
 import QuickLookThumbnailing
 import DClutterCore
 
-/// §6: a static QLThumbnailGenerator thumbnail at rest; only on focus does
-/// this become a live QLPreviewView. Keeps the scroll/swipe conflict
-/// impossible by default and renders faster for the common (unfocused) case.
+/// Always a QLThumbnailGenerator thumbnail.
+///
+/// §6 wanted a live QLPreviewView on focus, but focusing it is what
+/// created the two-finger-vertical conflict that section spends a
+/// paragraph avoiding — and a focusable QuickLook view also stole first
+/// responder, which trapped the keyboard entirely. Double-click opens the
+/// real file instead, which is what people reached for anyway, and the
+/// thumbnail is the faster path §6 preferred for the common case.
 struct PreviewPane: View {
     let candidate: FileCandidate
-    @Binding var focused: Bool
 
     var body: some View {
         ZStack {
@@ -22,13 +25,8 @@ struct PreviewPane: View {
                     RoundedRectangle(cornerRadius: DesignTokens.Radius.preview)
                         .strokeBorder(DesignTokens.ColorToken.hairline)
                 )
-            if focused {
-                LivePreview(url: candidate.url)
-                    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.preview))
-            } else {
                 ThumbnailPreview(url: candidate.url)
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.preview))
-            }
         }
         .aspectRatio(4.0 / 3.0, contentMode: .fit)
     }
@@ -94,24 +92,3 @@ private struct ThumbnailPreview: NSViewRepresentable {
     }
 }
 
-private struct LivePreview: NSViewRepresentable {
-    let url: URL
-
-    // QLPreviewView's init is failable on recent SDKs. NSViewRepresentable
-    // must return a non-optional view, so fall back to an empty NSView
-    // rather than force-unwrapping and crashing on an unpreviewable file.
-    func makeNSView(context: Context) -> NSView {
-        guard let view = QLPreviewView(frame: .zero, style: .normal) else {
-            return NSView()
-        }
-        view.previewItem = url as QLPreviewItem
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        guard let view = nsView as? QLPreviewView else { return }
-        if (view.previewItem as? URL) != url {
-            view.previewItem = url as QLPreviewItem
-        }
-    }
-}
