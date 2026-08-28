@@ -71,6 +71,7 @@ public final class DClutterSession {
 /// out for the folder to match the queue.
 public enum UndoSideEffect: Equatable, Sendable {
     case renameFile(from: URL, to: URL)
+    case moveFile(from: URL, to: URL)
 }
 
 private enum Decision {
@@ -78,6 +79,7 @@ private enum Decision {
     case stage(URL)
     case skip(URL)
     case rename(from: URL, to: URL)
+    case move(URL, to: URL)
 
     /// Rewrites this decision's target after a rename, so undo and redo
     /// still reach the file they were recorded against.
@@ -88,6 +90,8 @@ private enum Decision {
         case .skip(let url): return url == old ? .skip(new) : self
         case .rename(let from, let to):
             return .rename(from: from == old ? new : from, to: to == old ? new : to)
+        case .move(let url, let destination):
+            return url == old ? .move(new, to: destination) : self
         }
     }
 }
@@ -117,6 +121,14 @@ extension DClutterSession {
 
 extension DClutterSession {
     public var canUndo: Bool { !history.isEmpty }
+
+    /// Files filed into a folder since the last commit — the ones a reset
+    /// would bring back.
+    public var movesThisSession: Int {
+        history.reduce(into: 0) { count, decision in
+            if case .move = decision { count += 1 }
+        }
+    }
 
     public func keep() {
         guard let url = current?.url else { return }
@@ -153,6 +165,34 @@ extension DClutterSession {
         persist()
     }
 
+    /// Records the move and advances. §3: `.moved` is already executed and
+    /// lives in the undo stack, so unlike `.staged` it never reaches the
+    /// commit sheet. Invariant 4 requires the undo entry to exist before
+    /// the file is touched, so callers must call this *before* moving on
+    /// disk, not after.
+    public func move(_ url: URL, to destination: URL) {
+        guard states[url] == nil || states[url] == .pending else { return }
+        states[url] = .moved(to: destination)
+        history.append(.move(url, to: destination))
+        sortedSinceLastCommit += 1
+        redoStack.removeAll()
+        persist()
+    }
+
+    /// Corrects the destination recorded for a move already registered.
+    /// A destination folder may suffix the filename to avoid overwriting
+    /// something already there, so where the file actually landed can
+    /// differ from what was recorded before it was touched — and undo must
+    /// follow the real path. Amends in place: no new history entry.
+    public func amendLastMove(of url: URL, to actual: URL) {
+        guard case .moved = states[url] else { return }
+        states[url] = .moved(to: actual)
+        if case .move(let recorded, _) = history.last, recorded == url {
+            history[history.count - 1] = .move(url, to: actual)
+        }
+        persist()
+    }
+
     public var canRedo: Bool { !redoStack.isEmpty }
 
     @discardableResult
@@ -160,6 +200,7 @@ extension DClutterSession {
         guard let last = history.popLast() else { return nil }
         switch last {
         case .skip, .rename: break
+        case .move: sortedSinceLastCommit = max(0, sortedSinceLastCommit - 1)
         default: sortedSinceLastCommit = max(0, sortedSinceLastCommit - 1)
         }
         let effect = revert(last)
@@ -176,6 +217,7 @@ extension DClutterSession {
         guard let next = redoStack.popLast() else { return nil }
         switch next {
         case .skip, .rename: break
+        case .move: sortedSinceLastCommit += 1
         default: sortedSinceLastCommit += 1
         }
         let effect = apply(next)
@@ -188,12 +230,39 @@ extension DClutterSession {
     /// stacks. `.trashed` files are deliberately left alone: they are gone
     /// from disk, so re-queuing them would show cards for paths that no
     /// longer exist.
-    public func reset() {
-        states = states.filter { $0.value == .trashed }
+    /// Undoes everything still undoable and reports the disk work that
+    /// needs doing to match.
+    ///
+    /// A commit ends a session, so `history` — which a commit clears — is
+    /// exactly this session's work. Files filed into a folder since then
+    /// come back; anything trashed, or filed before the last commit,
+    /// belongs to a session that is already closed and is left alone.
+    @discardableResult
+    public func reset() -> [UndoSideEffect] {
+        var effects: [UndoSideEffect] = []
+        for decision in history.reversed() {
+            guard case .move(let url, let destination) = decision else { continue }
+            states.removeValue(forKey: url)
+            effects.append(.moveFile(from: destination, to: url))
+        }
+        // Everything else this session decided simply becomes undecided;
+        // trashed and older moved files keep their terminal state.
+        states = states.filter { state in
+            if case .moved = state.value { return true }
+            return state.value == .trashed
+        }
         deferred.removeAll()
         history.removeAll()
         redoStack.removeAll()
         sortedSinceLastCommit = 0
+        persist()
+        return effects
+    }
+
+    /// Puts a move back on the record after the file could not be returned,
+    /// so the queue never claims a file is in Downloads when it isn't.
+    public func restoreMove(of url: URL, to destination: URL) {
+        states[url] = .moved(to: destination)
         persist()
     }
 
@@ -208,6 +277,9 @@ extension DClutterSession {
         case .rename(let from, let to):
             rename(to, to: from)
             return .renameFile(from: to, to: from)
+        case .move(let url, let destination):
+            states.removeValue(forKey: url)
+            return .moveFile(from: destination, to: url)
         }
         return nil
     }
@@ -224,6 +296,9 @@ extension DClutterSession {
         case .rename(let from, let to):
             rename(from, to: to)
             return .renameFile(from: from, to: to)
+        case .move(let url, let destination):
+            states[url] = .moved(to: destination)
+            return .moveFile(from: url, to: destination)
         }
         return nil
     }

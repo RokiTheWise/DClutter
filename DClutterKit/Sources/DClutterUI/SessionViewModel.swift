@@ -22,15 +22,19 @@ final class SessionViewModel {
     /// See the task note above — without this, SwiftUI never re-renders.
     private var version = 0
 
-    var previewFocused = false
     var showCommitSheet = false
     var commitError: String?
     var isRenaming = false
+    var destinations: [Destination] = []
+    var moveError: String?
     var renameError: String?
+
+    private let destinationStore = DestinationStore()
 
     init(session: DClutterSession, fileActions: FileActions = FileActions()) {
         self.session = session
         self.fileActions = fileActions
+        self.destinations = destinationStore.load()
     }
 
     var current: FileCandidate? { _ = version; return session.current }
@@ -60,22 +64,72 @@ final class SessionViewModel {
         }
     }
 
-    func keep() { previewFocused = false; session.keep(); version += 1 }
-    func stage() { previewFocused = false; session.stage(); version += 1 }
-    func skip() { previewFocused = false; session.skip(); version += 1 }
-    func undo() { previewFocused = false; perform(session.undo()); version += 1 }
-    func redo() { previewFocused = false; perform(session.redo()); version += 1 }
+    func keep() { session.keep(); version += 1 }
+    func stage() { session.stage(); version += 1 }
+    func skip() { session.skip(); version += 1 }
+    func undo() { perform(session.undo()); version += 1 }
+    func redo() { perform(session.redo()); version += 1 }
 
     /// Core reports disk work it cannot do itself; without carrying it out
     /// the queue and the folder would disagree about a file's name.
     private func perform(_ effect: UndoSideEffect?) {
-        guard case .renameFile(let from, let to) = effect else { return }
-        _ = try? fileActions.rename(from, to: to.lastPathComponent)
+        switch effect {
+        case .renameFile(let from, let to):
+            _ = try? fileActions.rename(from, to: to.lastPathComponent)
+        case .moveFile(let from, let to):
+            // The scope belongs to the bookmarked folder the file is sitting
+            // in, so find it rather than trimming the path — a rebuilt URL
+            // grants no access at all.
+            let scoped = destinations.first { from.path.hasPrefix($0.url.path + "/") }?.url
+            do {
+                try fileActions.moveBack(from, to: to, scopedFolder: scoped)
+                moveError = nil
+            } catch {
+                // The file is still where it was, so put the record back:
+                // leaving it reverted would show a card for a file that is
+                // no longer in Downloads, and every later action on it fails.
+                session.redo()
+                moveError = "Couldn't move \(from.lastPathComponent) back — \(error.localizedDescription)"
+            }
+        case .none:
+            break
+        }
     }
 
     /// Discards every undecided decision and restarts the queue.
     /// Already-trashed files stay trashed — see DClutterSession.reset.
-    func reset() { previewFocused = false; session.reset(); version += 1 }
+    /// Undoes this session: files put into folders come back, and every
+    /// keep, trash-stage and skip becomes undecided again. Anything already
+    /// committed to the Trash stays there — that commit closed a session.
+    func reset() {
+        var stranded: [String] = []
+        for effect in session.reset() {
+            guard case .moveFile(let from, let to) = effect else { continue }
+            let scoped = destinations.first { from.path.hasPrefix($0.url.path + "/") }?.url
+            do {
+                try fileActions.moveBack(from, to: to, scopedFolder: scoped)
+            } catch {
+                // Put the record back rather than claiming a file is in
+                // Downloads when it isn't — the same rule single-file undo
+                // follows.
+                session.restoreMove(of: to, to: from)
+                stranded.append(from.lastPathComponent)
+            }
+        }
+        moveError = stranded.isEmpty ? nil : strandedMessage(stranded)
+        version += 1
+    }
+
+    private func strandedMessage(_ names: [String]) -> String {
+        if names.count == 1 {
+            return "Couldn't bring \(names[0]) back — it's still in its folder."
+        }
+        return "Couldn't bring \(names.count) files back — they're still in their folders."
+    }
+
+    /// How many files this session filed into folders, for the confirmation
+    /// to say what Start Over will actually do.
+    var filedThisSessionCount: Int { _ = version; return session.movesThisSession }
 
     /// Opens the current file in whatever app owns it, for when the
     /// preview and metadata aren't enough to decide. Read-only: it never
@@ -84,7 +138,76 @@ final class SessionViewModel {
         guard let url = session.current?.url else { return }
         NSWorkspace.shared.open(url)
     }
-    func toggleFocus() { previewFocused.toggle() }
+    /// Files the current card into the destination at `index`.
+    ///
+    /// Invariant 4: the undo entry is registered *before* the file is
+    /// touched. The session records the move first; only if the disk
+    /// operation then succeeds does the record stand, and if it fails the
+    /// record is rolled back so the queue never claims a move that did not
+    /// happen.
+    func moveCurrent(toDestinationAt index: Int) {
+        guard let candidate = session.current,
+              destinations.indices.contains(index) else { return }
+        let folder = destinations[index].url
+
+        session.move(candidate.url, to: folder.appendingPathComponent(candidate.url.lastPathComponent))
+        do {
+            let landed = try fileActions.move(candidate.url, intoFolder: folder)
+            // Correct the recorded path if the destination suffixed the name
+            // to avoid clobbering a file already there, so undo looks in the
+            // right place. Amends the existing entry rather than adding one.
+            session.amendLastMove(of: candidate.url, to: landed)
+            moveError = nil
+        } catch {
+            session.undo()      // withdraw the record; nothing moved
+            moveError = "Couldn't file \(candidate.url.lastPathComponent) — \(error.localizedDescription)"
+        }
+        version += 1
+    }
+
+    /// §6: up to three folders, chosen by the user through an open panel so
+    /// the sandbox grants access to them at all.
+    func chooseDestinationFolder() {
+        // §6 caps this at three. Silently dropping one to make room loses
+        // a setup the user chose, so refuse and say which key frees a slot.
+        guard destinations.count < DestinationStore.maximumDestinations else {
+            moveError = "Three folders is the maximum. Highlight one on the shelf and press ⌫ to free a slot."
+            return
+        }
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Use Folder"
+        panel.message = "Pick a folder to file things into."
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        destinations.append(Destination(url: url))
+        destinationStore.save(destinations)
+        moveError = nil
+        version += 1
+    }
+
+    func removeDestination(at index: Int) {
+        guard destinations.indices.contains(index) else { return }
+        moveError = nil
+        destinations.remove(at: index)
+        destinationStore.save(destinations)
+        version += 1
+    }
+
+    /// Selects the file in Finder. Read-only, like opening it — the queue
+    /// is untouched, so this never counts as a decision.
+    func revealCurrentInFinder() {
+        guard let url = session.current?.url else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    func copyCurrentName() {
+        guard let url = session.current?.url else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.lastPathComponent, forType: .string)
+    }
 
     /// Renames the current file on disk and re-points the session onto the
     /// new URL. Both halves must happen together: the session is keyed by

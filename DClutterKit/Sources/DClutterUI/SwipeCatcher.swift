@@ -28,10 +28,27 @@ import SwiftUI
 @MainActor
 final class SwipeMonitorController {
     private var monitor: Any?
+    private var steeringMonitor: Any?
     var onProgress: ((CGFloat) -> Void)?
     var onCommit: ((DecisionDirection) -> Void)?
     /// Gesture released below the threshold — return the card to rest.
     var onSnapBack: (() -> Void)?
+    /// Two fingers up: reveal the destination shelf. Safe on the same
+    /// event stream as the horizontal swipe now that nothing else wants
+    /// vertical — the live preview that §6 was protecting is gone, so the
+    /// two gestures are separated by axis alone.
+    var onShelfOpen: (() -> Void)?
+    /// Fingers moved horizontally while the shelf is open: -1 or +1 to
+    /// step the highlighted bin.
+    var onShelfStep: ((Int) -> Void)?
+    /// Fingers lifted with the shelf open: file into the highlighted bin.
+    var onShelfCommit: (() -> Void)?
+    /// Fingers dragged back down: abandon the shelf without filing.
+    /// Cancelling has to be as easy as committing (§6).
+    var onShelfCancel: (() -> Void)?
+    /// True while the shelf is showing, so the monitor knows to steer bins
+    /// rather than start another decision.
+    var isShelfOpen = false
     var isEnabled: Bool = true
 
     /// Fraction of a full gesture that commits a decision. Low enough to
@@ -50,6 +67,49 @@ final class SwipeMonitorController {
     func stop() {
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
+        endShelfSteering()
+    }
+
+    /// Steers the highlighted bin using the raw scroll deltas of the very
+    /// gesture that opened the shelf, and files into the highlighted bin
+    /// when the fingers lift. `trackSwipeEvent` reports a single dominant
+    /// axis, so it cannot follow a gesture that starts vertical and then
+    /// moves sideways — which is exactly the "up, across, let go" motion.
+    private func beginShelfSteering() {
+        guard steeringMonitor == nil else { return }
+        var travelled: CGFloat = 0
+        var vertical: CGFloat = 0
+        steeringMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            guard let self else { return event }
+
+            // Dragging back down abandons the shelf — the same fingers that
+            // opened it close it, without having to reach for Escape.
+            vertical += event.scrollingDeltaY
+            if vertical > 50 {
+                self.endShelfSteering()
+                self.onShelfCancel?()
+                return nil
+            }
+
+            travelled += event.scrollingDeltaX
+            // One bin per 60pt of travel: far enough that a wobble doesn't
+            // skid across the row, close enough to reach bin three easily.
+            while abs(travelled) >= 60 {
+                let step = travelled > 0 ? 1 : -1
+                travelled -= CGFloat(step) * 60
+                self.onShelfStep?(step)
+            }
+            if event.phase == .ended || event.momentumPhase == .ended {
+                self.endShelfSteering()
+                self.onShelfCommit?()
+            }
+            return nil
+        }
+    }
+
+    func endShelfSteering() {
+        if let steeringMonitor { NSEvent.removeMonitor(steeringMonitor) }
+        steeringMonitor = nil
     }
 
     /// Returns true when the event was consumed as a swipe.
@@ -58,10 +118,22 @@ final class SwipeMonitorController {
         // Only a genuine trackpad gesture carries phase information; a
         // mouse wheel does not, and must keep scrolling normally.
         guard event.phase == .began else { return false }
-        // Vertical belongs to the preview's scroller (§6).
-        guard abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) else { return false }
+
+        // Already steering — the steering monitor owns the events.
+        if isShelfOpen { return false }
+
+        // Fingers up reveals the shelf, and the very same gesture carries on
+        // into steering so the motion is one continuous "up, across, let
+        // go" rather than two separate swipes.
+        if abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX) {
+            guard event.scrollingDeltaY < 0 else { return false }
+            onShelfOpen?()
+            beginShelfSteering()
+            return true
+        }
 
         var committed = false
+        var stepAccumulator: CGFloat = 0
         event.trackSwipeEvent(
             options: .lockDirection,
             dampenAmountThresholdMin: -1,

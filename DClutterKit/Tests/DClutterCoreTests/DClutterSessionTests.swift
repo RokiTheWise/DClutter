@@ -552,3 +552,127 @@ private func tempPersistenceURL() -> URL {
     session.keep()
     #expect(session.undo() == nil)
 }
+
+// MARK: - Move to destination
+
+@MainActor
+@Test func moveMarksTheFileMovedAndLeavesTheQueue() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    let destination = URL(fileURLWithPath: "/tmp/Receipts/a.pdf")
+
+    session.move(a.url, to: destination)
+
+    #expect(session.states[a.url] == .moved(to: destination))
+    #expect(session.current?.id == b.id)     // advanced past it
+    #expect(session.remainingCount == 1)
+}
+
+@MainActor
+@Test func undoingAMoveAsksTheCallerToMoveTheFileBack() {
+    // Core cannot touch the filesystem, so undo reports the disk work.
+    // Invariant 4: the undo entry exists before anything is executed.
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    let destination = URL(fileURLWithPath: "/tmp/Receipts/a.pdf")
+    session.move(a.url, to: destination)
+
+    let effect = session.undo()
+
+    #expect(effect == .moveFile(from: destination, to: a.url))
+    #expect(session.states[a.url] == nil)    // back to pending
+    #expect(session.current?.id == a.id)
+}
+
+@MainActor
+@Test func redoingAMoveAsksTheCallerToMoveItForwardAgain() {
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    let destination = URL(fileURLWithPath: "/tmp/Receipts/a.pdf")
+    session.move(a.url, to: destination)
+    _ = session.undo()
+
+    let effect = session.redo()
+
+    #expect(effect == .moveFile(from: a.url, to: destination))
+    #expect(session.states[a.url] == .moved(to: destination))
+}
+
+@MainActor
+@Test func aMovedFileIsNotOfferedForTrashing() {
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    session.move(a.url, to: URL(fileURLWithPath: "/tmp/Receipts/a.pdf"))
+    #expect(session.stagedForCommit().isEmpty)
+}
+
+
+@MainActor
+@Test func amendingAMoveCorrectsWhereUndoWillLookWithoutAddingHistory() {
+    // The destination may suffix the name to avoid clobbering, so the path
+    // recorded before the move can differ from where the file actually
+    // landed. Undo has to follow the real one.
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    let intended = URL(fileURLWithPath: "/tmp/Receipts/a.pdf")
+    let actual = URL(fileURLWithPath: "/tmp/Receipts/a 2.pdf")
+
+    session.move(a.url, to: intended)
+    session.amendLastMove(of: a.url, to: actual)
+
+    #expect(session.states[a.url] == .moved(to: actual))
+    session.undo()
+    #expect(session.canUndo == false)          // one entry, not two
+    #expect(session.current?.id == a.id)
+}
+
+// MARK: - Start over reverses this session's moves
+
+@MainActor
+@Test func resetReportsTheMovesItNeedsTheCallerToReverse() {
+    let a = candidate("a.pdf"); let b = candidate("b.pdf")
+    let session = DClutterSession(candidates: [a, b], persistenceURL: tempPersistenceURL())
+    let filed = URL(fileURLWithPath: "/tmp/Receipts/a.pdf")
+    session.move(a.url, to: filed)
+    session.keep()
+
+    let effects = session.reset()
+
+    #expect(effects == [.moveFile(from: filed, to: a.url)])
+    #expect(session.states[a.url] == nil)      // back in the queue
+    #expect(session.remainingCount == 2)
+}
+
+@MainActor
+@Test func resetLeavesMovesFromBeforeTheLastCommitAlone() {
+    // Committing to the Trash ends a session. Anything filed before that
+    // belongs to the closed one and is not this reset's business.
+    let a = candidate("a.pdf"); let b = candidate("b.pdf"); let c = candidate("c.pdf")
+    let session = DClutterSession(candidates: [a, b, c], persistenceURL: tempPersistenceURL())
+    let filed = URL(fileURLWithPath: "/tmp/Receipts/a.pdf")
+    session.move(a.url, to: filed)
+    session.stage()                    // stages b
+    session.commitTrashed([b.url])     // closes the session
+
+    let effects = session.reset()
+
+    #expect(effects.isEmpty)
+    #expect(session.states[a.url] == .moved(to: filed))   // stays filed
+    #expect(session.states[b.url] == .trashed)            // stays trashed
+}
+
+@MainActor
+@Test func resetRestoresAMoveTheCallerCouldNotReverse() {
+    // If the file cannot come back, the record must go back with it, or
+    // the queue shows a card for a file that is not in Downloads.
+    let a = candidate("a.pdf")
+    let session = DClutterSession(candidates: [a], persistenceURL: tempPersistenceURL())
+    let filed = URL(fileURLWithPath: "/tmp/Receipts/a.pdf")
+    session.move(a.url, to: filed)
+    _ = session.reset()
+
+    session.restoreMove(of: a.url, to: filed)
+
+    #expect(session.states[a.url] == .moved(to: filed))
+    #expect(session.remainingCount == 0)
+}

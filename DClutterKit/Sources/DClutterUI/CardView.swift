@@ -20,21 +20,22 @@ enum DecisionDirection: Equatable {
 struct CardView: View {
     let candidate: FileCandidate
     let context: QueueContext
-    @Binding var previewFocused: Bool
     var lastDecision: DecisionDirection?
-    /// Double-click, not single: §6 reserves click-drag-upward for
-    /// move-to-destination in M4, and a single-click action would
-    /// collide with the start of that gesture.
+    /// Double-click opens the file. This replaced focus-to-preview, which
+    /// is what people were reaching for in the first place.
     var onOpen: (() -> Void)?
     /// Live swipe position, -1...1. Applied here rather than by the parent
     /// so a departing card keeps the offset it was rendered with: driven
     /// from shared state in the parent, the outgoing card would re-read the
     /// reset value, snap back to centre and only then play its exit.
     var swipeOffset: CGFloat = 0
+    var onReveal: (() -> Void)?
+    var onRename: (() -> Void)?
+    var onCopyName: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
-            PreviewPane(candidate: candidate, focused: $previewFocused)
+            PreviewPane(candidate: candidate)
 
             // Two lines are always reserved, and the chip row below always
             // occupies a row's height even when empty. Design spec §4: the
@@ -74,6 +75,14 @@ struct CardView: View {
         .opacity(1 - min(abs(swipeOffset) * 0.35, 0.35))
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { onOpen?() }
+        // Right-click reaches the Finder vocabulary people already know.
+        .contextMenu {
+            Button("Open") { onOpen?() }
+            Button("Reveal in Finder") { onReveal?() }
+            Divider()
+            Button("Rename…") { onRename?() }
+            Button("Copy Name") { onCopyName?() }
+        }
         .help("Double-click to open this file")
         .id(candidate.id) // forces a fresh identity so .transition fires on advance
         .transition(cardTransition)
