@@ -113,7 +113,8 @@ public struct TriageView: View {
             }
         }
         .padding(DesignTokens.Spacing.cardMargin)
-        .background(DesignTokens.ColorToken.surface)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignTokens.ColorToken.surface.ignoresSafeArea())
         .focusable()
         .focusEffectDisabled()
         .focused($isFocused)
@@ -318,11 +319,7 @@ public struct TriageView: View {
             fileAway(slot - 1, viewModel: viewModel)
             return .handled
         }
-        switch letter {
-        case "k": decide(.keep, using: viewModel); return .handled
-        case "x": decide(.stage, using: viewModel); return .handled
-        default: return .ignored
-        }
+        return .ignored
     }
 
     /// Every decision is reachable by pointer as well as by key. §2
@@ -373,22 +370,28 @@ public struct TriageView: View {
             // The terminal action, and the only one that removes anything:
             // it reads as the primary control and names the count, per §0
             // (files, never bytes).
-            Button {
-                viewModel.showCommitSheet = true
-            } label: {
-                HStack(spacing: DesignTokens.Spacing.unit) {
-                    Image(systemName: "trash")
-                    Text(viewModel.stagedForCommit.isEmpty
-                         ? "Nothing staged"
-                         : "Trash \(viewModel.stagedForCommit.count)")
-                        .fixedSize()
+            // Prominent only when there is something to do. A disabled
+            // prominent button keeps its tint and washes out to a pale
+            // pink in light mode, which reads as broken rather than
+            // unavailable.
+            if viewModel.stagedForCommit.isEmpty {
+                controlButton("Nothing staged", systemImage: "trash", shortcut: "⌘⏎") {}
+                    .disabled(true)
+            } else {
+                Button {
+                    viewModel.showCommitSheet = true
+                } label: {
+                    HStack(spacing: DesignTokens.Spacing.unit) {
+                        Image(systemName: "trash")
+                        Text("Trash \(viewModel.stagedForCommit.count)")
+                            .fixedSize()
+                    }
+                    .font(.system(size: 11, weight: .medium))
                 }
-                .font(.system(size: 11, weight: .medium))
+                .buttonStyle(.borderedProminent)
+                .tint(DesignTokens.ColorToken.consequence)
+                .help("Review and trash staged files  (⌘⏎)")
             }
-            .buttonStyle(.borderedProminent)
-            .tint(DesignTokens.ColorToken.consequence)
-            .disabled(viewModel.stagedForCommit.isEmpty)
-            .help("Review and trash staged files  (⌘⏎)")
 
             controlButton("Help", systemImage: "questionmark.circle", shortcut: "?") {
                 showHelp.toggle()
@@ -461,40 +464,64 @@ public struct TriageView: View {
     }
 
     private var helpCard: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
+            helpSection("Keyboard", rows: Self.keyboardHelp)
+            helpSection("Trackpad & mouse", rows: Self.pointerHelp)
+        }
+        .padding(DesignTokens.Spacing.large)
+        .frame(width: 420, alignment: .leading)
+    }
+
+    private func helpSection(_ title: String, rows: [(String, String)]) -> some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.small) {
-            Text("Controls").font(.system(size: 13, weight: .semibold))
-            Grid(alignment: .leading, horizontalSpacing: DesignTokens.Spacing.large, verticalSpacing: 6) {
-                ForEach(Self.helpRows, id: \.0) { key, action in
+            Text(title)
+                .font(.system(size: 11, design: .monospaced))
+                .kerning(0.5)
+                .foregroundStyle(DesignTokens.ColorToken.textTertiary)
+            Grid(alignment: .leading, horizontalSpacing: DesignTokens.Spacing.large, verticalSpacing: 7) {
+                ForEach(rows, id: \.0) { key, action in
                     GridRow {
                         Text(key)
                             .font(.system(size: 11, design: .monospaced))
-                            .foregroundStyle(DesignTokens.ColorToken.textTertiary)
-                        Text(action).font(.system(size: 12))
+                            .foregroundStyle(DesignTokens.ColorToken.textSecondary)
+                            .gridColumnAlignment(.leading)
+                            .fixedSize()
+                        Text(action)
+                            .font(.system(size: 12))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
         }
-        .padding(DesignTokens.Spacing.large)
-        .frame(width: 300)
     }
 
-    private static let helpRows: [(String, String)] = [
-        ("→  or  K", "Keep, next card"),
-        ("←  or  X", "Stage for trash, next card"),
-        ("Right-click", "Reveal in Finder, rename, copy name"),
+    /// Ordered by how often a hand actually reaches for them, not by the
+    /// order they were built.
+    private static let keyboardHelp: [(String, String)] = [
+        ("→", "Keep, next card"),
+        ("←", "Stage for trash, next card"),
         ("Space", "Skip — comes back at the end"),
-        ("↑  or  two fingers up", "Open the destination shelf"),
-        ("←  →  then ⏎", "Choose a folder and file it"),
-        ("↓", "Rename this file"),
         ("1 – 3", "File into a destination folder"),
+        ("↑", "Open the destination shelf"),
+        ("← →", "Choose a folder, then ⏎ to file it"),
         ("⌫", "Remove the highlighted folder"),
+        ("Esc  ↓", "Close the shelf"),
         ("⏎", "Open this file"),
-        ("⌘N", "Add a destination folder"),
-        ("Esc  or  ↓", "Close the shelf"),
+        ("↓", "Rename this file"),
         ("⌘Z", "Undo"),
-        ("⇧⌘Z  or  ⌘Y", "Redo"),
+        ("⇧⌘Z  ⌘Y", "Redo"),
         ("⌘⏎", "Review and trash staged files"),
-        ("Double-click", "Open the file"),
+        ("⌘N", "Add a destination folder"),
+        ("?", "Show this list"),
+    ]
+
+    private static let pointerHelp: [(String, String)] = [
+        ("Swipe right", "Keep"),
+        ("Swipe left", "Stage for trash"),
+        ("Two fingers up", "Open the shelf, slide across, let go"),
+        ("Drag back down", "Close the shelf without filing"),
+        ("Double-click", "Open this file"),
+        ("Right-click", "Reveal in Finder, rename, copy name"),
     ]
 
     private func controlButton(
