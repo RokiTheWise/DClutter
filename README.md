@@ -92,9 +92,41 @@ Keyboard is the primary interface; every action has a pointer equivalent.
 
 ## Installing
 
-No notarized build yet, so macOS will refuse to open it on first launch. Build
-it yourself (below), or if you were sent a build: try to open it once, then go
-to **System Settings → Privacy & Security** and click **Open Anyway**.
+There's no notarized build yet, so macOS treats DClutter as an unidentified
+developer's app. Nothing about the app is different — the step below only tells
+macOS you trust it. Pick whichever path suits you.
+
+### Build it yourself — no warnings at all
+
+An app you compile locally is never quarantined, so it just opens.
+
+```bash
+git clone https://github.com/RokiTheWise/DClutter.git
+cd DClutter && open DClutter.xcodeproj
+```
+
+Then press ⌘R. Requires Xcode 16+.
+
+### From a downloaded build — one time, then never again
+
+Anything that arrives over the internet is tagged for quarantine, and macOS
+blocks unsigned apps carrying that tag. To clear it once:
+
+1. Drag **DClutter.app** into your Applications folder.
+2. Double-click it. macOS will refuse — that's expected.
+3. Open **System Settings → Privacy & Security**, scroll to the bottom, and
+   click **Open Anyway** next to DClutter.
+4. Confirm. It opens normally from then on.
+
+You'll see a message saying macOS "could not verify" the app. That's accurate:
+verification requires an Apple Developer certificate, which this project doesn't
+have yet. It isn't a claim that anything is wrong with the app — the same message
+appears for every unsigned app, and the source is right here to read.
+
+### Copied from a USB stick or over your local network
+
+Files that never touch the internet aren't quarantined, so the app opens with no
+prompt at all.
 
 ## Building
 
