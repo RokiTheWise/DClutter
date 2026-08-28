@@ -1,0 +1,81 @@
+DClutter 0.4.0
+==============
+
+Thanks for trying this out.
+
+DClutter shows you one file at a time from your Downloads folder and lets
+you keep it, put it in the Trash, or file it into a folder — with one key
+or one swipe.
+
+
+HOW TO OPEN IT (please read — the first launch will fail on purpose)
+--------------------------------------------------------------------
+
+1. Drag DClutter.app into your Applications folder.
+
+2. Double-click it.
+
+   macOS WILL REFUSE TO OPEN IT. This is expected. Keep going.
+
+3. Open System Settings, go to Privacy & Security, and scroll all the way
+   to the bottom. You'll see a line about DClutter being blocked, with an
+   "Open Anyway" button. Click it.
+
+4. Click "Open" to confirm.
+
+That's the whole thing, and only on the first launch. Afterwards it opens
+like any other app.
+
+
+WHY DOES THAT HAPPEN?
+---------------------
+
+macOS blocks apps that haven't been signed with an Apple Developer
+certificate, which costs $99 a year. This one hasn't been, yet. The
+warning is macOS saying "I can't check who made this", not "this app is
+broken or dangerous".
+
+If you'd rather not take that on trust, the entire source code is public
+and you can build it yourself:
+
+    https://github.com/RokiTheWise/DClutter
+
+
+WHAT IT DOES TO YOUR FILES
+--------------------------
+
+It only ever looks at your Downloads folder, plus any folders you
+explicitly pick yourself.
+
+  Keep      Does nothing at all. The file stays exactly where it is.
+  Trash     Nothing is deleted straight away. Files are collected in a
+            list, you review that list, and only then do they go to the
+            Trash — where you can still get them back.
+  File it   Moves the file into a folder you chose. Undo brings it back.
+
+It never deletes anything permanently.
+
+
+THE CONTROLS
+------------
+
+  Right arrow      Keep, next file
+  Left arrow       Put in the trash pile, next file
+  Space            Skip — it comes back at the end
+  Up arrow         Choose a folder to file it into
+  1, 2, 3          File it straight into folder 1, 2 or 3
+  Return           Open the file so you can look at it properly
+  Cmd + Z          Undo
+  Cmd + Return     Review the trash pile and empty it
+  ?                Show all the controls
+
+You can also swipe left and right on a trackpad, and swipe up with two
+fingers to choose a folder.
+
+
+SOMETHING WRONG?
+----------------
+
+It's an early build, so quite possibly. Please tell me what happened:
+
+    https://github.com/RokiTheWise/DClutter/issues
