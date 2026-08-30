@@ -185,9 +185,18 @@ These hold on every commit and are covered by tests:
 ## Status
 
 Pre-release, in active development. Keep, trash, file, rename, undo/redo and
-gestures all work; the app is used daily by its author.
+gestures all work.
 
-Not done yet: notarized distribution, and renaming a destination bin's label.
+The app is meant for use at the end of a semester or a project, when the folder
+has gotten out of hand. Clear it once, then you won't need it again for a while.
+
+Not done yet:
+
+- **Scanning a folder other than `~/Downloads`.** The sandbox entitlement that
+  makes Downloads work without any permission prompt doesn't extend to other
+  folders, so this needs a different approach rather than a flag.
+- **Notarized distribution.** That needs a paid Apple Developer account, so it
+  depends on whether enough people find this useful to justify it.
 
 ## License
 
