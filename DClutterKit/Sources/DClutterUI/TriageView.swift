@@ -654,10 +654,19 @@ public struct TriageView: View {
     }
 
     private func loadSession() async {
+        // Snapshot the folder this scan is for, and read only the snapshot
+        // from here on. `folder` is `@State`, and `switchFolder` can retarget
+        // it while `provider.candidates(in:)` is still running — that scan
+        // has no suspension point SwiftUI's cancellation reaches, so it runs
+        // to completion regardless. Without the snapshot, a stale scan would
+        // resolve its filename and Downloads check against wherever `folder`
+        // has since moved to, wiring folder A's candidates to folder B's
+        // persistence file.
+        let targetFolder = folder
         let provider = DirectoryMetadataProvider()
         let candidates: [FileCandidate]
         do {
-            candidates = try await provider.candidates(in: folder)
+            candidates = try await provider.candidates(in: targetFolder)
         } catch {
             loadError = error.localizedDescription
             return
@@ -671,19 +680,25 @@ public struct TriageView: View {
         }
         let stateDir = supportDir ?? FileManager.default.temporaryDirectory
         let persistenceURL = stateDir
-            .appendingPathComponent(SessionPersistence.filename(for: folder))
+            .appendingPathComponent(SessionPersistence.filename(for: targetFolder))
 
         // Anyone upgrading from ≤0.4.0 has an in-progress session in the
         // old fixed filename. It can only ever have been Downloads, so
         // carry it onto Downloads' new name rather than silently dropping
         // someone's half-finished run.
         let legacy = stateDir.appendingPathComponent("session.json")
-        if isDownloads,
+        let targetIsDownloads = targetFolder.resolvingSymlinksInPath().standardizedFileURL
+            == Self.defaultDownloadsFolder.resolvingSymlinksInPath().standardizedFileURL
+        if targetIsDownloads,
            FileManager.default.fileExists(atPath: legacy.path),
            !FileManager.default.fileExists(atPath: persistenceURL.path) {
             try? FileManager.default.moveItem(at: legacy, to: persistenceURL)
         }
         let session = DClutterSession(candidates: ranked, persistenceURL: persistenceURL)
+        // The folder can have moved on again while the scan above was in
+        // flight. Only apply this result if it is still the one showing —
+        // otherwise it's a stale scan clobbering the in-flight replacement.
+        guard folder == targetFolder else { return }
         self.context = QueueContext(candidates: ranked)
         self.viewModel = SessionViewModel(session: session)
     }
