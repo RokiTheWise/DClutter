@@ -25,6 +25,7 @@ Copied verbatim from the spec's handoff note and CLAUDE.md. Every task's require
 - Deployment target stays macOS 14. Universal binary (`x86_64 arm64`).
 - "Unit tests target `DClutterCore` only. The platform layer is verified by hand; don't build an elaborate filesystem-mocking harness." Where this plan adds Platform tests they are pure-logic tests only — no filesystem or bookmark mocking.
 - Ask before pushing. Committing locally is fine.
+- **`plandocs/` and `CLAUDE.md` are gitignored on purpose** (`.gitignore:29` and `:34`, under "User Defined"). They are private working documents and have never been in the public repo. Edit them on disk; never `git add -f` them, and never include them in a commit.
 
 ---
 
@@ -122,12 +123,11 @@ In §9, replace the line `- Expand to ~/Desktop (needs different entitlement str
   user-picked folder rather than naming one.
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Do not commit**
 
-```bash
-git add plandocs/dclutter-plan.md
-git commit -m "Move folder switching from the v1 exclusion list into M6"
-```
+`plandocs/` is gitignored deliberately — the spec is a private working
+document. Leave the edits in the working tree, uncommitted and untracked.
+Do not `git add -f` it.
 
 ---
 
@@ -1006,8 +1006,10 @@ Expected: `minos 14.0`, and `x86_64 arm64`.
 
 - [ ] **Step 6: Commit**
 
+`CLAUDE.md` is gitignored — edit it on disk, but commit only the README:
+
 ```bash
-git add README.md CLAUDE.md
+git add README.md
 git commit -m "Document folder switching"
 ```
 
