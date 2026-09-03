@@ -42,8 +42,19 @@ staleness, whether it was ever opened, whether it's a redundant copy, whether
 it's an archive you already extracted — so no single signal can drown out the
 others. Duplicates are found by filename and size, no hashing.
 
-Whether that ordering actually surfaces the right things first is the open
-question, and the main thing worth telling me about.
+| Signal | Points |
+|---|---|
+| Size | +1 per doubling above 1 KB — 1 MB ≈ 10, 1 GB ≈ 20, uncapped |
+| Time since last opened (or last modified, if never) | up to +10, ramping to a 90-day cap |
+| Never opened, and it came from a download | +2 |
+| Same name and size as another file | +8 |
+| An archive whose extracted folder sits next to it | +4 |
+| A generic name with no download source | −5 |
+
+Size is the loudest term past about 1 MB, so the other signals mostly decide
+the order *among* files of similar size. The one negative weight exists
+because a generically named file you made yourself is usually not a file
+you want to be asked about first.
 
 Then you decide:
 
