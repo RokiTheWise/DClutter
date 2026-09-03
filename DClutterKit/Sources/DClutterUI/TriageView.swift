@@ -2,6 +2,7 @@
 //  Copyright 2026 Dexter Jethro Enriquez
 //  Licensed under the Apache License, Version 2.0.
 
+import AppKit
 import SwiftUI
 import DClutterCore
 import DClutterPlatform
@@ -39,10 +40,39 @@ public struct TriageView: View {
     /// the gesture can live on the axis people reach for.
     @State private var shelfOpen = false
     @State private var selectedBin = 0
-    let folder: URL
+    /// The folder being triaged. State, not a constant: it is the one
+    /// thing on this screen the user can change without quitting.
+    @State private var folder: URL
+    /// Held for as long as this folder is the source. Nil for Downloads,
+    /// which the entitlement reaches without a bookmark.
+    @State private var access: ScopedFolderAccess?
+    @State private var recentFolders: [URL] = []
+    private let sourceFolderStore = SourceFolderStore()
 
     public init(folder: URL) {
-        self.folder = folder
+        _folder = State(initialValue: folder)
+    }
+
+    /// In a sandboxed app, `homeDirectoryForCurrentUser` returns the
+    /// container path, not the real home — appending "Downloads" to it
+    /// would scan an empty folder inside the container.
+    /// `.downloadsDirectory` is what the
+    /// `com.apple.security.files.downloads.read-write` entitlement (§7)
+    /// resolves to the real ~/Downloads.
+    ///
+    /// Note it resolves to a *symlink* into the real folder, not the
+    /// folder itself; `DirectoryMetadataProvider` resolves that, since the
+    /// URL-based directory enumeration refuses to follow symlinks.
+    public static var defaultDownloadsFolder: URL {
+        (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false))
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
+    }
+
+    /// True when `folder` is the entitlement-granted Downloads folder,
+    /// which needs neither a bookmark nor a held scope.
+    private var isDownloads: Bool {
+        folder.resolvingSymlinksInPath().standardizedFileURL
+            == Self.defaultDownloadsFolder.resolvingSymlinksInPath().standardizedFileURL
     }
 
     public var body: some View {
@@ -66,7 +96,7 @@ public struct TriageView: View {
                 }
                 .padding(DesignTokens.Spacing.cardMargin)
             } else {
-                ProgressView().task { await loadSession() }
+                ProgressView().task(id: folder) { await loadSession() }
             }
         }
     }
@@ -121,6 +151,7 @@ public struct TriageView: View {
         .onKeyPress { press in handle(press, viewModel: viewModel) }
         .onAppear {
             isFocused = true
+            recentFolders = sourceFolderStore.recents()
             swipeMonitor.onProgress = { amount in swipeProgress = amount }
             swipeMonitor.onCommit = { direction in
                 // Exactly the keyboard's path. The offset is cleared inside
@@ -638,10 +669,65 @@ public struct TriageView: View {
         if let supportDir {
             try? FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
         }
-        let persistenceURL = (supportDir ?? FileManager.default.temporaryDirectory)
-            .appendingPathComponent("session.json")
+        let stateDir = supportDir ?? FileManager.default.temporaryDirectory
+        let persistenceURL = stateDir
+            .appendingPathComponent(SessionPersistence.filename(for: folder))
+
+        // Anyone upgrading from ≤0.4.0 has an in-progress session in the
+        // old fixed filename. It can only ever have been Downloads, so
+        // carry it onto Downloads' new name rather than silently dropping
+        // someone's half-finished run.
+        let legacy = stateDir.appendingPathComponent("session.json")
+        if isDownloads,
+           FileManager.default.fileExists(atPath: legacy.path),
+           !FileManager.default.fileExists(atPath: persistenceURL.path) {
+            try? FileManager.default.moveItem(at: legacy, to: persistenceURL)
+        }
         let session = DClutterSession(candidates: ranked, persistenceURL: persistenceURL)
         self.context = QueueContext(candidates: ranked)
         self.viewModel = SessionViewModel(session: session)
+    }
+
+    /// Points the app at a different folder. The previous folder's scope is
+    /// released only after the new one is held, and the session is torn
+    /// down so `.task(id:)` rebuilds it against the new candidates.
+    ///
+    /// Decisions already carried out on disk are left alone — a move is a
+    /// finished action, and having twenty of them fly back to Downloads
+    /// because you glanced at another folder is a worse surprise than
+    /// leaving them where you put them. Only staged trash is pending, and
+    /// `confirmSwitch` resolves that before calling this.
+    private func switchFolder(to url: URL) {
+        guard url.standardizedFileURL != folder.standardizedFileURL else { return }
+        access = ScopedFolderAccess(url: url)
+        if url.resolvingSymlinksInPath().standardizedFileURL
+            != Self.defaultDownloadsFolder.resolvingSymlinksInPath().standardizedFileURL {
+            sourceFolderStore.remember(url)
+            recentFolders = sourceFolderStore.recents()
+        }
+        viewModel = nil
+        context = nil
+        loadError = nil
+        shelfOpen = false
+        swipeMonitor.endShelfSteering()
+        folder = url
+        isFocused = true
+    }
+
+    /// Asks for a folder. The sandbox grants access only through the panel
+    /// or a bookmark it minted — a typed path grants nothing — so this is
+    /// the only way in.
+    private func chooseSourceFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Triage Folder"
+        panel.message = "Pick a folder to sort through."
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        // Task 6 adds requestSwitch(to:), which confirms before switching
+        // away from a folder with staged files. It does not exist yet, so
+        // this calls switchFolder(to:) directly for now.
+        switchFolder(to: url)
     }
 }
