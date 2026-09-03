@@ -713,13 +713,6 @@ xcodebuild -project DClutter.xcodeproj -scheme DClutter -configuration Debug -de
 ```
 
 - App still opens on Downloads with no new prompt.
-- **`ScopedFolderAccess`'s default closures actually work.** The unit suite
-  only exercises the injected seam, never the defaults that call the real
-  `startAccessingSecurityScopedResource`. This is the first task where the
-  sandboxed app runs them, so it is the first chance to catch a mis-wiring:
-  switch to a non-Downloads folder and confirm its files load, thumbnails
-  render, and a rename succeeds. All three fail if scope is not actually
-  held.
 - An existing `session.json` in `~/Library/Containers/dev.djenriquez.DClutter/Data/Library/Application Support/DClutter/` is renamed to `session-<hash>.json` on first launch, and prior decisions survive.
 - Making a decision writes to the hashed filename, not `session.json`.
 
@@ -848,6 +841,13 @@ xcodebuild -project DClutter.xcodeproj -scheme DClutter -configuration Debug -de
 - The bar reads `~/Downloads` at launch, not the full `/Users/...` path.
 - "Choose Folder…" opens the panel; picking a folder reloads the queue against it.
 - That folder then appears under the Downloads entry on the next launch.
+- **`ScopedFolderAccess`'s default closures actually work.** The unit suite
+  only exercises the injected seam, never the defaults that call the real
+  `startAccessingSecurityScopedResource`. This is the first task where the
+  sandboxed app runs them, so it is the first chance to catch a mis-wiring:
+  switch to a non-Downloads folder and confirm its files load, thumbnails
+  render, and a rename succeeds. All three fail if scope is not actually
+  held.
 - Switching back to Downloads restores Downloads' own decisions, not the other folder's.
 
 - [ ] **Step 4: Commit**
