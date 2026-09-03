@@ -364,6 +364,14 @@ public struct TriageView: View {
                 .foregroundStyle(DesignTokens.ColorToken.textSecondary)
                 .help("DClutter")
 
+            Divider().frame(height: 16)
+            FolderField(
+                url: folder,
+                recents: recentFolders,
+                onPick: { switchFolder(to: $0) },
+                onChoose: { chooseSourceFolder() }
+            )
+
             Spacer()
 
             if viewModel.current != nil {
