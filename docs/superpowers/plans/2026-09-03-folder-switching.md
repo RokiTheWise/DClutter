@@ -998,8 +998,13 @@ swift test --package-path DClutterKit
 
 Expected: all tests pass, including the 9 added by this plan.
 
+Use `docs/RELEASING.md`'s command, not a plain `-destination 'platform=macOS'`
+build. The latter builds only *this* Mac's architecture, which is exactly how
+v0.4.0 shipped arm64-only:
+
 ```bash
-xcodebuild -project DClutter.xcodeproj -scheme DClutter -configuration Release -destination 'platform=macOS' build
+xcodebuild -project DClutter.xcodeproj -scheme DClutter -configuration Release \
+  -destination 'generic/platform=macOS' ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO build
 ```
 
 Then, per `docs/RELEASING.md`, check the built binary rather than the project file:
