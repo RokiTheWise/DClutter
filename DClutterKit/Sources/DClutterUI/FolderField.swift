@@ -45,7 +45,15 @@ struct FolderField: View {
             .foregroundStyle(DesignTokens.ColorToken.textSecondary)
             .frame(maxWidth: 260, alignment: .leading)
         }
-        .menuStyle(.borderlessButton)
+        // `.button` + `.accessoryBar` rather than `.borderlessButton`: it
+        // makes this the same control as the Stage/Skip/Keep buttons beside
+        // it, so it inherits their hover fill instead of imitating one.
+        // Two hand-rolled attempts failed before this — `.onHover` never
+        // fires over `.borderlessButton`'s AppKit control, and an
+        // NSTrackingArea overlay hit the zero-sized-representable trap
+        // SwipeCatcher.swift already documents.
+        .menuStyle(.button)
+        .buttonStyle(.accessoryBar)
         .menuIndicator(.hidden)
         .fixedSize()
         .help("Triaging \(url.path) — click to switch folders")
@@ -70,3 +78,4 @@ struct FolderField: View {
         return String(cString: dir)
     }()
 }
+
