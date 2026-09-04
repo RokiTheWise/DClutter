@@ -178,8 +178,13 @@ final class SessionViewModel {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
+        // The folder you want to file into often doesn't exist yet — you
+        // work out that you need one the moment a file demands it. Sending
+        // someone to Finder to make it is exactly the break in the loop
+        // that putting "Add folder…" on the shelf was meant to avoid.
+        panel.canCreateDirectories = true
         panel.prompt = "Use Folder"
-        panel.message = "Pick a folder to file things into."
+        panel.message = "Pick or create a folder to file things into."
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         destinations.append(Destination(url: url))

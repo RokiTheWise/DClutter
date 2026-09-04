@@ -886,6 +886,10 @@ public struct TriageView: View {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
+        // Same affordance as the destination picker, for consistency — a
+        // panel that cannot make a folder is a surprise in one place if it
+        // can in the other.
+        panel.canCreateDirectories = true
         panel.prompt = "Triage Folder"
         panel.message = "Pick a folder to sort through."
         guard panel.runModal() == .OK, let url = panel.url else { return }
