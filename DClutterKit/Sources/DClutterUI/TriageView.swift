@@ -47,6 +47,9 @@ public struct TriageView: View {
     /// which the entitlement reaches without a bookmark.
     @State private var access: ScopedFolderAccess?
     @State private var recentFolders: [URL] = []
+    /// A folder the user asked for while files were still staged. Held
+    /// until they say what should happen to the staged set.
+    @State private var pendingSwitch: URL?
     private let sourceFolderStore = SourceFolderStore()
 
     public init(folder: URL) {
@@ -196,6 +199,36 @@ public struct TriageView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(resetMessage(viewModel: viewModel))
+        }
+        .confirmationDialog(
+            "Switch folders?",
+            isPresented: Binding(
+                get: { pendingSwitch != nil },
+                set: { if !$0 { pendingSwitch = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            // `viewModel` here is `content(viewModel:)`'s non-optional
+            // parameter, not the optional `@State` property — no unwrap
+            // needed to reach it.
+            Button("Trash \(viewModel.stagedForCommit.count) File\(viewModel.stagedForCommit.count == 1 ? "" : "s")", role: .destructive) {
+                viewModel.confirmCommit()
+                // Only leave if it worked. confirmCommit keeps the error
+                // on the view model when a file could not be trashed, and
+                // switching away would take that message off screen along
+                // with the folder it belongs to.
+                if viewModel.commitError == nil, let target = pendingSwitch {
+                    switchFolder(to: target)
+                }
+                pendingSwitch = nil
+            }
+            Button("Leave Them Staged") {
+                if let target = pendingSwitch { switchFolder(to: target) }
+                pendingSwitch = nil
+            }
+            Button("Cancel", role: .cancel) { pendingSwitch = nil }
+        } message: {
+            Text("\(viewModel.stagedForCommit.count) file\(viewModel.stagedForCommit.count == 1 ? " is" : "s are") staged for trash. Files you already filed into folders stay where they are either way.")
         }
         .sheet(isPresented: Bindable(viewModel).showCommitSheet) {
             CommitSheet(viewModel: viewModel)
@@ -368,7 +401,7 @@ public struct TriageView: View {
             FolderField(
                 url: folder,
                 recents: recentFolders,
-                onPick: { switchFolder(to: $0) },
+                onPick: { requestSwitch(to: $0) },
                 onChoose: { chooseSourceFolder() }
             )
 
@@ -748,9 +781,17 @@ public struct TriageView: View {
         panel.prompt = "Triage Folder"
         panel.message = "Pick a folder to sort through."
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        // Task 6 adds requestSwitch(to:), which confirms before switching
-        // away from a folder with staged files. It does not exist yet, so
-        // this calls switchFolder(to:) directly for now.
-        switchFolder(to: url)
+        requestSwitch(to: url)
+    }
+
+    /// Staged trash is the only genuinely pending state — a move already
+    /// happened on disk and stays done. So a switch asks about staged files
+    /// and nothing else.
+    private func requestSwitch(to url: URL) {
+        guard let viewModel, !viewModel.stagedForCommit.isEmpty else {
+            switchFolder(to: url)
+            return
+        }
+        pendingSwitch = url
     }
 }
