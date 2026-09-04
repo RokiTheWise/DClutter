@@ -13,6 +13,62 @@ enum DecisionDirection: Equatable {
     case keep
     case stage
     case skip
+
+    var exit: CardExit {
+        switch self {
+        case .keep: .right
+        case .stage: .left
+        case .skip: .fade
+        }
+    }
+}
+
+/// The edge a card leaves toward. Filing has no key of its own in
+/// `DecisionDirection` — it is chosen on the shelf, not by a decision key —
+/// so exits are named separately from decisions.
+enum CardExit: Equatable {
+    case right
+    case left
+    /// Into a destination folder: the shelf is above the card, so the file
+    /// goes the way the user just reached.
+    case up
+    case fade
+
+    /// Direction of travel. Nil for `.fade`, which has none.
+    var unitVector: CGSize? {
+        switch self {
+        case .right: CGSize(width: 1, height: 0)
+        case .left: CGSize(width: -1, height: 0)
+        case .up: CGSize(width: 0, height: -1)
+        case .fade: nil
+        }
+    }
+
+    /// Where a card that left this way comes back in from.
+    var edge: Edge? {
+        switch self {
+        case .right: .trailing
+        case .left: .leading
+        case .up: .top
+        case .fade: nil
+        }
+    }
+}
+
+/// How the next card arrives.
+///
+/// Only entrances are expressed as transitions. A view's *removal*
+/// transition is fixed when it is inserted — re-rendering it with a
+/// different `.transition()` later changes nothing — and a card is
+/// inserted long before the user decides where it should go, so an exit
+/// direction can never be a transition. Exits are animated explicitly
+/// instead, by `exiting`/`exitFraction` below.
+enum CardEntrance: Equatable {
+    /// Up from below: a new file arriving to be decided.
+    case rise
+    /// Back in from the edge it left toward, so an undo reads as a rewind
+    /// of what just happened rather than as another decision.
+    case from(CardExit)
 }
 
 /// dclutter-design.md §3–4: flat, 20pt-radius card — "the signature move."
@@ -20,7 +76,12 @@ enum DecisionDirection: Equatable {
 struct CardView: View {
     let candidate: FileCandidate
     let context: QueueContext
-    var lastDecision: DecisionDirection?
+    var entrance: CardEntrance
+    /// Set only on the card currently being animated off-screen.
+    var exiting: CardExit?
+    /// 0 at rest, 1 fully gone. Driven by the parent so the exit is a plain
+    /// animated offset rather than a transition.
+    var exitFraction: CGFloat = 0
     /// Double-click opens the file. This replaced focus-to-preview, which
     /// is what people were reaching for in the first place.
     var onOpen: (() -> Void)?
@@ -70,9 +131,9 @@ struct CardView: View {
         // tuned for the 520-wide minimum and looks marooned on a large
         // display, so it may grow a little before the margin takes over.
         .frame(maxWidth: 620)
-        .offset(x: swipeOffset * 90)
+        .offset(x: swipeOffset * 90 + exitTravel.width, y: exitTravel.height)
         .rotationEffect(.degrees(swipeOffset * 2))
-        .opacity(1 - min(abs(swipeOffset) * 0.35, 0.35))
+        .opacity((1 - min(abs(swipeOffset) * 0.35, 0.35)) * (1 - exitFraction))
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { onOpen?() }
         // Right-click reaches the Finder vocabulary people already know.
@@ -88,21 +149,33 @@ struct CardView: View {
         .transition(cardTransition)
     }
 
-    /// §7: outgoing card translates in the decision's direction and fades;
-    /// incoming card rises and fades in. Respects reduce-motion by
-    /// dropping to a plain crossfade — no directional translation.
+    /// Far enough that the card is clear of any window before the swap.
+    private static let exitDistance: CGFloat = 760
+
+    private var exitTravel: CGSize {
+        guard let vector = exiting?.unitVector else { return .zero }
+        return CGSize(
+            width: vector.width * exitFraction * Self.exitDistance,
+            height: vector.height * exitFraction * Self.exitDistance
+        )
+    }
+
+    /// §7: the incoming card rises and fades in, or returns from the edge
+    /// it left toward when a decision is undone. Removal is always a plain
+    /// fade — by the time a card is removed it has already been animated
+    /// off-screen by `exitTravel`, so there is nothing left to see.
+    /// Reduce-motion drops the translation entirely.
     private var cardTransition: AnyTransition {
         guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
             return .opacity
         }
-        let insertion: AnyTransition = .move(edge: .bottom).combined(with: .opacity)
-        switch lastDecision {
-        case .keep:
-            return .asymmetric(insertion: insertion, removal: .move(edge: .trailing).combined(with: .opacity))
-        case .stage:
-            return .asymmetric(insertion: insertion, removal: .move(edge: .leading).combined(with: .opacity))
-        case .skip, .none:
-            return .asymmetric(insertion: insertion, removal: .opacity)
+        let edge: Edge = switch entrance {
+        case .rise: .bottom
+        case .from(let exit): exit.edge ?? .bottom
         }
+        return .asymmetric(
+            insertion: .move(edge: edge).combined(with: .opacity),
+            removal: .opacity
+        )
     }
 }

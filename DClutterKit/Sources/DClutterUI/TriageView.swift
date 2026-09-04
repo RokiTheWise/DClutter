@@ -23,9 +23,23 @@ public struct TriageView: View {
     // surface must explicitly take it — both at launch and again whenever
     // the commit sheet dismisses (a sheet steals focus while presented).
     @FocusState private var isFocused: Bool
-    // §7: which key decided the card currently animating out, so CardView
-    // can translate the exit in that direction.
-    @State private var lastDecision: DecisionDirection?
+    // §7: how the next card arrives. Resolved at insertion, which is the
+    // only moment a transition is read, so it can be set in the same pass
+    // as the mutation that inserts the card.
+    @State private var entrance: CardEntrance = .rise
+    /// The card being animated off-screen, and how far along it is. Exits
+    /// cannot be transitions — a removal transition is fixed at insertion,
+    /// and the card is on screen long before the user picks a direction —
+    /// so the outgoing card is simply moved.
+    @State private var exitingCardID: FileCandidate.ID?
+    @State private var exitingDirection: CardExit?
+    @State private var exitFraction: CGFloat = 0
+    /// The exits this session's decisions used, newest last, so undo can
+    /// bring the card back the way it left. View-local and never persisted:
+    /// it feeds animation only, and a session restored from disk simply
+    /// rises until its first decision.
+    @State private var motionHistory: [CardExit] = []
+    @State private var redoMotionHistory: [CardExit] = []
     @State private var showResetConfirm = false
     @State private var showHelp = false
     /// Live swipe position, -1..1, so the card tracks the fingers.
@@ -144,7 +158,9 @@ public struct TriageView: View {
             Spacer()
             if let current = viewModel.current {
                 CardView(candidate: current, context: context,
-                   lastDecision: lastDecision,
+                   entrance: entrance,
+                   exiting: exitingCardID == current.id ? exitingDirection : nil,
+                   exitFraction: exitingCardID == current.id ? exitFraction : 0,
                    onOpen: { viewModel.openCurrentInDefaultApp() },
                    swipeOffset: swipeProgress,
                    onReveal: { viewModel.revealCurrentInFinder() },
@@ -217,7 +233,7 @@ public struct TriageView: View {
             isPresented: $showResetConfirm,
             titleVisibility: .visible
         ) {
-            Button("Start Over", role: .destructive) { viewModel.reset() }
+            Button("Start Over", role: .destructive) { resetMotion(); viewModel.reset() }
             // The dialog steals focus the same way the commit sheet does,
             // and unlike the sheet there is no onChange hook watching this
             // one dismiss — Cancel has to reclaim it directly, or every
@@ -335,8 +351,13 @@ public struct TriageView: View {
 
     private func fileAway(_ index: Int, viewModel: SessionViewModel) {
         guard viewModel.destinations.indices.contains(index) else { return }
-        clearDirection {
+        // Up, toward the shelf: the card leaves the way the user just
+        // reached, so the file visibly goes into the bin they chose rather
+        // than fading out of a decision they never appeared to make.
+        record(.up)
+        playExit(.up, of: viewModel.current?.id) {
             withAnimation(.easeOut(duration: 0.19)) {
+                entrance = .rise
                 swipeProgress = 0
                 viewModel.moveCurrent(toDestinationAt: index)
             }
@@ -666,67 +687,107 @@ public struct TriageView: View {
     }
 
     private func decide(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
-        // A removal transition is resolved from the departing view's LAST
-        // COMMITTED render, so setting `lastDecision` in the same pass as
-        // the mutation is too late — the outgoing card would animate in the
-        // *previous* decision's direction (press right then left, and the
-        // left exit still slides right). Commit the direction first, then
-        // mutate on the next pass so the departing card already carries the
-        // correct transition.
-        guard lastDecision != direction else {
-            performDecision(direction, using: viewModel)
-            return
-        }
-        lastDecision = direction
-        Task { @MainActor in
+        record(direction.exit)
+        playExit(direction.exit, of: viewModel.current?.id) {
             performDecision(direction, using: viewModel)
         }
     }
 
-    /// Undo and redo cross-fade rather than sliding: the card is not
-    /// leaving in a direction, it is being replaced, and a directional
-    /// slide would imply a decision that isn't being made.
-    /// Undo and redo cross-fade rather than sliding: the card is being
-    /// replaced, not decided, and a directional slide would imply a
-    /// decision. Clearing `lastDecision` needs its own pass first — a
-    /// removal transition resolves from the departing view's last committed
-    /// render, so clearing it alongside the mutation left the card still
-    /// sliding in the direction of the decision being undone.
-    private func undo(_ viewModel: SessionViewModel) {
-        clearDirection {
-            withAnimation(.easeInOut(duration: 0.19)) {
-                // Same reason as performDecision: a swipe may have left an
-                // offset behind, and clearing it outside this transaction
-                // leaves the arriving card's slide unanimated.
-                swipeProgress = 0
-                viewModel.undo()
-            }
+    /// Animates the current card off-screen, then runs `work` to swap it.
+    ///
+    /// This is the whole reason exits are not transitions. A removal
+    /// transition is fixed when the view is *inserted*, and a card is
+    /// inserted before the user has decided anything, so no amount of
+    /// re-rendering it with a new `.transition()` can steer its exit. An
+    /// earlier attempt did exactly that and only appeared to work when the
+    /// same direction was pressed twice in a row, because the second press
+    /// reused a card that had been inserted under that direction already.
+    ///
+    /// `exitingCardID` scopes the travel to the card that is leaving, so
+    /// the card arriving behind it is never offset by a value meant for
+    /// its predecessor.
+    private func playExit(_ exit: CardExit, of id: FileCandidate.ID?, then work: @escaping () -> Void) {
+        guard exit != .fade, let id else { work(); return }
+        exitingCardID = id
+        exitingDirection = exit
+        withAnimation(.easeIn(duration: 0.14)) {
+            exitFraction = 1
+        } completion: {
+            exitingCardID = nil
+            exitingDirection = nil
+            exitFraction = 0
+            work()
         }
+    }
+
+    /// A fresh decision invalidates the redo path, exactly as it does in
+    /// `DClutterSession`.
+    private func record(_ exit: CardExit) {
+        motionHistory.append(exit)
+        redoMotionHistory.removeAll()
+    }
+
+    /// Forgets how the current queue got here. A different folder is a
+    /// different queue, so the last card's exit says nothing about the
+    /// next one, and a stale entry would send the first undo the wrong way.
+    private func resetMotion() {
+        exitingCardID = nil
+        exitingDirection = nil
+        exitFraction = 0
+        entrance = .rise
+        motionHistory.removeAll()
+        redoMotionHistory.removeAll()
+    }
+
+    /// Undo brings the card back the way it left: the file that was sent
+    /// away returns from the edge it went toward. Unlike an exit this needs
+    /// no staging — an entrance is a transition, and a transition is
+    /// resolved when the view is inserted, so setting `entrance` in the
+    /// same pass as the mutation is exactly right.
+    ///
+    /// A session restored from disk has no view-local history, so it rises
+    /// instead. The decisions are still undoable; they just have no
+    /// recorded direction to replay.
+    private func undo(_ viewModel: SessionViewModel) {
+        let undone = motionHistory.popLast()
+        if let undone { redoMotionHistory.append(undone) }
+        withAnimation(.easeInOut(duration: 0.19)) {
+            // Inside the transaction, not before it. Assigning `entrance`
+            // outside and mutating inside lets SwiftUI coalesce both into
+            // one un-animated update, and the card swaps instantly — the
+            // flash this replaces.
+            entrance = undone.map(CardEntrance.from) ?? .rise
+            // Same reason as performDecision: a swipe may have left an
+            // offset behind, and clearing it outside this transaction
+            // leaves the arriving card's slide unanimated.
+            swipeProgress = 0
+            viewModel.undo()
+        }
+        // Reclaim focus: an undo can leave the triage surface without it,
+        // and every binding here is dead the moment that happens.
+        isFocused = true
     }
 
     private func redo(_ viewModel: SessionViewModel) {
-        clearDirection {
+        let redone = redoMotionHistory.popLast()
+        if let redone { motionHistory.append(redone) }
+        playExit(redone ?? .fade, of: viewModel.current?.id) {
             withAnimation(.easeInOut(duration: 0.19)) {
+                entrance = .rise
                 swipeProgress = 0
                 viewModel.redo()
             }
-        }
-    }
-
-    private func clearDirection(then work: @escaping () -> Void) {
-        // Reclaim focus: an undo can leave the triage surface without it,
-        // and every binding here is dead the moment that happens.
-        defer { isFocused = true }
-        guard lastDecision != nil else { work(); return }
-        lastDecision = nil
-        Task { @MainActor in
-            work()
             isFocused = true
         }
+        isFocused = true
     }
 
     private func performDecision(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
         withAnimation(.easeInOut(duration: 0.19)) {
+            // Set here rather than by the caller: every state change the
+            // arriving card depends on has to be inside this transaction,
+            // or SwiftUI coalesces them into an un-animated update.
+            entrance = .rise
             // Cleared in the same transaction as the swap: the departing
             // card keeps the offset it was rendered with, and the arriving
             // one starts at rest. Clearing it a pass earlier snapped the
@@ -811,6 +872,7 @@ public struct TriageView: View {
         context = nil
         loadError = nil
         shelfOpen = false
+        resetMotion()
         swipeMonitor.endShelfSteering()
         folder = url
         isFocused = true
