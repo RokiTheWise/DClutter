@@ -33,7 +33,10 @@ So DClutter is a **decluttering tool, not a disk-space tool**. It shows you one
 file at a time and asks for a single decision. Progress is measured in files
 resolved, never in bytes reclaimed.
 
-It reads `~/Downloads` and nothing else.
+It opens on `~/Downloads` and needs no setup to do it. You can point it at
+any other folder from the path shown in the top bar — macOS will ask you to
+pick that one explicitly, because an app in the sandbox can only reach a
+folder you handed it yourself.
 
 ## How it works
 
@@ -99,6 +102,7 @@ Keyboard is the primary interface; every action has a pointer equivalent.
 | Drag back down | Close the shelf without filing |
 | Double-click | Open the file |
 | Right-click | Reveal in Finder, rename, copy name |
+| Click the folder path | Switch folders, or add a new one |
 
 ## Install
 
@@ -203,9 +207,6 @@ has gotten out of hand. Clear it once, then you won't need it again for a while.
 
 Not done yet:
 
-- **Scanning a folder other than `~/Downloads`.** The sandbox entitlement that
-  makes Downloads work without any permission prompt doesn't extend to other
-  folders, so this needs a different approach rather than a flag.
 - **Notarized distribution.** That needs a paid Apple Developer account, so it
   depends on whether enough people find this useful to justify it.
 

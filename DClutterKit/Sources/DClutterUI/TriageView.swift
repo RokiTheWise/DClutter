@@ -2,6 +2,7 @@
 //  Copyright 2026 Dexter Jethro Enriquez
 //  Licensed under the Apache License, Version 2.0.
 
+import AppKit
 import SwiftUI
 import DClutterCore
 import DClutterPlatform
@@ -22,9 +23,23 @@ public struct TriageView: View {
     // surface must explicitly take it — both at launch and again whenever
     // the commit sheet dismisses (a sheet steals focus while presented).
     @FocusState private var isFocused: Bool
-    // §7: which key decided the card currently animating out, so CardView
-    // can translate the exit in that direction.
-    @State private var lastDecision: DecisionDirection?
+    // §7: how the next card arrives. Resolved at insertion, which is the
+    // only moment a transition is read, so it can be set in the same pass
+    // as the mutation that inserts the card.
+    @State private var entrance: CardEntrance = .rise
+    /// The card being animated off-screen, and how far along it is. Exits
+    /// cannot be transitions — a removal transition is fixed at insertion,
+    /// and the card is on screen long before the user picks a direction —
+    /// so the outgoing card is simply moved.
+    @State private var exitingCardID: FileCandidate.ID?
+    @State private var exitingDirection: CardExit?
+    @State private var exitFraction: CGFloat = 0
+    /// The exits this session's decisions used, newest last, so undo can
+    /// bring the card back the way it left. View-local and never persisted:
+    /// it feeds animation only, and a session restored from disk simply
+    /// rises until its first decision.
+    @State private var motionHistory: [CardExit] = []
+    @State private var redoMotionHistory: [CardExit] = []
     @State private var showResetConfirm = false
     @State private var showHelp = false
     /// Live swipe position, -1..1, so the card tracks the fingers.
@@ -39,10 +54,48 @@ public struct TriageView: View {
     /// the gesture can live on the axis people reach for.
     @State private var shelfOpen = false
     @State private var selectedBin = 0
-    let folder: URL
+    /// The folder being triaged. State, not a constant: it is the one
+    /// thing on this screen the user can change without quitting.
+    @State private var folder: URL
+    /// Held for as long as this folder is the source. Always created on
+    /// switch, even for Downloads — the entitlement grants that folder
+    /// directly, so the security-scoped start call there simply finds
+    /// nothing to hold and `isScoped` comes back false.
+    @State private var access: ScopedFolderAccess?
+    @State private var recentFolders: [URL] = []
+    /// A folder the user asked for while files were still staged. Held
+    /// until they say what should happen to the staged set.
+    @State private var pendingSwitch: URL?
+    private let sourceFolderStore = SourceFolderStore()
 
     public init(folder: URL) {
-        self.folder = folder
+        _folder = State(initialValue: folder)
+    }
+
+    /// In a sandboxed app, `homeDirectoryForCurrentUser` returns the
+    /// container path, not the real home — appending "Downloads" to it
+    /// would scan an empty folder inside the container.
+    /// `.downloadsDirectory` is what the
+    /// `com.apple.security.files.downloads.read-write` entitlement (§7)
+    /// resolves to the real ~/Downloads.
+    ///
+    /// Note it resolves to a *symlink* into the real folder, not the
+    /// folder itself; `DirectoryMetadataProvider` resolves that, since the
+    /// URL-based directory enumeration refuses to follow symlinks.
+    public static var defaultDownloadsFolder: URL {
+        (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false))
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
+    }
+
+    /// True when `url` is the entitlement-granted Downloads folder, which
+    /// needs neither a bookmark nor a held scope. Takes the folder in
+    /// rather than reading the `folder` property, because `loadSession`
+    /// must compare against its captured `targetFolder` snapshot — reading
+    /// the live property there would reopen the stale-scan race the
+    /// snapshot exists to close.
+    private static func isDownloadsFolder(_ url: URL) -> Bool {
+        url.resolvingSymlinksInPath().standardizedFileURL
+            == Self.defaultDownloadsFolder.resolvingSymlinksInPath().standardizedFileURL
     }
 
     public var body: some View {
@@ -51,22 +104,38 @@ public struct TriageView: View {
                 content(viewModel: viewModel, context: context)
             } else if let loadError {
                 VStack(spacing: DesignTokens.Spacing.large) {
-                    Text("Couldn't read your Downloads folder.")
+                    Text("Couldn't read the \"\(folder.lastPathComponent)\" folder.")
                         .foregroundStyle(DesignTokens.ColorToken.textPrimary)
                     Text(loadError)
                         .font(.system(size: 12))
                         .foregroundStyle(DesignTokens.ColorToken.textSecondary)
-                    Button("Try Again") {
-                        // Clearing loadError re-renders into the ProgressView
-                        // branch, whose own .task fires loadSession() — do
-                        // not also kick one off here, or two concurrent
-                        // scans race to write the same persistence file.
-                        self.loadError = nil
+                    // Before folder switching, the source was always
+                    // Downloads and "Try Again" alone was fine — nothing
+                    // else could go wrong with it. Now the folder can be a
+                    // volume that's gone for good, and retrying a dead
+                    // folder forever with no way out short of quitting is
+                    // worse than the error itself, so this screen needs the
+                    // same two escape routes the control bar gives a
+                    // working session.
+                    HStack(spacing: DesignTokens.Spacing.small) {
+                        Button("Try Again") {
+                            // Clearing loadError re-renders into the ProgressView
+                            // branch, whose own .task fires loadSession() — do
+                            // not also kick one off here, or two concurrent
+                            // scans race to write the same persistence file.
+                            self.loadError = nil
+                        }
+                        Button("Return to Downloads") {
+                            switchFolder(to: Self.defaultDownloadsFolder)
+                        }
+                        Button("Choose Folder…") {
+                            chooseSourceFolder()
+                        }
                     }
                 }
                 .padding(DesignTokens.Spacing.cardMargin)
             } else {
-                ProgressView().task { await loadSession() }
+                ProgressView().task(id: folder) { await loadSession() }
             }
         }
     }
@@ -89,7 +158,9 @@ public struct TriageView: View {
             Spacer()
             if let current = viewModel.current {
                 CardView(candidate: current, context: context,
-                   lastDecision: lastDecision,
+                   entrance: entrance,
+                   exiting: exitingCardID == current.id ? exitingDirection : nil,
+                   exitFraction: exitingCardID == current.id ? exitFraction : 0,
                    onOpen: { viewModel.openCurrentInDefaultApp() },
                    swipeOffset: swipeProgress,
                    onReveal: { viewModel.revealCurrentInFinder() },
@@ -121,6 +192,7 @@ public struct TriageView: View {
         .onKeyPress { press in handle(press, viewModel: viewModel) }
         .onAppear {
             isFocused = true
+            recentFolders = sourceFolderStore.recents()
             swipeMonitor.onProgress = { amount in swipeProgress = amount }
             swipeMonitor.onCommit = { direction in
                 // Exactly the keyboard's path. The offset is cleared inside
@@ -161,10 +233,66 @@ public struct TriageView: View {
             isPresented: $showResetConfirm,
             titleVisibility: .visible
         ) {
-            Button("Start Over", role: .destructive) { viewModel.reset() }
-            Button("Cancel", role: .cancel) {}
+            Button("Start Over", role: .destructive) { resetMotion(); viewModel.reset() }
+            // The dialog steals focus the same way the commit sheet does,
+            // and unlike the sheet there is no onChange hook watching this
+            // one dismiss — Cancel has to reclaim it directly, or every
+            // binding on the card is dead until the next click.
+            Button("Cancel", role: .cancel) { isFocused = true }
         } message: {
             Text(resetMessage(viewModel: viewModel))
+        }
+        .confirmationDialog(
+            "Switch folders?",
+            isPresented: Binding(
+                get: { pendingSwitch != nil },
+                set: { if !$0 { pendingSwitch = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            // `viewModel` here is `content(viewModel:)`'s non-optional
+            // parameter, not the optional `@State` property — no unwrap
+            // needed to reach it. The count is `filesToTrash`, not
+            // `stagedForCommit`: confirmCommit only ever trashes the
+            // former, and a file unticked in a since-dismissed commit
+            // sheet stays staged-but-excluded (SessionViewModel.swift:49-52)
+            // — counting the latter here would label the button with more
+            // files than it's about to trash.
+            Button("Trash \(viewModel.filesToTrash.count) File\(viewModel.filesToTrash.count == 1 ? "" : "s")", role: .destructive) {
+                viewModel.confirmCommit()
+                // Only leave if it worked. confirmCommit keeps the error
+                // on the view model when a file could not be trashed, and
+                // switching away would take that message off screen along
+                // with the folder it belongs to. On failure, present the
+                // commit sheet so the error and the still-staged files are
+                // visible — silently returning to the card would look
+                // identical to success.
+                if viewModel.commitError == nil, let target = pendingSwitch {
+                    switchFolder(to: target)
+                } else if viewModel.commitError != nil {
+                    // Deferred a pass: this update also dismisses the
+                    // switch dialog (pendingSwitch below), and presenting a
+                    // sheet in the same runloop pass that dismisses a
+                    // confirmationDialog typically drops the sheet
+                    // entirely. That would make a partial trash failure
+                    // invisible — the exact outcome the comment above
+                    // exists to prevent — so the sheet has to go up on the
+                    // next pass instead.
+                    Task { @MainActor in
+                        viewModel.showCommitSheet = true
+                    }
+                }
+                pendingSwitch = nil
+            }
+            Button("Leave Them Staged") {
+                if let target = pendingSwitch { switchFolder(to: target) }
+                pendingSwitch = nil
+            }
+            // Same focus hole as showResetConfirm's Cancel, and the same
+            // fix: nothing else here reclaims it on dismissal.
+            Button("Cancel", role: .cancel) { pendingSwitch = nil; isFocused = true }
+        } message: {
+            Text("\(viewModel.filesToTrash.count) file\(viewModel.filesToTrash.count == 1 ? " is" : "s are") staged for trash. Files you already filed into folders stay where they are either way.")
         }
         .sheet(isPresented: Bindable(viewModel).showCommitSheet) {
             CommitSheet(viewModel: viewModel)
@@ -223,8 +351,13 @@ public struct TriageView: View {
 
     private func fileAway(_ index: Int, viewModel: SessionViewModel) {
         guard viewModel.destinations.indices.contains(index) else { return }
-        clearDirection {
+        // Up, toward the shelf: the card leaves the way the user just
+        // reached, so the file visibly goes into the bin they chose rather
+        // than fading out of a decision they never appeared to make.
+        record(.up)
+        playExit(.up, of: viewModel.current?.id) {
             withAnimation(.easeOut(duration: 0.19)) {
+                entrance = .rise
                 swipeProgress = 0
                 viewModel.moveCurrent(toDestinationAt: index)
             }
@@ -332,6 +465,14 @@ public struct TriageView: View {
             BrandMark(size: 18)
                 .foregroundStyle(DesignTokens.ColorToken.textSecondary)
                 .help("DClutter")
+
+            Divider().frame(height: 16)
+            FolderField(
+                url: folder,
+                recents: recentFolders,
+                onPick: { requestSwitch(to: $0) },
+                onChoose: { chooseSourceFolder() }
+            )
 
             Spacer()
 
@@ -546,67 +687,107 @@ public struct TriageView: View {
     }
 
     private func decide(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
-        // A removal transition is resolved from the departing view's LAST
-        // COMMITTED render, so setting `lastDecision` in the same pass as
-        // the mutation is too late — the outgoing card would animate in the
-        // *previous* decision's direction (press right then left, and the
-        // left exit still slides right). Commit the direction first, then
-        // mutate on the next pass so the departing card already carries the
-        // correct transition.
-        guard lastDecision != direction else {
-            performDecision(direction, using: viewModel)
-            return
-        }
-        lastDecision = direction
-        Task { @MainActor in
+        record(direction.exit)
+        playExit(direction.exit, of: viewModel.current?.id) {
             performDecision(direction, using: viewModel)
         }
     }
 
-    /// Undo and redo cross-fade rather than sliding: the card is not
-    /// leaving in a direction, it is being replaced, and a directional
-    /// slide would imply a decision that isn't being made.
-    /// Undo and redo cross-fade rather than sliding: the card is being
-    /// replaced, not decided, and a directional slide would imply a
-    /// decision. Clearing `lastDecision` needs its own pass first — a
-    /// removal transition resolves from the departing view's last committed
-    /// render, so clearing it alongside the mutation left the card still
-    /// sliding in the direction of the decision being undone.
-    private func undo(_ viewModel: SessionViewModel) {
-        clearDirection {
-            withAnimation(.easeInOut(duration: 0.19)) {
-                // Same reason as performDecision: a swipe may have left an
-                // offset behind, and clearing it outside this transaction
-                // leaves the arriving card's slide unanimated.
-                swipeProgress = 0
-                viewModel.undo()
-            }
+    /// Animates the current card off-screen, then runs `work` to swap it.
+    ///
+    /// This is the whole reason exits are not transitions. A removal
+    /// transition is fixed when the view is *inserted*, and a card is
+    /// inserted before the user has decided anything, so no amount of
+    /// re-rendering it with a new `.transition()` can steer its exit. An
+    /// earlier attempt did exactly that and only appeared to work when the
+    /// same direction was pressed twice in a row, because the second press
+    /// reused a card that had been inserted under that direction already.
+    ///
+    /// `exitingCardID` scopes the travel to the card that is leaving, so
+    /// the card arriving behind it is never offset by a value meant for
+    /// its predecessor.
+    private func playExit(_ exit: CardExit, of id: FileCandidate.ID?, then work: @escaping () -> Void) {
+        guard exit != .fade, let id else { work(); return }
+        exitingCardID = id
+        exitingDirection = exit
+        withAnimation(.easeIn(duration: 0.14)) {
+            exitFraction = 1
+        } completion: {
+            exitingCardID = nil
+            exitingDirection = nil
+            exitFraction = 0
+            work()
         }
+    }
+
+    /// A fresh decision invalidates the redo path, exactly as it does in
+    /// `DClutterSession`.
+    private func record(_ exit: CardExit) {
+        motionHistory.append(exit)
+        redoMotionHistory.removeAll()
+    }
+
+    /// Forgets how the current queue got here. A different folder is a
+    /// different queue, so the last card's exit says nothing about the
+    /// next one, and a stale entry would send the first undo the wrong way.
+    private func resetMotion() {
+        exitingCardID = nil
+        exitingDirection = nil
+        exitFraction = 0
+        entrance = .rise
+        motionHistory.removeAll()
+        redoMotionHistory.removeAll()
+    }
+
+    /// Undo brings the card back the way it left: the file that was sent
+    /// away returns from the edge it went toward. Unlike an exit this needs
+    /// no staging — an entrance is a transition, and a transition is
+    /// resolved when the view is inserted, so setting `entrance` in the
+    /// same pass as the mutation is exactly right.
+    ///
+    /// A session restored from disk has no view-local history, so it rises
+    /// instead. The decisions are still undoable; they just have no
+    /// recorded direction to replay.
+    private func undo(_ viewModel: SessionViewModel) {
+        let undone = motionHistory.popLast()
+        if let undone { redoMotionHistory.append(undone) }
+        withAnimation(.easeInOut(duration: 0.19)) {
+            // Inside the transaction, not before it. Assigning `entrance`
+            // outside and mutating inside lets SwiftUI coalesce both into
+            // one un-animated update, and the card swaps instantly — the
+            // flash this replaces.
+            entrance = undone.map(CardEntrance.from) ?? .rise
+            // Same reason as performDecision: a swipe may have left an
+            // offset behind, and clearing it outside this transaction
+            // leaves the arriving card's slide unanimated.
+            swipeProgress = 0
+            viewModel.undo()
+        }
+        // Reclaim focus: an undo can leave the triage surface without it,
+        // and every binding here is dead the moment that happens.
+        isFocused = true
     }
 
     private func redo(_ viewModel: SessionViewModel) {
-        clearDirection {
+        let redone = redoMotionHistory.popLast()
+        if let redone { motionHistory.append(redone) }
+        playExit(redone ?? .fade, of: viewModel.current?.id) {
             withAnimation(.easeInOut(duration: 0.19)) {
+                entrance = .rise
                 swipeProgress = 0
                 viewModel.redo()
             }
-        }
-    }
-
-    private func clearDirection(then work: @escaping () -> Void) {
-        // Reclaim focus: an undo can leave the triage surface without it,
-        // and every binding here is dead the moment that happens.
-        defer { isFocused = true }
-        guard lastDecision != nil else { work(); return }
-        lastDecision = nil
-        Task { @MainActor in
-            work()
             isFocused = true
         }
+        isFocused = true
     }
 
     private func performDecision(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
         withAnimation(.easeInOut(duration: 0.19)) {
+            // Set here rather than by the caller: every state change the
+            // arriving card depends on has to be inside this transaction,
+            // or SwiftUI coalesces them into an un-animated update.
+            entrance = .rise
             // Cleared in the same transaction as the swap: the departing
             // card keeps the offset it was rendered with, and the arriving
             // one starts at rest. Clearing it a pass earlier snapped the
@@ -623,10 +804,19 @@ public struct TriageView: View {
     }
 
     private func loadSession() async {
+        // Snapshot the folder this scan is for, and read only the snapshot
+        // from here on. `folder` is `@State`, and `switchFolder` can retarget
+        // it while `provider.candidates(in:)` is still running — that scan
+        // has no suspension point SwiftUI's cancellation reaches, so it runs
+        // to completion regardless. Without the snapshot, a stale scan would
+        // resolve its filename and Downloads check against wherever `folder`
+        // has since moved to, wiring folder A's candidates to folder B's
+        // persistence file.
+        let targetFolder = folder
         let provider = DirectoryMetadataProvider()
         let candidates: [FileCandidate]
         do {
-            candidates = try await provider.candidates(in: folder)
+            candidates = try await provider.candidates(in: targetFolder)
         } catch {
             loadError = error.localizedDescription
             return
@@ -638,10 +828,85 @@ public struct TriageView: View {
         if let supportDir {
             try? FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
         }
-        let persistenceURL = (supportDir ?? FileManager.default.temporaryDirectory)
-            .appendingPathComponent("session.json")
+        let stateDir = supportDir ?? FileManager.default.temporaryDirectory
+        let persistenceURL = stateDir
+            .appendingPathComponent(SessionPersistence.filename(for: targetFolder))
+
+        // Anyone upgrading from ≤0.4.0 has an in-progress session in the
+        // old fixed filename. It can only ever have been Downloads, so
+        // carry it onto Downloads' new name rather than silently dropping
+        // someone's half-finished run.
+        let legacy = stateDir.appendingPathComponent("session.json")
+        let targetIsDownloads = Self.isDownloadsFolder(targetFolder)
+        if targetIsDownloads,
+           FileManager.default.fileExists(atPath: legacy.path),
+           !FileManager.default.fileExists(atPath: persistenceURL.path) {
+            try? FileManager.default.moveItem(at: legacy, to: persistenceURL)
+        }
         let session = DClutterSession(candidates: ranked, persistenceURL: persistenceURL)
+        // The folder can have moved on again while the scan above was in
+        // flight. Only apply this result if it is still the one showing —
+        // otherwise it's a stale scan clobbering the in-flight replacement.
+        guard folder == targetFolder else { return }
         self.context = QueueContext(candidates: ranked)
         self.viewModel = SessionViewModel(session: session)
+    }
+
+    /// Points the app at a different folder. The previous folder's scope is
+    /// released only after the new one is held, and the session is torn
+    /// down so `.task(id:)` rebuilds it against the new candidates.
+    ///
+    /// Decisions already carried out on disk are left alone — a move is a
+    /// finished action, and having twenty of them fly back to Downloads
+    /// because you glanced at another folder is a worse surprise than
+    /// leaving them where you put them. Only staged trash is pending, and
+    /// `confirmSwitch` resolves that before calling this.
+    private func switchFolder(to url: URL) {
+        guard url.standardizedFileURL != folder.standardizedFileURL else { return }
+        access = ScopedFolderAccess(url: url)
+        if !Self.isDownloadsFolder(url) {
+            sourceFolderStore.remember(url)
+            recentFolders = sourceFolderStore.recents()
+        }
+        viewModel = nil
+        context = nil
+        loadError = nil
+        shelfOpen = false
+        resetMotion()
+        swipeMonitor.endShelfSteering()
+        folder = url
+        isFocused = true
+    }
+
+    /// Asks for a folder. The sandbox grants access only through the panel
+    /// or a bookmark it minted — a typed path grants nothing — so this is
+    /// the only way in.
+    private func chooseSourceFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        // Same affordance as the destination picker, for consistency — a
+        // panel that cannot make a folder is a surprise in one place if it
+        // can in the other.
+        panel.canCreateDirectories = true
+        panel.prompt = "Triage Folder"
+        panel.message = "Pick a folder to sort through."
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        requestSwitch(to: url)
+    }
+
+    /// Staged trash is the only genuinely pending state — a move already
+    /// happened on disk and stays done. So a switch asks about staged files
+    /// and nothing else — and only when there's actually something the
+    /// dialog's destructive button would trash; a file staged but already
+    /// excluded from commit isn't going anywhere, so it's not worth a
+    /// confirmation of its own.
+    private func requestSwitch(to url: URL) {
+        guard let viewModel, !viewModel.filesToTrash.isEmpty else {
+            switchFolder(to: url)
+            return
+        }
+        pendingSwitch = url
     }
 }
