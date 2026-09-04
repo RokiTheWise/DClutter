@@ -43,8 +43,10 @@ public struct TriageView: View {
     /// The folder being triaged. State, not a constant: it is the one
     /// thing on this screen the user can change without quitting.
     @State private var folder: URL
-    /// Held for as long as this folder is the source. Nil for Downloads,
-    /// which the entitlement reaches without a bookmark.
+    /// Held for as long as this folder is the source. Always created on
+    /// switch, even for Downloads — the entitlement grants that folder
+    /// directly, so the security-scoped start call there simply finds
+    /// nothing to hold and `isScoped` comes back false.
     @State private var access: ScopedFolderAccess?
     @State private var recentFolders: [URL] = []
     /// A folder the user asked for while files were still staged. Held
@@ -71,10 +73,14 @@ public struct TriageView: View {
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
     }
 
-    /// True when `folder` is the entitlement-granted Downloads folder,
-    /// which needs neither a bookmark nor a held scope.
-    private var isDownloads: Bool {
-        folder.resolvingSymlinksInPath().standardizedFileURL
+    /// True when `url` is the entitlement-granted Downloads folder, which
+    /// needs neither a bookmark nor a held scope. Takes the folder in
+    /// rather than reading the `folder` property, because `loadSession`
+    /// must compare against its captured `targetFolder` snapshot — reading
+    /// the live property there would reopen the stale-scan race the
+    /// snapshot exists to close.
+    private static func isDownloadsFolder(_ url: URL) -> Bool {
+        url.resolvingSymlinksInPath().standardizedFileURL
             == Self.defaultDownloadsFolder.resolvingSymlinksInPath().standardizedFileURL
     }
 
@@ -84,17 +90,33 @@ public struct TriageView: View {
                 content(viewModel: viewModel, context: context)
             } else if let loadError {
                 VStack(spacing: DesignTokens.Spacing.large) {
-                    Text("Couldn't read your Downloads folder.")
+                    Text("Couldn't read the \"\(folder.lastPathComponent)\" folder.")
                         .foregroundStyle(DesignTokens.ColorToken.textPrimary)
                     Text(loadError)
                         .font(.system(size: 12))
                         .foregroundStyle(DesignTokens.ColorToken.textSecondary)
-                    Button("Try Again") {
-                        // Clearing loadError re-renders into the ProgressView
-                        // branch, whose own .task fires loadSession() — do
-                        // not also kick one off here, or two concurrent
-                        // scans race to write the same persistence file.
-                        self.loadError = nil
+                    // Before folder switching, the source was always
+                    // Downloads and "Try Again" alone was fine — nothing
+                    // else could go wrong with it. Now the folder can be a
+                    // volume that's gone for good, and retrying a dead
+                    // folder forever with no way out short of quitting is
+                    // worse than the error itself, so this screen needs the
+                    // same two escape routes the control bar gives a
+                    // working session.
+                    HStack(spacing: DesignTokens.Spacing.small) {
+                        Button("Try Again") {
+                            // Clearing loadError re-renders into the ProgressView
+                            // branch, whose own .task fires loadSession() — do
+                            // not also kick one off here, or two concurrent
+                            // scans race to write the same persistence file.
+                            self.loadError = nil
+                        }
+                        Button("Return to Downloads") {
+                            switchFolder(to: Self.defaultDownloadsFolder)
+                        }
+                        Button("Choose Folder…") {
+                            chooseSourceFolder()
+                        }
                     }
                 }
                 .padding(DesignTokens.Spacing.cardMargin)
@@ -196,7 +218,11 @@ public struct TriageView: View {
             titleVisibility: .visible
         ) {
             Button("Start Over", role: .destructive) { viewModel.reset() }
-            Button("Cancel", role: .cancel) {}
+            // The dialog steals focus the same way the commit sheet does,
+            // and unlike the sheet there is no onChange hook watching this
+            // one dismiss — Cancel has to reclaim it directly, or every
+            // binding on the card is dead until the next click.
+            Button("Cancel", role: .cancel) { isFocused = true }
         } message: {
             Text(resetMessage(viewModel: viewModel))
         }
@@ -210,8 +236,13 @@ public struct TriageView: View {
         ) {
             // `viewModel` here is `content(viewModel:)`'s non-optional
             // parameter, not the optional `@State` property — no unwrap
-            // needed to reach it.
-            Button("Trash \(viewModel.stagedForCommit.count) File\(viewModel.stagedForCommit.count == 1 ? "" : "s")", role: .destructive) {
+            // needed to reach it. The count is `filesToTrash`, not
+            // `stagedForCommit`: confirmCommit only ever trashes the
+            // former, and a file unticked in a since-dismissed commit
+            // sheet stays staged-but-excluded (SessionViewModel.swift:49-52)
+            // — counting the latter here would label the button with more
+            // files than it's about to trash.
+            Button("Trash \(viewModel.filesToTrash.count) File\(viewModel.filesToTrash.count == 1 ? "" : "s")", role: .destructive) {
                 viewModel.confirmCommit()
                 // Only leave if it worked. confirmCommit keeps the error
                 // on the view model when a file could not be trashed, and
@@ -223,7 +254,17 @@ public struct TriageView: View {
                 if viewModel.commitError == nil, let target = pendingSwitch {
                     switchFolder(to: target)
                 } else if viewModel.commitError != nil {
-                    viewModel.showCommitSheet = true
+                    // Deferred a pass: this update also dismisses the
+                    // switch dialog (pendingSwitch below), and presenting a
+                    // sheet in the same runloop pass that dismisses a
+                    // confirmationDialog typically drops the sheet
+                    // entirely. That would make a partial trash failure
+                    // invisible — the exact outcome the comment above
+                    // exists to prevent — so the sheet has to go up on the
+                    // next pass instead.
+                    Task { @MainActor in
+                        viewModel.showCommitSheet = true
+                    }
                 }
                 pendingSwitch = nil
             }
@@ -231,9 +272,11 @@ public struct TriageView: View {
                 if let target = pendingSwitch { switchFolder(to: target) }
                 pendingSwitch = nil
             }
-            Button("Cancel", role: .cancel) { pendingSwitch = nil }
+            // Same focus hole as showResetConfirm's Cancel, and the same
+            // fix: nothing else here reclaims it on dismissal.
+            Button("Cancel", role: .cancel) { pendingSwitch = nil; isFocused = true }
         } message: {
-            Text("\(viewModel.stagedForCommit.count) file\(viewModel.stagedForCommit.count == 1 ? " is" : "s are") staged for trash. Files you already filed into folders stay where they are either way.")
+            Text("\(viewModel.filesToTrash.count) file\(viewModel.filesToTrash.count == 1 ? " is" : "s are") staged for trash. Files you already filed into folders stay where they are either way.")
         }
         .sheet(isPresented: Bindable(viewModel).showCommitSheet) {
             CommitSheet(viewModel: viewModel)
@@ -733,8 +776,7 @@ public struct TriageView: View {
         // carry it onto Downloads' new name rather than silently dropping
         // someone's half-finished run.
         let legacy = stateDir.appendingPathComponent("session.json")
-        let targetIsDownloads = targetFolder.resolvingSymlinksInPath().standardizedFileURL
-            == Self.defaultDownloadsFolder.resolvingSymlinksInPath().standardizedFileURL
+        let targetIsDownloads = Self.isDownloadsFolder(targetFolder)
         if targetIsDownloads,
            FileManager.default.fileExists(atPath: legacy.path),
            !FileManager.default.fileExists(atPath: persistenceURL.path) {
@@ -761,8 +803,7 @@ public struct TriageView: View {
     private func switchFolder(to url: URL) {
         guard url.standardizedFileURL != folder.standardizedFileURL else { return }
         access = ScopedFolderAccess(url: url)
-        if url.resolvingSymlinksInPath().standardizedFileURL
-            != Self.defaultDownloadsFolder.resolvingSymlinksInPath().standardizedFileURL {
+        if !Self.isDownloadsFolder(url) {
             sourceFolderStore.remember(url)
             recentFolders = sourceFolderStore.recents()
         }
@@ -791,9 +832,12 @@ public struct TriageView: View {
 
     /// Staged trash is the only genuinely pending state — a move already
     /// happened on disk and stays done. So a switch asks about staged files
-    /// and nothing else.
+    /// and nothing else — and only when there's actually something the
+    /// dialog's destructive button would trash; a file staged but already
+    /// excluded from commit isn't going anywhere, so it's not worth a
+    /// confirmation of its own.
     private func requestSwitch(to url: URL) {
-        guard let viewModel, !viewModel.stagedForCommit.isEmpty else {
+        guard let viewModel, !viewModel.filesToTrash.isEmpty else {
             switchFolder(to: url)
             return
         }
