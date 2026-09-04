@@ -216,9 +216,14 @@ public struct TriageView: View {
                 // Only leave if it worked. confirmCommit keeps the error
                 // on the view model when a file could not be trashed, and
                 // switching away would take that message off screen along
-                // with the folder it belongs to.
+                // with the folder it belongs to. On failure, present the
+                // commit sheet so the error and the still-staged files are
+                // visible — silently returning to the card would look
+                // identical to success.
                 if viewModel.commitError == nil, let target = pendingSwitch {
                     switchFolder(to: target)
+                } else if viewModel.commitError != nil {
+                    viewModel.showCommitSheet = true
                 }
                 pendingSwitch = nil
             }
