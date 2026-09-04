@@ -1,11 +1,12 @@
-DClutter 0.4.0
+DClutter 1.0.0
 ==============
 
 Thanks for trying this out.
 
 DClutter shows you one file at a time from your Downloads folder and lets
 you keep it, put it in the Trash, or file it into a folder — with one key
-or one swipe.
+or one swipe. It opens on Downloads, and you can point it at any other
+folder you like.
 
 
 HOW TO OPEN IT (please read — the first launch will fail on purpose)
@@ -72,11 +73,17 @@ THE CONTROLS
 You can also swipe left and right on a trackpad, and swipe up with two
 fingers to choose a folder.
 
+To sort a different folder, click the folder path at the top and pick one.
+macOS will ask you to choose it yourself — an app like this can only reach
+a folder you handed it. Each folder remembers its own progress, so you can
+leave one half-sorted and come back to it.
+
 
 SOMETHING WRONG?
 ----------------
 
-It's an early build, so quite possibly. Please tell me what happened:
+It's a small project and I'm one person, so quite possibly. Please tell me
+what happened:
 
     https://github.com/RokiTheWise/DClutter/issues
 

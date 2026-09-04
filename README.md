@@ -106,10 +106,10 @@ Keyboard is the primary interface; every action has a pointer equivalent.
 
 ## Install
 
-**[⬇ Download DClutter 0.4.0](https://github.com/RokiTheWise/DClutter/releases/download/v0.4.0/DClutter-0.4.0.zip)**
+**[⬇ Download DClutter 1.0.0](https://github.com/RokiTheWise/DClutter/releases/download/v1.0.0/DClutter-1.0.0.zip)**
 &nbsp;·&nbsp; [all releases](https://github.com/RokiTheWise/DClutter/releases)
 
-Then, because this build isn't signed by Apple yet, macOS needs you to approve it
+Then, because this app isn't signed by Apple, macOS needs you to approve it
 once:
 
 1. Unzip it and drag **DClutter.app** into your **Applications** folder.
@@ -125,8 +125,8 @@ That's it. It opens normally from then on.
 
 The warning says macOS "could not verify" the app. That's accurate, and it isn't
 a claim that something is wrong with it: verifying an app requires an Apple
-Developer certificate, which costs $99/year and this project doesn't have one
-yet. Every unsigned app shows the same message.
+Developer certificate at $99/year, which this project doesn't have yet. Every
+unsigned app shows the same message.
 
 What you can do instead of taking that on trust: the entire source is in this
 repository, and you can build it yourself in a couple of minutes (below), which
@@ -199,16 +199,17 @@ These hold on every commit and are covered by tests:
 
 ## Status
 
-Pre-release, in active development. Keep, trash, file, rename, undo/redo and
-gestures all work.
+1.0. Keep, trash, file, rename, undo/redo, gestures and folder switching all
+work, and I use it on my own machine.
 
 The app is meant for use at the end of a semester or a project, when the folder
 has gotten out of hand. Clear it once, then you won't need it again for a while.
+That's the whole shape of it — there's no roadmap of features it's waiting on.
 
-Not done yet:
-
-- **Notarized distribution.** That needs a paid Apple Developer account, so it
-  depends on whether enough people find this useful to justify it.
+I'm not notarizing it for now, so the one-time approval step above stays. That
+needs a paid Apple Developer account, and if this picks up enough support to
+justify one, I'll get it. In the meantime the source is all here, and building
+it yourself skips the warning entirely.
 
 ## License
 
