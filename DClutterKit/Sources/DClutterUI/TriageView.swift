@@ -186,6 +186,7 @@ public struct TriageView: View {
         .padding(DesignTokens.Spacing.cardMargin)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DesignTokens.ColorToken.surface.ignoresSafeArea())
+        .background { SwipeMonitorWindowReader(controller: swipeMonitor) }
         .focusable()
         .focusEffectDisabled()
         .focused($isFocused)
@@ -219,11 +220,10 @@ public struct TriageView: View {
             swipeMonitor.start()
         }
         .onDisappear { swipeMonitor.stop() }
-        .onChange(of: viewModel.isRenaming) { _, renaming in
-            // A swipe landing mid-rename would decide the very file being
-            // renamed, out from under the text field.
-            swipeMonitor.isEnabled = !renaming
-            if !renaming { isFocused = true }
+        .onChange(of: inputIsBlocked(viewModel)) { _, blocked in
+            // The editor or dialog owns input until it has finished.
+            swipeMonitor.isEnabled = !blocked
+            if !blocked { isFocused = true }
         }
         .onChange(of: shelfOpen) { _, open in
             swipeMonitor.isShelfOpen = open
@@ -374,11 +374,16 @@ public struct TriageView: View {
         renameFieldFocused = true
     }
 
+    private func inputIsBlocked(_ viewModel: SessionViewModel) -> Bool {
+        viewModel.isRenaming || viewModel.isChoosingDestinationFolder || viewModel.showCommitSheet
+            || showHelp || showResetConfirm || pendingSwitch != nil
+    }
+
     private func handle(_ press: KeyPress, viewModel: SessionViewModel) -> KeyPress.Result {
         // The rename field owns the keyboard while it is open: Space is a
         // space, not a skip, and every other binding would act on the very
         // file being renamed. Esc is handled by the field's own exit command.
-        if viewModel.isRenaming { return .ignored }
+        if inputIsBlocked(viewModel) { return .ignored }
         // A message about destinations has been read by the time the user
         // presses anything else; leaving it up makes it look like a
         // permanent state rather than a reply to what they just did.

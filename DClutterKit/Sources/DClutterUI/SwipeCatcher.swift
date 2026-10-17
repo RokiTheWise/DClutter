@@ -11,11 +11,8 @@ import SwiftUI
 /// snap-back-below-threshold for free; §6 is explicit that the threshold
 /// logic must not be hand-rolled.
 ///
-/// **Horizontal only, deliberately.** Two-finger *vertical* arrives as the
-/// same `scrollWheel:` stream that scrolls the QuickLook preview, so §6
-/// reserves vertical for scrolling and puts move-to-destination on a
-/// click-drag instead. Anything not dominantly horizontal is passed
-/// straight through untouched.
+/// Two fingers up opens the destination shelf. Only events belonging to
+/// the triage window are handled; folder pickers and sheets scroll normally.
 ///
 /// Implemented as a window-local event monitor rather than a view: an
 /// `NSView` overlay would have to win hit-testing to receive scroll events,
@@ -29,6 +26,9 @@ import SwiftUI
 final class SwipeMonitorController {
     private var monitor: Any?
     private var steeringMonitor: Any?
+    weak var window: NSWindow?
+    private var shelfTravel: CGFloat = 0
+    private var shelfVertical: CGFloat = 0
     var onProgress: ((CGFloat) -> Void)?
     var onCommit: ((DecisionDirection) -> Void)?
     /// Gesture released below the threshold — return the card to rest.
@@ -49,7 +49,11 @@ final class SwipeMonitorController {
     /// True while the shelf is showing, so the monitor knows to steer bins
     /// rather than start another decision.
     var isShelfOpen = false
-    var isEnabled: Bool = true
+    var isEnabled: Bool = true {
+        didSet {
+            if !isEnabled { endShelfSteering() }
+        }
+    }
 
     /// Fraction of a full gesture that commits a decision. Low enough to
     /// fire early in a deliberate flick, high enough that a stray
@@ -77,34 +81,47 @@ final class SwipeMonitorController {
     /// moves sideways — which is exactly the "up, across, let go" motion.
     private func beginShelfSteering() {
         guard steeringMonitor == nil else { return }
-        var travelled: CGFloat = 0
-        var vertical: CGFloat = 0
+        shelfTravel = 0
+        shelfVertical = 0
         steeringMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
             guard let self else { return event }
-
-            // Dragging back down abandons the shelf — the same fingers that
-            // opened it close it, without having to reach for Escape.
-            vertical += event.scrollingDeltaY
-            if vertical > 50 {
-                self.endShelfSteering()
-                self.onShelfCancel?()
-                return nil
-            }
-
-            travelled += event.scrollingDeltaX
-            // One bin per 60pt of travel: far enough that a wobble doesn't
-            // skid across the row, close enough to reach bin three easily.
-            while abs(travelled) >= 60 {
-                let step = travelled > 0 ? 1 : -1
-                travelled -= CGFloat(step) * 60
-                self.onShelfStep?(step)
-            }
-            if event.phase == .ended || event.momentumPhase == .ended {
-                self.endShelfSteering()
-                self.onShelfCommit?()
-            }
-            return nil
+            return self.handleShelfSteering(event) ? nil : event
         }
+    }
+
+    /// Returns true only for events owned by the active shelf gesture.
+    func handleShelfSteering(_ event: NSEvent) -> Bool {
+        guard steeringMonitor != nil else { return false }
+        guard accepts(event) else {
+            endShelfSteering()
+            return false
+        }
+        if event.phase == .cancelled {
+            endShelfSteering()
+            onShelfCancel?()
+            return true
+        }
+
+        // Dragging back down abandons the shelf without filing.
+        shelfVertical += event.scrollingDeltaY
+        if shelfVertical > 50 {
+            endShelfSteering()
+            onShelfCancel?()
+            return true
+        }
+
+        shelfTravel += event.scrollingDeltaX
+        // One bin per 60pt of travel, as in the opening gesture.
+        while abs(shelfTravel) >= 60 {
+            let step = shelfTravel > 0 ? 1 : -1
+            shelfTravel -= CGFloat(step) * 60
+            onShelfStep?(step)
+        }
+        if event.phase == .ended || event.momentumPhase == .ended {
+            endShelfSteering()
+            onShelfCommit?()
+        }
+        return true
     }
 
     func endShelfSteering() {
@@ -112,9 +129,21 @@ final class SwipeMonitorController {
         steeringMonitor = nil
     }
 
+    var canHandleInput: Bool {
+        isEnabled && window?.isKeyWindow == true
+            && window?.attachedSheet == nil && NSApp.modalWindow == nil
+    }
+
+    private func accepts(_ event: NSEvent) -> Bool {
+        // Local monitors receive events from every window in the app,
+        // including NSOpenPanel's nested modal loop.
+        guard canHandleInput, let window else { return false }
+        return event.window === window
+    }
+
     /// Returns true when the event was consumed as a swipe.
-    private func handle(_ event: NSEvent) -> Bool {
-        guard isEnabled else { return false }
+    func handle(_ event: NSEvent) -> Bool {
+        guard accepts(event) else { return false }
         // Only a genuine trackpad gesture carries phase information; a
         // mouse wheel does not, and must keep scrolling normally.
         guard event.phase == .began else { return false }
@@ -128,18 +157,23 @@ final class SwipeMonitorController {
         if abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX) {
             guard event.scrollingDeltaY < 0 else { return false }
             onShelfOpen?()
+            guard accepts(event) else { return true }
             beginShelfSteering()
             return true
         }
 
         var committed = false
-        var stepAccumulator: CGFloat = 0
         event.trackSwipeEvent(
             options: .lockDirection,
             dampenAmountThresholdMin: -1,
             max: 1
         ) { [weak self] amount, phase, isComplete, stop in
             guard let self else { return }
+            guard self.accepts(event) else {
+                stop.pointee = true
+                self.onSnapBack?()
+                return
+            }
 
             // Once the decision is made this gesture is over as far as the
             // card is concerned. trackSwipeEvent keeps calling back while it
@@ -173,5 +207,32 @@ final class SwipeMonitorController {
             }
         }
         return true
+    }
+}
+
+/// Finds the owning window without intercepting pointer events on the card.
+struct SwipeMonitorWindowReader: NSViewRepresentable {
+    let controller: SwipeMonitorController
+
+    func makeNSView(context: Context) -> WindowView {
+        let view = WindowView()
+        view.controller = controller
+        return view
+    }
+
+    func updateNSView(_ view: WindowView, context: Context) {
+        view.controller = controller
+        controller.window = view.window
+    }
+
+    final class WindowView: NSView {
+        weak var controller: SwipeMonitorController?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            controller?.window = window
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
     }
 }
