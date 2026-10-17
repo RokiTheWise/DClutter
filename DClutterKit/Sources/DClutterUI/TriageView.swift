@@ -34,6 +34,8 @@ public struct TriageView: View {
     @State private var exitingCardID: FileCandidate.ID?
     @State private var exitingDirection: CardExit?
     @State private var exitFraction: CGFloat = 0
+    @State private var exitCompletion: (() -> Void)?
+    @State private var exitGeneration = UUID()
     /// The exits this session's decisions used, newest last, so undo can
     /// bring the card back the way it left. View-local and never persisted:
     /// it feeds animation only, and a session restored from disk simply
@@ -41,7 +43,11 @@ public struct TriageView: View {
     @State private var motionHistory: [CardExit] = []
     @State private var redoMotionHistory: [CardExit] = []
     @State private var showResetConfirm = false
-    @State private var showHelp = false
+    @State private var showSettings = false
+    @State private var settingsSection: SettingsSection = .general
+    @AppStorage(InteractionSettings.holdSpeedKey) private var holdSpeed = InteractionSettings.defaultHoldSpeed
+    @AppStorage(InteractionSettings.confirmAddFolderKey) private var confirmAddFolder = false
+    @State private var heldDecision = HeldDecisionController()
     /// Live swipe position, -1..1, so the card tracks the fingers.
     @State private var swipeProgress: CGFloat = 0
     @State private var swipeMonitor = SwipeMonitorController()
@@ -142,54 +148,30 @@ public struct TriageView: View {
 
     @ViewBuilder
     private func content(viewModel: SessionViewModel, context: QueueContext) -> some View {
-        VStack(spacing: DesignTokens.Spacing.xLarge) {
+        VStack(spacing: 0) {
             controlBar(viewModel: viewModel)
-            DestinationShelf(
-                destinations: viewModel.destinations,
-                revealed: shelfOpen ? 1 : 0,
-                highlighted: shelfOpen ? selectedBin : nil,
-                onChooseFolder: { viewModel.chooseDestinationFolder() },
-                onRemove: { index in
-                    viewModel.removeDestination(at: index)
-                    selectedBin = min(selectedBin, max(binCount(viewModel) - 1, 0))
+                .padding(.horizontal, 24)
+                .padding(.vertical, 18)
+            Divider()
+            workspace(viewModel: viewModel, context: context)
+            Divider()
+            Group {
+                if viewModel.isRenaming {
+                    renameField(viewModel: viewModel)
+                } else {
+                    statusBar(viewModel: viewModel)
                 }
-            )
-            .frame(height: shelfOpen ? nil : 0)
-            Spacer()
-            if let current = viewModel.current {
-                CardView(candidate: current, context: context,
-                   entrance: entrance,
-                   exiting: exitingCardID == current.id ? exitingDirection : nil,
-                   exitFraction: exitingCardID == current.id ? exitFraction : 0,
-                   onOpen: { viewModel.openCurrentInDefaultApp() },
-                   swipeOffset: swipeProgress,
-                   onReveal: { viewModel.revealCurrentInFinder() },
-                   onRename: { beginRename(viewModel: viewModel) },
-                   onCopyName: { viewModel.copyCurrentName() })
-                    // Shrinks back and fades while choosing a folder, so
-                    // the shelf is unobstructed and the card reads as the
-                    // thing being filed rather than the thing in focus.
-                    .scaleEffect(shelfOpen ? 0.82 : 1)
-                    .opacity(shelfOpen ? 0.45 : 1)
-                    .animation(.spring(response: 0.26, dampingFraction: 0.85), value: shelfOpen)
-            } else {
-                Text("All done.")
-                    .foregroundStyle(DesignTokens.ColorToken.textSecondary)
             }
-            Spacer()
-            if viewModel.isRenaming {
-                renameField(viewModel: viewModel)
-            } else {
-                statusBar(viewModel: viewModel)
-            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
         }
-        .padding(DesignTokens.Spacing.cardMargin)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DesignTokens.ColorToken.surface.ignoresSafeArea())
+        .background { SwipeMonitorWindowReader(controller: swipeMonitor) }
         .focusable()
         .focusEffectDisabled()
         .focused($isFocused)
-        .onKeyPress { press in handle(press, viewModel: viewModel) }
+        .onKeyPress(phases: [.down, .repeat, .up]) { press in handle(press, viewModel: viewModel) }
         .onAppear {
             isFocused = true
             recentFolders = sourceFolderStore.recents()
@@ -205,7 +187,7 @@ public struct TriageView: View {
             }
             swipeMonitor.onShelfOpen = { openShelf(viewModel: viewModel) }
             swipeMonitor.onShelfStep = { step in stepBin(by: step, viewModel: viewModel) }
-            swipeMonitor.onShelfCommit = { confirmShelf(viewModel: viewModel) }
+            swipeMonitor.onShelfCommit = { confirmShelf(viewModel: viewModel, fromGesture: true) }
             swipeMonitor.onShelfCancel = {
                 shelfOpen = false
                 swipeMonitor.endShelfSteering()
@@ -218,12 +200,20 @@ public struct TriageView: View {
             }
             swipeMonitor.start()
         }
-        .onDisappear { swipeMonitor.stop() }
-        .onChange(of: viewModel.isRenaming) { _, renaming in
-            // A swipe landing mid-rename would decide the very file being
-            // renamed, out from under the text field.
-            swipeMonitor.isEnabled = !renaming
-            if !renaming { isFocused = true }
+        .onDisappear { swipeMonitor.stop(); heldDecision.stop() }
+        .onChange(of: inputIsBlocked(viewModel)) { _, blocked in
+            // The editor or dialog owns input until it has finished.
+            swipeMonitor.isEnabled = !blocked
+            if blocked { heldDecision.stop() }
+            if !blocked { isFocused = true }
+        }
+        .onChange(of: isFocused) { _, focused in
+            if !focused { heldDecision.stop() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { notification in
+            if let window = notification.object as? NSWindow, window === swipeMonitor.window {
+                heldDecision.stop()
+            }
         }
         .onChange(of: shelfOpen) { _, open in
             swipeMonitor.isShelfOpen = open
@@ -302,6 +292,109 @@ public struct TriageView: View {
         }
     }
 
+    private func workspace(viewModel: SessionViewModel, context: QueueContext) -> some View {
+        GeometryReader { geometry in
+            // Window size controls the well, so every file has the same
+            // frame and the actions remain visible at the minimum size.
+            let previewHeight = max(100, min(340, geometry.size.height - 330))
+            ZStack(alignment: .top) {
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    if let current = viewModel.current {
+                        CardView(candidate: current, context: context,
+                            entrance: entrance,
+                            exiting: exitingCardID == current.id ? exitingDirection : nil,
+                            exitFraction: exitingCardID == current.id ? exitFraction : 0,
+                            onOpen: { viewModel.openCurrentInDefaultApp() },
+                            swipeOffset: swipeProgress,
+                            onReveal: { viewModel.revealCurrentInFinder() },
+                            onRename: { beginRename(viewModel: viewModel) },
+                            onCopyName: { viewModel.copyCurrentName() },
+                            previewHeight: previewHeight)
+                            .scaleEffect(shelfOpen ? 0.85 : 1)
+                            .opacity(shelfOpen ? 0.35 : 1)
+                            .allowsHitTesting(!shelfOpen)
+                            .animation(.easeOut(duration: 0.2), value: shelfOpen)
+                    } else {
+                        VStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle")
+                                .font(.system(size: 36, weight: .light))
+                            Text("All caught up").font(.system(size: 22, weight: .medium))
+                            Text(viewModel.stagedForCommit.isEmpty
+                                ? "Every file in this queue has a decision."
+                                : "Review your staged files when you're ready.")
+                                .font(.system(size: 13))
+                                .foregroundStyle(DesignTokens.ColorToken.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 260)
+                    }
+                    Spacer(minLength: 16)
+                    decisionBar(viewModel: viewModel)
+                        .opacity(shelfOpen ? 0.35 : 1)
+                        .disabled(shelfOpen || viewModel.current == nil || inputIsBlocked(viewModel))
+                }
+                .frame(maxWidth: 760, maxHeight: .infinity)
+                .frame(maxWidth: .infinity)
+
+                if shelfOpen {
+                    destinationPanel(viewModel: viewModel)
+                        .frame(maxWidth: 760)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.easeOut(duration: 0.2), value: shelfOpen)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+    }
+
+    private func destinationPanel(viewModel: SessionViewModel) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("File into a folder").font(.system(size: 14, weight: .medium))
+                    Text("← → to choose · Return to file · Esc to cancel")
+                        .font(.system(size: 11))
+                        .foregroundStyle(DesignTokens.ColorToken.textSecondary)
+                }
+                Spacer()
+                TriageIconButton(title: "Close destinations", symbol: "xmark", shortcut: "Esc") {
+                    shelfOpen = false
+                    swipeMonitor.endShelfSteering()
+                    isFocused = true
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+
+            DestinationShelf(
+                destinations: viewModel.destinations,
+                revealed: 1,
+                highlighted: selectedBin,
+                onChooseFolder: { chooseDestinationFolder(viewModel: viewModel) },
+                onRemove: { index in
+                    viewModel.removeDestination(at: index)
+                    selectedBin = min(selectedBin, max(binCount(viewModel) - 1, 0))
+                },
+                onSelect: { index in
+                    selectedBin = index
+                    confirmShelf(viewModel: viewModel)
+                }
+            )
+            .frame(maxWidth: .infinity)
+
+            if confirmAddFolder && selectedBin >= viewModel.destinations.count {
+                Text("Press Return or click “Add folder…” to choose a folder.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DesignTokens.ColorToken.textSecondary)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+            }
+        }
+        .background(DesignTokens.ColorToken.cardSurface, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(DesignTokens.ColorToken.hairline))
+    }
+
     /// Says what Start Over will actually do to files on disk. A count
     /// matters here in a way it doesn't for a single undo: nobody can
     /// eyeball twenty files coming back.
@@ -320,6 +413,8 @@ public struct TriageView: View {
     }
 
     private func openShelf(viewModel: SessionViewModel) {
+        heldDecision.stop()
+        finishExit()
         guard viewModel.current != nil else { return }
         selectedBin = min(selectedBin, max(binCount(viewModel) - 1, 0))
         shelfOpen = true
@@ -337,19 +432,36 @@ public struct TriageView: View {
         selectedBin = min(max(selectedBin + step, 0), max(binCount(viewModel) - 1, 0))
     }
 
-    private func confirmShelf(viewModel: SessionViewModel) {
+    private func confirmShelf(viewModel: SessionViewModel, fromGesture: Bool = false) {
         guard shelfOpen else { return }
-        shelfOpen = false
         swipeMonitor.endShelfSteering()
+        if fromGesture && confirmAddFolder && selectedBin >= viewModel.destinations.count {
+            // Keep the highlighted bin visible until an explicit Return
+            // or click confirms it. Existing destinations still file on lift.
+            isFocused = true
+            return
+        }
+        shelfOpen = false
         if selectedBin >= viewModel.destinations.count {
-            viewModel.chooseDestinationFolder()
+            chooseDestinationFolder(viewModel: viewModel)
         } else {
             fileAway(selectedBin, viewModel: viewModel)
         }
         isFocused = true
     }
 
+    private func chooseDestinationFolder(viewModel: SessionViewModel) {
+        heldDecision.stop()
+        finishExit()
+        shelfOpen = false
+        swipeMonitor.endShelfSteering()
+        viewModel.chooseDestinationFolder()
+        isFocused = true
+    }
+
     private func fileAway(_ index: Int, viewModel: SessionViewModel) {
+        heldDecision.stop()
+        finishExit()
         guard viewModel.destinations.indices.contains(index) else { return }
         // Up, toward the shelf: the card leaves the way the user just
         // reached, so the file visibly goes into the bin they chose rather
@@ -365,6 +477,8 @@ public struct TriageView: View {
     }
 
     private func beginRename(viewModel: SessionViewModel) {
+        heldDecision.stop()
+        finishExit()
         guard let current = viewModel.current else { return }
         // Stem only — the extension is preserved automatically and is not
         // the user's to accidentally delete.
@@ -374,11 +488,33 @@ public struct TriageView: View {
         renameFieldFocused = true
     }
 
+    private func inputIsBlocked(_ viewModel: SessionViewModel) -> Bool {
+        viewModel.isRenaming || viewModel.isChoosingDestinationFolder || viewModel.showCommitSheet
+            || showSettings || showResetConfirm || pendingSwitch != nil
+    }
+
+    private func openSettings(_ section: SettingsSection) {
+        heldDecision.stop()
+        finishExit()
+        shelfOpen = false
+        swipeMonitor.endShelfSteering()
+        settingsSection = section
+        showSettings = true
+    }
+
     private func handle(_ press: KeyPress, viewModel: SessionViewModel) -> KeyPress.Result {
+        let direction: DecisionDirection? = press.key == .leftArrow ? .stage : press.key == .rightArrow ? .keep : nil
+        if press.phase == .up {
+            if let direction { heldDecision.stop(ifHeld: direction); return .handled }
+            return .ignored
+        }
+        if press.phase == .down { heldDecision.stop() }
         // The rename field owns the keyboard while it is open: Space is a
         // space, not a skip, and every other binding would act on the very
         // file being renamed. Esc is handled by the field's own exit command.
-        if viewModel.isRenaming { return .ignored }
+        if inputIsBlocked(viewModel) {
+            return .ignored
+        }
         // A message about destinations has been read by the time the user
         // presses anything else; leaving it up makes it look like a
         // permanent state rather than a reply to what they just did.
@@ -399,7 +535,8 @@ public struct TriageView: View {
             if letter == "y" { redo(viewModel); return .handled }
             // §6: add a destination mid-session, so hitting an
             // unclassifiable file doesn't send the user to Finder.
-            if letter == "n" { viewModel.chooseDestinationFolder(); return .handled }
+            if letter == "n" { chooseDestinationFolder(viewModel: viewModel); return .handled }
+            if letter == "," { openSettings(.general); return .handled }
             return .ignored
         }
         // ⇧⌘Z is the macOS redo convention (⌘Y is the Windows one).
@@ -434,6 +571,22 @@ public struct TriageView: View {
             }
             return .ignored
         }
+        // Arrow events also carry system flags such as numericPad and
+        // function. Only the four shortcut modifiers change this binding.
+        if let direction, press.modifiers.intersection([.command, .control, .option, .shift]).isEmpty {
+            // Native repeats are consumed; our own clock supplies the pace.
+            if press.phase == .down {
+                let speed = InteractionSettings.boundedSpeed(holdSpeed)
+                heldDecision.start(direction, speed: speed) { repeating in
+                    guard !inputIsBlocked(viewModel), isFocused, !shelfOpen,
+                          swipeMonitor.canHandleInput, viewModel.current != nil else { return false }
+                    // At the fast end, finish the exit before the next tick.
+                    decide(direction, using: viewModel, exitDuration: repeating ? min(0.14, 0.6 / speed) : 0.14)
+                    return true
+                }
+            }
+            return .handled
+        }
         switch press.key {
         case .rightArrow: decide(.keep, using: viewModel); return .handled
         case .leftArrow: decide(.stage, using: viewModel); return .handled
@@ -447,7 +600,7 @@ public struct TriageView: View {
         case .return: viewModel.openCurrentInDefaultApp(); return .handled
         default: break
         }
-        if press.key.character == "?" { showHelp.toggle(); return .handled }
+        if press.key.character == "?" { openSettings(.controls); return .handled }
         if let slot = Int(letter), (1...DestinationStore.maximumDestinations).contains(slot) {
             fileAway(slot - 1, viewModel: viewModel)
             return .handled
@@ -455,116 +608,117 @@ public struct TriageView: View {
         return .ignored
     }
 
-    /// Every decision is reachable by pointer as well as by key. §2
-    /// principle 5 says keyboard wins where the two conflict — it does not
-    /// say pointer users get nothing, and a first-time user has no way to
-    /// discover the bindings otherwise. Keys stay primary; these mirror them.
-    @ViewBuilder
     private func controlBar(viewModel: SessionViewModel) -> some View {
-        HStack(spacing: DesignTokens.Spacing.small) {
-            BrandMark(size: 18)
-                .foregroundStyle(DesignTokens.ColorToken.textSecondary)
-                .help("DClutter")
-
-            Divider().frame(height: 16)
-            FolderField(
-                url: folder,
-                recents: recentFolders,
-                onPick: { requestSwitch(to: $0) },
-                onChoose: { chooseSourceFolder() }
-            )
-
-            Spacer()
-
-            if viewModel.current != nil {
-                // "Stage", not "Trash": this marks a file for the commit
-                // sheet, while the primary control at the far end is what
-                // actually trashes. Two controls both reading "Trash" made
-                // a staged, reversible decision look like a deletion.
-                controlButton("Stage", systemImage: "trash", shortcut: "←") {
-                    decide(.stage, using: viewModel)
+        HStack(spacing: 12) {
+            TriageIconButton(title: "Settings", symbol: "gearshape", shortcut: "⌘,") {
+                openSettings(.general)
+            }
+            .popover(isPresented: $showSettings, arrowEdge: .bottom) {
+                TriageSettingsView(holdSpeed: $holdSpeed, confirmAddFolder: $confirmAddFolder, section: $settingsSection) {
+                    helpCard
                 }
-                .foregroundStyle(DesignTokens.ColorToken.consequence)
-                controlButton("Skip", systemImage: "arrow.uturn.right", shortcut: "Space") {
-                    decide(.skip, using: viewModel)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                FolderField(
+                    url: folder,
+                    recents: recentFolders,
+                    onPick: { requestSwitch(to: $0) },
+                    onChoose: { chooseSourceFolder() }
+                )
+                Text(FolderField.displayPath(for: folder))
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(DesignTokens.ColorToken.textSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 2) {
+                TriageIconButton(title: "Undo", symbol: "arrow.uturn.backward", shortcut: "⌘Z") { undo(viewModel) }
+                    .disabled(!viewModel.canUndo)
+                TriageIconButton(title: "Redo", symbol: "arrow.uturn.forward", shortcut: "⇧⌘Z or ⌘Y") { redo(viewModel) }
+                    .disabled(!viewModel.canRedo)
+            }
+
+            Button { viewModel.showCommitSheet = true } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "tray.full")
+                    Text("Review trash")
+                    Text("\(viewModel.stagedForCommit.count)")
+                        .monospacedDigit()
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(DesignTokens.ColorToken.textPrimary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
                 }
-                controlButton("Keep", systemImage: "checkmark", shortcut: "→") {
-                    decide(.keep, using: viewModel)
-                }
-                Divider().frame(height: 16)
+                .font(.system(size: 12, weight: .medium))
+                .padding(.horizontal, 10)
+                .frame(height: 32)
+                .foregroundStyle(viewModel.stagedForCommit.isEmpty
+                    ? DesignTokens.ColorToken.textSecondary : DesignTokens.ColorToken.consequence)
+                .background(DesignTokens.ColorToken.consequence.opacity(viewModel.stagedForCommit.isEmpty ? 0 : 0.1), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(DesignTokens.ColorToken.hairline))
             }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .fixedSize()
+            .disabled(viewModel.stagedForCommit.isEmpty)
+            .help("Review staged files before moving anything to Trash  (⌘⏎)")
 
-            controlButton("Undo", systemImage: "arrow.uturn.backward", shortcut: "⌘Z") {
-                undo(viewModel)
+            Menu {
+                Button("Start Over…", systemImage: "arrow.counterclockwise") { showResetConfirm = true }
+                Divider()
+                Button("Controls & gestures", systemImage: "keyboard") { openSettings(.controls) }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 14))
+                    .frame(width: 24, height: 32)
             }
-            .disabled(!viewModel.canUndo)
-            controlButton("Redo", systemImage: "arrow.uturn.forward", shortcut: "⇧⌘Z or ⌘Y") {
-                redo(viewModel)
-            }
-            .disabled(!viewModel.canRedo)
-            controlButton("Start Over", systemImage: "arrow.counterclockwise", shortcut: nil) {
-                showResetConfirm = true
-            }
-
-            Divider().frame(height: 16)
-
-            // The terminal action, and the only one that removes anything:
-            // it reads as the primary control and names the count, per §0
-            // (files, never bytes).
-            // Prominent only when there is something to do. A disabled
-            // prominent button keeps its tint and washes out to a pale
-            // pink in light mode, which reads as broken rather than
-            // unavailable.
-            if viewModel.stagedForCommit.isEmpty {
-                controlButton("Nothing staged", systemImage: "trash", shortcut: "⌘⏎") {}
-                    .disabled(true)
-            } else {
-                Button {
-                    viewModel.showCommitSheet = true
-                } label: {
-                    HStack(spacing: DesignTokens.Spacing.unit) {
-                        Image(systemName: "trash")
-                        Text("Trash \(viewModel.stagedForCommit.count)")
-                            .fixedSize()
-                    }
-                    .font(.system(size: 11, weight: .medium))
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(DesignTokens.ColorToken.consequence)
-                .help("Review and trash staged files  (⌘⏎)")
-            }
-
-            controlButton("Help", systemImage: "questionmark.circle", shortcut: "?") {
-                showHelp.toggle()
-            }
-            .popover(isPresented: $showHelp, arrowEdge: .bottom) { helpCard }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .accessibilityLabel("Session options")
+            .help("Session options")
         }
     }
 
-    /// Progress is measured in files, never bytes (§0). `trashedCount` is
-    /// shown separately because staging already advances the decided count,
-    /// so a commit would otherwise move no number on screen at all.
+    private func decisionBar(viewModel: SessionViewModel) -> some View {
+        HStack(spacing: 8) {
+            TriageDecisionButton(title: "Stage", symbol: "trash", key: "←", consequential: true) {
+                decide(.stage, using: viewModel)
+            }
+            TriageDecisionButton(title: "Skip", symbol: "arrow.uturn.right", key: "␣") {
+                decide(.skip, using: viewModel)
+            }
+            TriageDecisionButton(title: "File", symbol: "folder", key: "↑") {
+                openShelf(viewModel: viewModel)
+            }
+            TriageDecisionButton(title: "Keep", symbol: "checkmark", key: "→") {
+                decide(.keep, using: viewModel)
+            }
+        }
+    }
+
     private func statusBar(viewModel: SessionViewModel) -> some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.unit) {
+        VStack(alignment: .leading, spacing: 8) {
             if let moveError = viewModel.moveError {
                 Text(moveError)
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(DesignTokens.ColorToken.consequence)
             }
-            statusCounts(viewModel: viewModel)
-        }
-    }
+            HStack(spacing: 10) {
+                Text("\(viewModel.remainingCount)")
+                    .foregroundStyle(DesignTokens.ColorToken.textPrimary)
+                    + Text(" left")
+                Text("·")
+                Text("\(viewModel.sortedSinceLastCommit) sorted")
+                Spacer(minLength: 8)
 
-    private func statusCounts(viewModel: SessionViewModel) -> some View {
-        HStack(spacing: DesignTokens.Spacing.medium) {
-            Text("\(viewModel.remainingCount) left")
-            Text("·")
-            Text("\(viewModel.sortedSinceLastCommit) sorted")
-            Spacer()
-            Text("double-click the card to open it")
+            }
+            .font(.system(size: 11))
+            .monospacedDigit()
+            .foregroundStyle(DesignTokens.ColorToken.textSecondary)
         }
-        .font(.system(size: 12, design: .monospaced))
-        .foregroundStyle(DesignTokens.ColorToken.textTertiary)
     }
 
     /// §2 principle 2 warns that a text field mid-session kills the loop,
@@ -609,8 +763,6 @@ public struct TriageView: View {
             helpSection("Keyboard", rows: Self.keyboardHelp)
             helpSection("Trackpad & mouse", rows: Self.pointerHelp)
         }
-        .padding(DesignTokens.Spacing.large)
-        .frame(width: 420, alignment: .leading)
     }
 
     private func helpSection(_ title: String, rows: [(String, String)]) -> some View {
@@ -641,6 +793,7 @@ public struct TriageView: View {
     private static let keyboardHelp: [(String, String)] = [
         ("→", "Keep, next card"),
         ("←", "Stage for trash, next card"),
+        ("Hold ←  →", "Repeat at the speed set in Settings"),
         ("Space", "Skip — comes back at the end"),
         ("1 – 3", "File into a destination folder"),
         ("↑", "Open the destination shelf"),
@@ -653,6 +806,7 @@ public struct TriageView: View {
         ("⇧⌘Z  ⌘Y", "Redo"),
         ("⌘⏎", "Review and trash staged files"),
         ("⌘N", "Add a destination folder"),
+        ("⌘,", "Settings"),
         ("?", "Show this list"),
     ]
 
@@ -661,34 +815,17 @@ public struct TriageView: View {
         ("Swipe left", "Stage for trash"),
         ("Two fingers up", "Open the shelf, slide across, let go"),
         ("Drag back down", "Close the shelf without filing"),
+        ("Click File", "Open destination folders"),
+        ("Click a folder", "File into that destination"),
         ("Double-click", "Open this file"),
         ("Right-click", "Reveal in Finder, rename, copy name"),
     ]
 
-    private func controlButton(
-        _ label: String,
-        systemImage: String,
-        shortcut: String?,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            // Icon and label only. The binding lives in the tooltip and the
-            // help card: printing it here a third time made every label
-            // truncate to "Tra…", which costs more than it teaches.
-            HStack(spacing: DesignTokens.Spacing.unit) {
-                Image(systemName: systemImage)
-                Text(label)
-                    .fixedSize()
-            }
-            .font(.system(size: 11))
-        }
-        .buttonStyle(.accessoryBar)
-        .help(shortcut.map { "\(label)  (\($0))" } ?? label)
-    }
-
-    private func decide(_ direction: DecisionDirection, using viewModel: SessionViewModel) {
+    private func decide(_ direction: DecisionDirection, using viewModel: SessionViewModel, exitDuration: TimeInterval = 0.14) {
+        finishExit()
+        guard viewModel.current != nil else { return }
         record(direction.exit)
-        playExit(direction.exit, of: viewModel.current?.id) {
+        playExit(direction.exit, of: viewModel.current?.id, duration: exitDuration) {
             performDecision(direction, using: viewModel)
         }
     }
@@ -706,18 +843,31 @@ public struct TriageView: View {
     /// `exitingCardID` scopes the travel to the card that is leaving, so
     /// the card arriving behind it is never offset by a value meant for
     /// its predecessor.
-    private func playExit(_ exit: CardExit, of id: FileCandidate.ID?, then work: @escaping () -> Void) {
+    private func playExit(_ exit: CardExit, of id: FileCandidate.ID?, duration: TimeInterval = 0.14, then work: @escaping () -> Void) {
         guard exit != .fade, let id else { work(); return }
+        let generation = UUID()
+        exitGeneration = generation
+        exitCompletion = work
         exitingCardID = id
         exitingDirection = exit
-        withAnimation(.easeIn(duration: 0.14)) {
+        withAnimation(.easeIn(duration: duration)) {
             exitFraction = 1
         } completion: {
-            exitingCardID = nil
-            exitingDirection = nil
-            exitFraction = 0
-            work()
+            guard exitGeneration == generation else { return }
+            finishExit()
         }
+    }
+
+    /// A fast tap may arrive before the previous exit completes. Finish
+    /// its accepted decision once, and invalidate the old animation callback.
+    private func finishExit() {
+        let completion = exitCompletion
+        exitCompletion = nil
+        exitGeneration = UUID()
+        exitingCardID = nil
+        exitingDirection = nil
+        exitFraction = 0
+        completion?()
     }
 
     /// A fresh decision invalidates the redo path, exactly as it does in
@@ -731,6 +881,9 @@ public struct TriageView: View {
     /// different queue, so the last card's exit says nothing about the
     /// next one, and a stale entry would send the first undo the wrong way.
     private func resetMotion() {
+        heldDecision.stop()
+        exitCompletion = nil
+        exitGeneration = UUID()
         exitingCardID = nil
         exitingDirection = nil
         exitFraction = 0
@@ -749,6 +902,8 @@ public struct TriageView: View {
     /// instead. The decisions are still undoable; they just have no
     /// recorded direction to replay.
     private func undo(_ viewModel: SessionViewModel) {
+        heldDecision.stop()
+        finishExit()
         let undone = motionHistory.popLast()
         if let undone { redoMotionHistory.append(undone) }
         withAnimation(.easeInOut(duration: 0.19)) {
@@ -769,6 +924,8 @@ public struct TriageView: View {
     }
 
     private func redo(_ viewModel: SessionViewModel) {
+        heldDecision.stop()
+        finishExit()
         let redone = redoMotionHistory.popLast()
         if let redone { motionHistory.append(redone) }
         playExit(redone ?? .fade, of: viewModel.current?.id) {
@@ -882,6 +1039,8 @@ public struct TriageView: View {
     /// or a bookmark it minted — a typed path grants nothing — so this is
     /// the only way in.
     private func chooseSourceFolder() {
+        heldDecision.stop()
+        finishExit()
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
@@ -903,6 +1062,8 @@ public struct TriageView: View {
     /// excluded from commit isn't going anywhere, so it's not worth a
     /// confirmation of its own.
     private func requestSwitch(to url: URL) {
+        heldDecision.stop()
+        finishExit()
         guard let viewModel, !viewModel.filesToTrash.isEmpty else {
             switchFolder(to: url)
             return

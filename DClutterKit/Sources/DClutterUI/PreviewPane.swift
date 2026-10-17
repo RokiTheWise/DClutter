@@ -16,6 +16,7 @@ import DClutterCore
 /// thumbnail is the faster path §6 preferred for the common case.
 struct PreviewPane: View {
     let candidate: FileCandidate
+    var height: CGFloat = 300
 
     var body: some View {
         ZStack {
@@ -28,7 +29,7 @@ struct PreviewPane: View {
                 ThumbnailPreview(url: candidate.url)
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.preview))
         }
-        .aspectRatio(4.0 / 3.0, contentMode: .fit)
+        .frame(height: height)
     }
 }
 
@@ -47,7 +48,7 @@ private struct ThumbnailPreview: NSViewRepresentable {
         // NSImageView reports the image's own size as its intrinsic content
         // size. A file-type icon is 512pt square, which blew the card's
         // layout out and pushed the control bar off screen. Let the
-        // SwiftUI aspect box drive the size instead of the image.
+        // bounded preview well drive the size instead of the image.
         view.setContentHuggingPriority(.defaultLow, for: .horizontal)
         view.setContentHuggingPriority(.defaultLow, for: .vertical)
         view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -67,7 +68,7 @@ private struct ThumbnailPreview: NSViewRepresentable {
         guard coordinator.requestedURL != url else { return }
         coordinator.requestedURL = url
 
-        let size = CGSize(width: 400, height: 300)
+        let size = CGSize(width: 680, height: 400)
         // `.all`, not `.thumbnail`: a zip, a .docx, or anything else with no
         // renderable content has no content thumbnail, and asking only for
         // one leaves the well blank — which reads as a broken app rather

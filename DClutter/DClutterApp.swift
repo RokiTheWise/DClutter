@@ -11,13 +11,8 @@ import SwiftUI
 struct DClutterApp: App {
     var body: some Scene {
         WindowGroup {
-            // Design spec §4: minimum 520x640. Below that the card stops
-            // being a card — the preview well and metadata rows compress
-            // until the layout reads as a cramped list instead.
-            // Sized to fit its contents rather than floating the card in a
-            // large canvas: the card caps at 620pt plus a 48pt margin each
-            // side, so ~716 is the width at which the layout is exactly
-            // itself. Design §4 wants generous margin, not a void.
+            // The header and decision row stay visible down to 520×640;
+            // the preview grows with the available workspace height.
             ContentView()
                 .frame(
                     minWidth: 520, idealWidth: 716,

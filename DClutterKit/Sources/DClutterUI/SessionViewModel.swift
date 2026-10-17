@@ -25,15 +25,22 @@ final class SessionViewModel {
     var showCommitSheet = false
     var commitError: String?
     var isRenaming = false
+    private(set) var isChoosingDestinationFolder = false
     var destinations: [Destination] = []
     var moveError: String?
     var renameError: String?
 
     private let destinationStore = DestinationStore()
+    private let destinationFolderPicker: @MainActor () -> URL?
 
-    init(session: DClutterSession, fileActions: FileActions = FileActions()) {
+    init(
+        session: DClutterSession,
+        fileActions: FileActions = FileActions(),
+        destinationFolderPicker: @escaping @MainActor () -> URL? = SessionViewModel.pickDestinationFolder
+    ) {
         self.session = session
         self.fileActions = fileActions
+        self.destinationFolderPicker = destinationFolderPicker
         self.destinations = destinationStore.load()
     }
 
@@ -168,12 +175,26 @@ final class SessionViewModel {
     /// §6: up to three folders, chosen by the user through an open panel so
     /// the sandbox grants access to them at all.
     func chooseDestinationFolder() {
+        // runModal runs a nested event loop: another gesture or shortcut
+        // can reach this method before the first picker returns.
+        guard !isChoosingDestinationFolder else { return }
         // §6 caps this at three. Silently dropping one to make room loses
         // a setup the user chose, so refuse and say which key frees a slot.
         guard destinations.count < DestinationStore.maximumDestinations else {
             moveError = "Three folders is the maximum. Highlight one on the shelf and press ⌫ to free a slot."
             return
         }
+        isChoosingDestinationFolder = true
+        defer { isChoosingDestinationFolder = false }
+        guard let url = destinationFolderPicker() else { return }
+
+        destinations.append(Destination(url: url))
+        destinationStore.save(destinations)
+        moveError = nil
+        version += 1
+    }
+
+    private static func pickDestinationFolder() -> URL? {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
@@ -185,12 +206,8 @@ final class SessionViewModel {
         panel.canCreateDirectories = true
         panel.prompt = "Use Folder"
         panel.message = "Pick or create a folder to file things into."
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-
-        destinations.append(Destination(url: url))
-        destinationStore.save(destinations)
-        moveError = nil
-        version += 1
+        guard panel.runModal() == .OK else { return nil }
+        return panel.url
     }
 
     func removeDestination(at index: Int) {

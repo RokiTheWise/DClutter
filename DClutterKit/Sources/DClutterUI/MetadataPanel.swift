@@ -6,15 +6,12 @@ import SwiftUI
 import DClutterCore
 
 /// dclutter-design.md §1 — the "instrumentation" voice: uppercase SF Mono
-/// labels in tertiary grey, SF Pro Text values in primary. Monospaced
-/// labels also align on a column for free, no Grid needed.
+/// labels in secondary grey and SF Pro Text values in primary. A two-column
+/// readout keeps related fields grouped without a tall stack of sparse rows.
 struct MetadataPanel: View {
     let candidate: FileCandidate
 
-    /// Always the same four rows, in the same order — an absent source
-    /// renders as a dash rather than collapsing the row. Design spec §4:
-    /// the card must not change height between files, or the queue jitters
-    /// on every advance.
+    /// Always the same four fields; missing values never collapse a cell.
     private var rows: [(String, String)] {
         [
             ("SIZE", Self.byteFormatter.string(fromByteCount: candidate.bytes)),
@@ -25,18 +22,21 @@ struct MetadataPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.unit * 2) {
+        LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)], alignment: .leading, spacing: 14) {
             ForEach(rows, id: \.0) { label, value in
-                HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.small) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(label)
-                        .font(.system(size: 11, design: .monospaced))
-                        .kerning(0.5)
-                        .foregroundStyle(DesignTokens.ColorToken.textTertiary)
-                        .frame(width: 90, alignment: .leading)
+                        .font(.system(size: 10, design: .monospaced))
+                        .kerning(0.7)
+                        .foregroundStyle(DesignTokens.ColorToken.textSecondary)
                     Text(value)
                         .font(.system(size: 13))
                         .foregroundStyle(DesignTokens.ColorToken.textPrimary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(value)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }

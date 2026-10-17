@@ -93,44 +93,61 @@ struct CardView: View {
     var onReveal: (() -> Void)?
     var onRename: (() -> Void)?
     var onCopyName: (() -> Void)?
+    var previewHeight: CGFloat = 300
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.large) {
-            PreviewPane(candidate: candidate)
+        VStack(alignment: .leading, spacing: 0) {
+            PreviewPane(candidate: candidate, height: previewHeight)
+                .padding(20)
 
-            // Two lines are always reserved, and the chip row below always
-            // occupies a row's height even when empty. Design spec §4: the
-            // card must not resize between files, or the queue jitters on
-            // every advance.
-            Text(candidate.url.lastPathComponent)
-                .font(.system(size: 22, weight: .regular))
-                .kerning(-0.4)
-                .foregroundStyle(DesignTokens.ColorToken.textPrimary)
-                .lineLimit(2, reservesSpace: true)
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Text(candidate.url.lastPathComponent)
+                            .font(.system(size: 22, weight: .medium))
+                            .kerning(-0.4)
+                            .foregroundStyle(DesignTokens.ColorToken.textPrimary)
+                            .lineLimit(2)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .help(candidate.url.lastPathComponent)
+                        Button(action: { onOpen?() }) {
+                            Label("Open", systemImage: "arrow.up.right")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .focusable(false)
+                        .help("Open this file  (⏎)")
+                    }
 
-            let chips = ChipBuilder.chips(for: candidate, in: context)
-            HStack(spacing: DesignTokens.Spacing.small) {
-                if chips.isEmpty {
-                    Chip(text: " ").hidden()
-                } else {
-                    ForEach(chips, id: \.self) { Chip(text: $0) }
+                    HStack(spacing: 8) {
+                        Text(fileKind)
+                            .font(.system(size: 12))
+                            .foregroundStyle(DesignTokens.ColorToken.textSecondary)
+                            .lineLimit(1)
+                        ForEach(ChipBuilder.chips(for: candidate, in: context), id: \.self) { Chip(text: $0) }
+                        Spacer(minLength: 0)
+                    }
+                    .frame(height: 22, alignment: .leading)
                 }
-            }
 
-            MetadataPanel(candidate: candidate)
+                Divider()
+                MetadataPanel(candidate: candidate)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
-        .padding(DesignTokens.Spacing.xLarge)
+        // Keep the card steady across files while allowing the name and
+        // its context to sit together, even when the name is only one line.
+        .frame(height: previewHeight + 250, alignment: .top)
         .background(DesignTokens.ColorToken.cardSurface)
         .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.card))
         .overlay(
             RoundedRectangle(cornerRadius: DesignTokens.Radius.card)
                 .strokeBorder(DesignTokens.ColorToken.hairline)
         )
-        // Design §4 keeps the card centred with generous margin — the
-        // emptiness is deliberate, one decision at a time. But 480 was
-        // tuned for the 520-wide minimum and looks marooned on a large
-        // display, so it may grow a little before the margin takes over.
-        .frame(maxWidth: 620)
+        .frame(maxWidth: 760)
         .offset(x: swipeOffset * 90 + exitTravel.width, y: exitTravel.height)
         .rotationEffect(.degrees(swipeOffset * 2))
         .opacity((1 - min(abs(swipeOffset) * 0.35, 0.35)) * (1 - exitFraction))
@@ -147,6 +164,13 @@ struct CardView: View {
         .help("Double-click to open this file")
         .id(candidate.id) // forces a fresh identity so .transition fires on advance
         .transition(cardTransition)
+    }
+
+    private var fileKind: String {
+        if candidate.isDirectory { return "Folder" }
+        if let description = candidate.contentType?.localizedDescription { return description }
+        let suffix = candidate.url.pathExtension
+        return suffix.isEmpty ? "File" : "\(suffix.uppercased()) file"
     }
 
     /// Far enough that the card is clear of any window before the swap.

@@ -32,9 +32,9 @@ struct FolderField: View {
         } label: {
             HStack(spacing: DesignTokens.Spacing.unit) {
                 Image(systemName: "folder")
-                    .font(.system(size: 11))
-                Text(Self.displayPath(for: url))
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.system(size: 14))
+                Text(url.lastPathComponent)
+                    .font(.system(size: 16, weight: .medium))
                     .lineLimit(1)
                     // A long path loses its middle, never its end — the
                     // folder name is the part that identifies it.
@@ -42,20 +42,14 @@ struct FolderField: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9))
             }
-            .foregroundStyle(DesignTokens.ColorToken.textSecondary)
-            .frame(maxWidth: 260, alignment: .leading)
+            .foregroundStyle(DesignTokens.ColorToken.textPrimary)
         }
-        // `.button` + `.accessoryBar` rather than `.borderlessButton`: it
-        // makes this the same control as the Stage/Skip/Keep buttons beside
-        // it, so it inherits their hover fill instead of imitating one.
-        // Two hand-rolled attempts failed before this — `.onHover` never
-        // fires over `.borderlessButton`'s AppKit control, and an
-        // NSTrackingArea overlay hit the zero-sized-representable trap
-        // SwipeCatcher.swift already documents.
+        // The folder name is the header's title. Its full path is shown
+        // beneath it by TriageView and remains available in the tooltip.
         .menuStyle(.button)
-        .buttonStyle(.accessoryBar)
+        .buttonStyle(.plain)
         .menuIndicator(.hidden)
-        .fixedSize()
+        .lineLimit(1)
         .help("Triaging \(url.path) — click to switch folders")
     }
 

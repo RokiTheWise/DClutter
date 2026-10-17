@@ -83,3 +83,32 @@ private struct TestTrashError: Error {}
     #expect(session.states[c.url] == .trashed)
     #expect(viewModel.stagedForCommit.map(\.id) == [b.id])
 }
+
+@MainActor
+@Test func destinationPickerIgnoresReentrantRequestsAndReopensAfterCancellation() {
+    let session = DClutterSession(candidates: [candidate("a.pdf")], persistenceURL: tempPersistenceURL())
+    var pickerCount = 0
+    var viewModel: SessionViewModel!
+    viewModel = SessionViewModel(session: session, destinationFolderPicker: {
+        pickerCount += 1
+        #expect(viewModel.isChoosingDestinationFolder)
+        // Simulate gesture/keyboard callbacks during runModal's nested loop.
+        for _ in 0..<5 { viewModel.chooseDestinationFolder() }
+        return nil
+    })
+    defer { viewModel = nil }
+    viewModel.destinations = []
+
+    viewModel.chooseDestinationFolder()
+
+    #expect(pickerCount == 1)
+    #expect(!viewModel.isChoosingDestinationFolder)
+    #expect(viewModel.destinations.isEmpty)
+    #expect(viewModel.remainingCount == 1)
+
+    viewModel.chooseDestinationFolder()
+
+    #expect(pickerCount == 2)
+    #expect(!viewModel.isChoosingDestinationFolder)
+    #expect(viewModel.destinations.isEmpty)
+}
