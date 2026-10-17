@@ -9,7 +9,7 @@ function Preview({ kind }: { kind: SampleFile["preview"] }) {
         <br />
         01&nbsp;&nbsp;Review the project brief
         <br />
-        02&nbsp;&nbsp;Organise research and references
+        02&nbsp;&nbsp;Organize research and references
         <br />
         03&nbsp;&nbsp;Prepare the first design review
         <br />

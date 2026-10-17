@@ -40,7 +40,7 @@ The current site assumes deployment at the root of a domain. GitHub Pages under
 ## Design
 
 The page is one continuous scroll from pale sky to near-black. Five muted
-colours carry it, declared as tokens in `globals.css`:
+colors carry it, declared as tokens in `globals.css`:
 
 | Token     | Value     | Where it lands            |
 | --------- | --------- | ------------------------- |
@@ -51,8 +51,8 @@ colours carry it, declared as tokens in `globals.css`:
 | `--blush` | `#edd6d9` | undo                      |
 
 One tint owns each band and the bands meet on arcs rather than straight edges,
-so one colour rolls into the next. Ink is the only strong value on the page —
-there is no accent colour. Display type is Instrument Serif; everything else is
+so one color rolls into the next. Ink is the only strong value on the page —
+there is no accent color. Display type is Instrument Serif; everything else is
 the self-hosted Inter.
 
 ## Structure
@@ -97,7 +97,7 @@ and Stage.
 The four decisions section can also be driven by hover, click or focus rather
 than scroll.
 
-Motion honours `prefers-reduced-motion` throughout: the tints and the layout
+Motion honors `prefers-reduced-motion` throughout: the tints and the layout
 stay, the movement stops.
 
 The website does not depend on the ignored `videos/` project or any video file.

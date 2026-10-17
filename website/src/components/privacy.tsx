@@ -5,15 +5,15 @@ import { motion, useReducedMotion } from "motion/react";
 const points = [
   {
     title: "No account, ever.",
-    body: "There is nothing to sign up for. Open the app and it works, offline, on the first launch.",
+    body: "There is nothing to sign up for. Open it and it works, offline, on the first launch.",
   },
   {
     title: "Nothing is uploaded.",
-    body: "File names, contents and previews are read on your Mac and never leave it. There is no server to send them to.",
+    body: "File names, contents, and previews are read on your Mac and never leave it. There is no server to send them to.",
   },
   {
     title: "No telemetry.",
-    body: "No analytics, no crash pings, no usage counters. The app has no idea what you sorted, and neither does anyone else.",
+    body: "No analytics, no crash pings, no usage counters. The app has no idea what you sorted, and neither do I.",
   },
 ];
 

@@ -13,12 +13,12 @@ export default function SiteEnd() {
             Here&rsquo;s to a lighter desktop
           </span>
           <h2 className="display" id="download-heading" style={{ marginTop: 18 }}>
-            A little less clutter.
-            <br />A little more clarity.
+            Go empty a folder.
           </h2>
           <p className="lede">
-            Free, open source, and yours to read line by line. Built for the end
-            of a semester or the end of a project — not for every day.
+            Free, open source, and built in a week. Eighteen downloads, six stars,
+            and one fork from people who trusted it with their own files. Made for
+            the end of a semester or the end of a project.
           </p>
 
           <div className="end-actions">
@@ -57,6 +57,8 @@ export default function SiteEnd() {
           </div>
         </div>
 
+        <p className="end-closer">771 unmade decisions, finally made.</p>
+
         <div className="end-foot">
           <span>DClutter</span>
           {mac.status === "available" ? (
@@ -66,7 +68,7 @@ export default function SiteEnd() {
           {win.repositoryUrl ? (
             <a href={win.repositoryUrl}>Windows — in development</a>
           ) : null}
-          <span className="spacer">Made for the end of a semester.</span>
+          <span className="spacer">Built in a week, Aug 28 to Sep 4, 2026.</span>
         </div>
       </div>
     </section>

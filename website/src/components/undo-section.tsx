@@ -25,14 +25,14 @@ export default function UndoSection() {
             Room to change your mind.
           </h2>
           <p className="lede" style={{ marginTop: 22 }}>
-            Staging isn&rsquo;t deleting. Files you stage sit in a holding area until
-            you review the whole batch, and every move the app makes is registered
-            for undo before it happens — not after. Drag the handle and watch the
-            session come apart.
+            Staged files stay on disk. They sit in a holding area until you
+            review the whole batch, and every move gets registered for undo before
+            it runs. Drag the handle and watch the session come apart.
           </p>
           <p className="lede" style={{ marginTop: 18 }}>
-            When you do empty the staging area, files go to the Trash. DClutter
-            never deletes anything outright.
+            When you do empty the staging area, files go to the Trash, where you
+            can still fish them out. A file that was never deleted is a lot easier
+            to bring back than one you have to dig for.
           </p>
         </div>
 

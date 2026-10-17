@@ -63,7 +63,7 @@ export const decisions: {
     key: "ArrowLeft",
     keyLabel: "←",
     blurb:
-      "Headed for the bin, but not yet. Staged files sit in a holding area you review in one go — nothing is trashed until you say the word.",
+      "Headed for the bin, but not yet. Swipe left and the file moves to a holding area, still on disk. You get the whole list for a second look, and even then it goes to the Trash.",
     result: "Staged for review. Still on disk.",
   },
   {
@@ -72,7 +72,7 @@ export const decisions: {
     key: " ",
     keyLabel: "space",
     blurb:
-      "No decision is a decision too. Skipped files drop back into the queue so you can keep moving instead of stalling on the hard one.",
+      "No decision is a decision too. Skipped files drop back into the queue, so you keep moving instead of stalling on the hard one.",
     result: "Skipped. Back in the queue.",
   },
   {
@@ -81,7 +81,7 @@ export const decisions: {
     key: "ArrowUp",
     keyLabel: "↑",
     blurb:
-      "Send it somewhere it belongs. Pick a destination once and it stays on the list, a keystroke away, for the rest of the session.",
+      "Press up and your folders slide in. Pick one, and it is filed — and it stays on the list, a keystroke away, for the rest of the session.",
     result: "Filed into Projects.",
   },
   {

@@ -27,9 +27,10 @@ export default function Landing() {
               Try it before you download it.
             </h2>
             <p className="lede" style={{ marginTop: 22 }}>
-              This is the real thing, running in the page. Click into it and use
-              the arrow keys — or the buttons, if you&rsquo;d rather. Nothing here
-              touches anything on your computer.
+              It takes about half a second to know whether a file matters, and
+              your fingers can keep up with your mind. Click in and use the arrow
+              keys — or the buttons, if you&rsquo;d rather. Nothing here touches
+              anything on your computer.
             </p>
             <TriageDemo />
           </div>

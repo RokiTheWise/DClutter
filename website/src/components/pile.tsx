@@ -82,19 +82,20 @@ export default function Pile() {
         <div>
           <span className="eyebrow">The honest starting point</span>
           <h2 className="display" id="pile-heading" style={{ marginTop: 18 }}>
-            Eight months of
+            771 files, and no
             <br />
-            &ldquo;I&rsquo;ll deal with it later.&rdquo;
+            idea where to start.
           </h2>
           <p className="lede" style={{ marginTop: 22 }}>
-            Downloads is where files go when a decision feels too small to make
-            and too annoying to repeat. The folder isn&rsquo;t the problem. Making
-            four hundred tiny choices in a row is.
+            I opened my Mac after finals and wondered when I had last organized
+            anything. Then I opened Downloads. Whiplash. Downloads fills up
+            because every file asks for a decision, and 771 decisions in a row is
+            more than anyone sits down to make.
           </p>
           <div className="pile-count">
-            <b>412</b>
+            <b>771</b>
             <span className="lede" style={{ margin: 0 }}>
-              files, give or take
+              down to the 3 I needed
             </span>
           </div>
         </div>

@@ -68,12 +68,12 @@ export default function Hero() {
         <h1>
           <span className="line-mask">
             <motion.span style={{ display: "block" }} {...line(0)}>
-              A calmer way
+              A little less cluttery.
             </motion.span>
           </span>
           <span className="line-mask">
             <motion.span style={{ display: "block" }} {...line(1)}>
-              to empty a folder.
+              A little more clarity.
             </motion.span>
           </span>
         </h1>
@@ -84,8 +84,10 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.42 }}
         >
-          DClutter shows you one file at a time and asks a single question.
-          Keep it, stage it, or file it away. Undo is always one key behind you.
+          Think Tinder, for your folders. The sem ended, I opened Downloads,
+          and found 771 files — so DClutter shows them to you one at a time,
+          with a real preview and the details that decide a file&rsquo;s fate.
+          The whole loop takes ten seconds.
         </motion.p>
 
         <motion.div
