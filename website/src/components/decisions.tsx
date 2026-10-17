@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { reels } from "./decision-reels";
 import { decisions } from "@/lib/samples";
 
@@ -49,6 +49,7 @@ export default function Decisions() {
                 key={d.id}
                 type="button"
                 className="dec-item"
+                style={{ "--pair": i * 2 } as CSSProperties}
                 data-active={i === active}
                 aria-current={i === active}
                 onClick={() => jumpTo(i)}
@@ -70,6 +71,7 @@ export default function Decisions() {
               <div
                 key={decisions[i].id}
                 className="dec-reel"
+                style={{ "--pair": i * 2 } as CSSProperties}
                 data-active={i === active}
                 ref={(node) => {
                   reelRefs.current[i] = node;
