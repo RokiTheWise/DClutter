@@ -22,11 +22,10 @@ const loop = (times: number[], delay = 0) => ({
   delay,
 });
 
-function Reel({ children, caption }: { children: ReactNode; caption: ReactNode }) {
+function Reel({ children }: { children: ReactNode }) {
   return (
     <motion.div initial="rest" whileInView="play" viewport={viewport}>
       <div className="reel-scene">{children}</div>
-      <p className="reel-cap">{caption}</p>
     </motion.div>
   );
 }
@@ -84,13 +83,7 @@ export function StageReel() {
   };
 
   return (
-    <Reel
-      caption={
-        <>
-          <b>Stage</b> Still on disk. Nothing reaches the Trash until you confirm.
-        </>
-      }
-    >
+    <Reel>
       <div className="reel-pill" style={{ left: 0, top: "50%", marginTop: -19 }}>
         Review trash
         <b style={{ position: "relative" }}>
@@ -139,13 +132,7 @@ export function SkipReel() {
   });
 
   return (
-    <Reel
-      caption={
-        <>
-          <b>Skip</b> Back of the queue. You will see it again.
-        </>
-      }
-    >
+    <Reel>
       {[2, 1].map((i) => (
         <Chip
           key={i}
@@ -154,7 +141,7 @@ export function SkipReel() {
           reduced={reduced}
           variants={behind(i)}
           className="reel-chip--center"
-          style={{ marginTop: -28 + i * 20, zIndex: 3 - i }}
+          style={{ marginTop: -30 + i * 20, zIndex: 3 - i }}
         />
       ))}
       <Chip
@@ -210,13 +197,7 @@ export function FileReel() {
   };
 
   return (
-    <Reel
-      caption={
-        <>
-          <b>File</b> Three folders, picked once. After that it is 1, 2, or 3.
-        </>
-      }
-    >
+    <Reel>
       <motion.div className="reel-bins" variants={reduced ? undefined : shelf}>
         {bins.map((name, i) => (
           <motion.div
@@ -265,13 +246,7 @@ export function KeepReel() {
   };
 
   return (
-    <Reel
-      caption={
-        <>
-          <b>Keep</b> Marked as handled. It stops coming back.
-        </>
-      }
-    >
+    <Reel>
       <Chip
         name="Semester planning notes.txt"
         meta="174 bytes · ~/Downloads"

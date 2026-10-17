@@ -81,7 +81,7 @@ export const decisions: {
     key: "ArrowUp",
     keyLabel: "↑",
     blurb:
-      "Press up and your folders slide in. Pick one, and it is filed — and it stays on the list, a keystroke away, for the rest of the session.",
+      "Press up and your three folders slide in. Pick one and it is filed, or hit 1, 2, or 3 and skip the picking. They stay on the shelf for the rest of the session.",
     result: "Filed into Projects.",
   },
   {
