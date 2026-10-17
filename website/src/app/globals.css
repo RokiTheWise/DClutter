@@ -301,7 +301,7 @@ h2.display {
   gap: clamp(14px, 2.4vw, 34px);
   width: 100%;
   max-width: var(--measure);
-  padding: 10px 10px 10px 4px;
+  padding: 8px;
   border: 1px solid transparent;
   border-radius: 999px;
   pointer-events: auto;
@@ -316,7 +316,7 @@ h2.display {
 /* once you start scrolling the bar contracts into a pill */
 .nav[data-stuck="true"] .nav-inner {
   max-width: 640px;
-  padding: 10px 10px 10px 22px;
+  padding: 8px 8px 8px 18px;
   background: rgba(255, 255, 255, 0.72);
   border-color: rgba(255, 255, 255, 0.9);
   box-shadow: 0 10px 30px rgba(2, 2, 4, 0.09);
@@ -327,16 +327,17 @@ h2.display {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  padding: 4px 10px;
+  min-height: 38px;
+  padding: 0 10px;
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.015em;
 }
 
 .wordmark img {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
 }
 
 .nav-links {
@@ -357,7 +358,10 @@ h2.display {
 }
 
 .nav-cta {
-  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 22px;
   border-radius: 999px;
   background: var(--ink);
   color: var(--paper);
@@ -804,7 +808,7 @@ h2.display {
 
 .reel-scene {
   position: relative;
-  height: clamp(196px, 24vw, 248px);
+  height: clamp(236px, 28vw, 296px);
 }
 
 .reel-note {
@@ -820,28 +824,11 @@ h2.display {
   color: var(--faint);
 }
 
-.reel-cap {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-top: 14px;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
-.reel-cap b {
-  font-weight: 500;
-  color: var(--ink);
-}
-
 /* a file as it appears inside a reel */
 .reel-chip {
   position: absolute;
-  width: clamp(168px, 22vw, 210px);
-  padding: 11px 13px;
+  width: clamp(190px, 25vw, 248px);
+  padding: 13px 15px;
   border: 1px solid rgba(2, 2, 4, 0.09);
   border-radius: 11px;
   background: #fff;
@@ -851,20 +838,20 @@ h2.display {
 .reel-chip--right {
   right: 0;
   top: 50%;
-  margin-top: -28px;
+  margin-top: -30px;
 }
 
 .reel-chip--center {
   left: 50%;
   top: 50%;
-  margin-left: -100px;
-  margin-top: -28px;
+  margin-left: min(-12.5vw, -124px);
+  margin-top: -30px;
 }
 
 .reel-chip--bottom {
   left: 50%;
   bottom: 4px;
-  margin-left: -100px;
+  margin-left: min(-12.5vw, -124px);
 }
 
 .reel-chip b {
@@ -882,33 +869,6 @@ h2.display {
   color: var(--faint);
 }
 
-.reel-target--left {
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.reel-target--top {
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
-}
-
-/* the place a file is headed */
-.reel-target {
-  position: absolute;
-}
-
-.reel-target h4 {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--faint);
-  margin-bottom: 9px;
-}
-
 .reel-row {
   display: flex;
   align-items: center;
@@ -922,13 +882,16 @@ h2.display {
 }
 
 /* File (↑) reveals three destination bins that slide down from the top */
+/* Centred by the box, not by a transform: motion drives `y` on this element
+   and writes its own `transform`, which would overwrite translateX(-50%). */
 .reel-bins {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
   top: 0;
   display: flex;
+  justify-content: center;
   gap: 10px;
-  transform: translateX(-50%);
 }
 
 .reel-bin {
@@ -936,8 +899,8 @@ h2.display {
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  width: clamp(76px, 10vw, 96px);
-  padding: 12px 8px;
+  width: clamp(88px, 11.5vw, 112px);
+  padding: 14px 9px;
   border: 1px solid rgba(2, 2, 4, 0.1);
   border-radius: 12px;
   background: #fff;
@@ -1458,6 +1421,10 @@ h2.display {
     display: flex;
     flex-direction: column;
     gap: 0;
+    /* the desktop grid sets align-items:start for the sticky column; left as
+       it is here the reels shrink to nothing, since a scene's contents are
+       all absolutely positioned */
+    align-items: stretch;
   }
 
   .dec-list,
@@ -1516,30 +1483,26 @@ h2.display {
   .reel-chip--right {
   right: 0;
   top: 50%;
-  margin-top: -28px;
+  margin-top: -30px;
 }
 
 .reel-chip--center {
   left: 50%;
   top: 50%;
-  margin-left: -100px;
-  margin-top: -28px;
+  margin-left: min(-12.5vw, -124px);
+  margin-top: -30px;
 }
 
 .reel-chip--bottom {
   left: 50%;
   bottom: 4px;
-  margin-left: -100px;
+  margin-left: min(-12.5vw, -124px);
 }
 
 .reel-chip b {
     font-size: 11.5px;
   }
 
-  .reel-target {
-    max-width: 44vw;
-    padding: 10px 11px;
-  }
 
   .reel-row {
     padding: 6px 8px;
@@ -1548,27 +1511,21 @@ h2.display {
 
   /* stacked instead of side by side, so the scene needs more height */
   .reel-scene {
-    height: 290px;
+    height: 300px;
   }
 
   .reel-chip--center,
   .reel-chip--bottom {
-    margin-left: min(-25vw, -95px);
+    margin-left: min(-25vw, -104px);
   }
 
-  .reel-target--left {
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
-  }
-
-  .reel-chip--right {
+    .reel-chip--right {
     right: auto;
     left: 50%;
     top: auto;
     bottom: 0;
     margin-top: 0;
-    margin-left: min(-25vw, -95px);
+    margin-left: min(-25vw, -104px);
   }
 
   .demo-actions {
