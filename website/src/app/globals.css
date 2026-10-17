@@ -807,6 +807,7 @@ h2.display {
 }
 
 .reel-scene {
+  --chip-w: clamp(190px, 25vw, 248px);
   position: relative;
   height: clamp(236px, 28vw, 296px);
 }
@@ -827,7 +828,7 @@ h2.display {
 /* a file as it appears inside a reel */
 .reel-chip {
   position: absolute;
-  width: clamp(190px, 25vw, 248px);
+  width: var(--chip-w);
   padding: 13px 15px;
   border: 1px solid rgba(2, 2, 4, 0.09);
   border-radius: 11px;
@@ -842,16 +843,18 @@ h2.display {
 }
 
 .reel-chip--center {
-  left: 50%;
+  left: 0;
+  right: 0;
   top: 50%;
-  margin-left: min(-12.5vw, -124px);
+  margin-inline: auto;
   margin-top: -30px;
 }
 
 .reel-chip--bottom {
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 4px;
-  margin-left: min(-12.5vw, -124px);
+  margin-inline: auto;
 }
 
 .reel-chip b {
@@ -965,6 +968,9 @@ h2.display {
 }
 
 .reel-tick {
+  left: 50%;
+  /* clears the card's 16px nudge, so the two never touch mid-cycle */
+  margin-left: calc(var(--chip-w) / 2 + 30px);
   display: grid;
   place-items: center;
   width: 30px;
@@ -1487,16 +1493,18 @@ h2.display {
 }
 
 .reel-chip--center {
-  left: 50%;
+  left: 0;
+  right: 0;
   top: 50%;
-  margin-left: min(-12.5vw, -124px);
+  margin-inline: auto;
   margin-top: -30px;
 }
 
 .reel-chip--bottom {
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 4px;
-  margin-left: min(-12.5vw, -124px);
+  margin-inline: auto;
 }
 
 .reel-chip b {
@@ -1514,18 +1522,13 @@ h2.display {
     height: 300px;
   }
 
-  .reel-chip--center,
-  .reel-chip--bottom {
-    margin-left: min(-25vw, -104px);
-  }
-
     .reel-chip--right {
-    right: auto;
-    left: 50%;
+    right: 0;
+    left: 0;
     top: auto;
     bottom: 0;
     margin-top: 0;
-    margin-left: min(-25vw, -104px);
+    margin-inline: auto;
   }
 
   .demo-actions {

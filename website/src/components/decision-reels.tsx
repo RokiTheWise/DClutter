@@ -257,7 +257,7 @@ export function KeepReel() {
       <motion.div
         className="reel-tick"
         variants={reduced ? undefined : tick}
-        style={{ position: "absolute", left: "calc(50% + 92px)", top: "calc(50% - 15px)" }}
+        style={{ position: "absolute", top: "calc(50% - 15px)" }}
         aria-hidden="true"
       >
         ✓
