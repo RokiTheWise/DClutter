@@ -266,7 +266,8 @@ file actions, picker reentry, gesture isolation, and held-key timing:
 **Latest packaged release: 1.0.0.** Keep, staged trash, file, skip, rename,
 undo/redo, gestures, and folder switching are implemented.
 
-Current source also includes the preview-first layout, labeled decision buttons,
+**1.1.0 is being prepared for release.** Current source includes the preview-first
+layout, labeled decision buttons,
 clickable destination folders, persistent interaction settings, and the fix for
 repeated folder pickers triggered by scrolling. These are pending the next release.
 

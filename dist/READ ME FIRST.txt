@@ -1,4 +1,4 @@
-DClutter 1.0.0
+DClutter 1.1.0
 ==============
 
 Thanks for trying this out.
@@ -49,10 +49,11 @@ It only ever looks at your Downloads folder, plus any folders you
 explicitly pick yourself.
 
   Keep      Does nothing at all. The file stays exactly where it is.
-  Trash     Nothing is deleted straight away. Files are collected in a
+  Stage     Nothing is deleted straight away. Files are collected in a
             list, you review that list, and only then do they go to the
             Trash — where you can still get them back.
-  File it   Moves the file into a folder you chose. Undo brings it back.
+  Skip      Puts the file at the end of the queue to decide later.
+  File      Moves the file into a folder you chose. Undo brings it back.
 
 It never deletes anything permanently.
 
@@ -66,14 +67,29 @@ THE CONTROLS
   Up arrow         Choose a folder to file it into
   1, 2, 3          File it straight into folder 1, 2 or 3
   Return           Open the file so you can look at it properly
+  Down arrow       Rename the current file
   Cmd + Z          Undo
-  Cmd + Return     Review the trash pile and empty it
-  ?                Show all the controls
+  Shift + Cmd + Z   Redo (Cmd + Y also works)
+  Cmd + Return     Review staged files and confirm moving them to Trash
+  Cmd + N          Add a destination folder
+  Cmd + ,          Open Settings
+  ?                Show Controls & gestures in Settings
 
 You can also swipe left and right on a trackpad, and swipe up with two
 fingers to choose a folder.
 
-To sort a different folder, click the folder path at the top and pick one.
+The Stage, Skip, File, and Keep buttons below the preview work by click too.
+Click a destination folder to file into it, or double-click the card to open
+the file in its default app.
+
+Hold Left or Right to move through files at a steady pace. The Settings
+gear on the left lets you choose 0.5 to 8 files per second (3 by default).
+At 0.5, each repeat waits two seconds. Releasing the key stops the hold.
+
+Settings also has an optional Confirm Add folder switch, off by default.
+Enable it to require Return or a click after a swipe highlights Add folder.
+
+To sort a different folder, click the folder name at the top and pick one.
 macOS will ask you to choose it yourself — an app like this can only reach
 a folder you handed it. Each folder remembers its own progress, so you can
 leave one half-sorted and come back to it.
