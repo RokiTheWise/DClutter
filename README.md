@@ -91,7 +91,17 @@ Keyboard is the primary interface; every action has a pointer equivalent.
 | `⌘Z` / `⇧⌘Z` | Undo / redo |
 | `⌘⏎` | Review and trash staged files |
 | `⌘N` | Add a destination folder |
+| `⌘,` | Open Settings |
 | `?` | Show the controls |
+
+Hold `←` or `→` to advance at a steady pace. Settings, at the left of the
+toolbar, adjusts this from 0.5–8 files per second in half-file steps (3 by default).
+At 0.5, files advance once every two seconds. Single
+presses stay immediate. Settings also contains the controls guide and an
+optional **Confirm “Add folder…”** switch, off by default. When enabled,
+releasing a swipe over that bin leaves it highlighted; press Return or
+click it to open the folder picker. Existing destination bins still file
+on release. Both settings are saved between launches.
 
 ### Trackpad and mouse
 
@@ -100,7 +110,9 @@ Keyboard is the primary interface; every action has a pointer equivalent.
 | Swipe right / left | Keep / stage for trash |
 | Two fingers up | Open the shelf, slide across, let go to file |
 | Drag back down | Close the shelf without filing |
-| Double-click | Open the file |
+| Click Stage / Skip / File / Keep | Decide on the current file |
+| Click a destination folder | File into that folder |
+| Double-click or click Open | Open the file |
 | Right-click | Reveal in Finder, rename, copy name |
 | Click the folder path | Switch folders, or add a new one |
 

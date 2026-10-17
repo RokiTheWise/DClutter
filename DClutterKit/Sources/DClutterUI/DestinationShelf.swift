@@ -27,6 +27,7 @@ struct DestinationShelf: View {
     /// Forget a destination, freeing its slot. The folder on disk and
     /// anything already filed into it are untouched.
     var onRemove: ((Int) -> Void)?
+    var onSelect: ((Int) -> Void)?
 
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.medium) {
@@ -45,6 +46,10 @@ struct DestinationShelf: View {
                         isHighlighted: highlighted == index,
                         shortcut: "\(index + 1)"
                     )
+                    .onTapGesture { onSelect?(index) }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { onSelect?(index) }
+                    .help("File into \(destination.name)  (\(index + 1))")
                     .overlay(alignment: .topTrailing) {
                         Button {
                             onRemove?(index)

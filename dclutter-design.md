@@ -67,7 +67,7 @@ does not transfer at all — only its *treatment* does.
 
 | Token | Face | Size | Weight | Tracking | Use |
 |---|---|---:|---|---:|---|
-| `filename` | SF Pro Display | 22 | Regular | −0.4 | The file's name on the card |
+| `filename` | SF Pro Display | 22 | Medium | −0.4 | The file's name on the card |
 | `filenameLong` | SF Pro Display | 17 | Regular | −0.2 | Fallback when the name is long |
 | `metaLabel` | SF Mono | 11 | Regular | +0.5, UPPERCASE | `SIZE`, `FROM`, `LAST OPENED` |
 | `metaValue` | SF Pro Text | 13 | Regular | 0 | The values beside them |
@@ -158,40 +158,58 @@ black.
 
 ## 4. Layout
 
-Base unit 4. Steps: 4, 8, 12, 16, 24, 32, 48.
+Base unit 4. Steps: 4, 8, 12, 16, 20, 24, 32, 48.
+
+The window has three clear regions: a source/session header, a review workspace,
+and a quiet status footer. File decisions live immediately below the card;
+secondary session actions never compete with them in the header.
 
 ```
-┌─────────────────────────────────────┐
-│  [ destination bins, hidden ]       │  slides in on drag (M4)
-├─────────────────────────────────────┤
-│                                     │
-│    ╭───────────────────────────╮    │
-│    │  ┌─────────────────────┐  │    │  preview well
-│    │  │                     │  │    │  10pt radius, hairline
-│    │  │      QuickLook      │  │    │  fixed aspect box
-│    │  │                     │  │    │
-│    │  └─────────────────────┘  │    │
-│    │                           │    │
-│    │  Enriquez_ProblemSet3.pdf │    │  filename, 22pt, tight
-│    │                           │    │
-│    │  ⟨3 copies⟩ ⟨never opened⟩│    │  chips
-│    │                           │    │
-│    │  SIZE         842 KB      │    │  mono label / value rows
-│    │  LAST OPENED  Never       │    │
-│    │  FROM         canvas.…    │    │
-│    ╰───────────────────────────╯    │  20pt radius, hairline, flat
-│                                     │
-│  142 of 771                     ⌘⏎  │  mono counter, keyboard hint
-└─────────────────────────────────────┘
+┌───────────────────────────────────────────────────┐
+│ ⚙  Downloads          ↶  ↷   Review trash  12   ⋯ │
+│    ~/Downloads                                    │
+├───────────────────────────────────────────────────┤
+│                                                   │
+│  ╭─────────────────────────────────────────────╮  │
+│  │ ╭─────────────────────────────────────────╮ │  │
+│  │ │                 Preview                 │ │  │
+│  │ ╰─────────────────────────────────────────╯ │  │
+│  │ Semester notes.pdf                   Open ↗ │  │
+│  │ PDF document  ⟨2 copies⟩                    │  │
+│  ├─────────────────────────────────────────────┤  │
+│  │ SIZE                 LAST OPENED            │  │
+│  │ 842 KB               Never                  │  │
+│  │ FROM                 ADDED                  │  │
+│  │ canvas.ateneo.edu    14 Mar 2026             │  │
+│  ╰─────────────────────────────────────────────╯  │
+│                                                   │
+│  [Stage ←]     [Skip ␣]     [File ↑]     [Keep →]  │
+├───────────────────────────────────────────────────┤
+│  142 left · 29 sorted                             │
+└───────────────────────────────────────────────────┘
 ```
 
-- Card is centered with generous margin — at least 48 on each side at default window
-  size. The emptiness is the point: one decision at a time, nothing else asking for
-  attention.
-- Preview well has a **fixed aspect box**, not intrinsic sizing. Cards must not resize
-  between files or the whole queue jitters as you swipe. Fit content inside; never
-  crop.
-- Window minimum 520×640. Below that the card stops being a card.
+- Default window 716×880, minimum 520×640. Keep 24pt horizontal workspace
+  margins; the card and decision row share a maximum width of 760pt.
+- The preview height follows the available window height, from 100–340pt.
+  It is independent of the file's content. Fit the entire thumbnail; never crop.
+- Put the preview first. Group the filename, file kind, flag chips and metadata
+  together below it, with all context reading from the left. Keep space for a
+  two-line name in the overall card height without spreading its text apart.
+- Group the four metadata fields into a two-column readout separated from
+  the name and context by a hairline. Labels remain uppercase mono and use secondary
+  color for legibility; values remain primary.
+- Keep all four decision labels and their keycaps visible at the minimum
+  size. Stage uses the warm accent; Skip, File and Keep remain neutral.
+- The footer shows session counts only. Hold speed belongs in Settings, with
+  a 0.5–8 files/second range in 0.5 steps and a default of 3. The first repeat
+  waits at least one repeat interval; at 0.5 files/second this is two seconds.
+- The header contains Settings on the left, the folder name and path, Undo/
+  Redo, and Review trash with its staged-file count. Start Over lives in the
+  session menu. Review opens the existing confirmation sheet.
+- The destination chooser overlays the upper workspace while the card dims.
+  Existing bins can be clicked as well as selected by keyboard or trackpad.
+  Closing it restores focus without shifting the workspace layout.
 
 ---
 
