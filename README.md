@@ -26,8 +26,7 @@ Keep, stage for trash, skip, or file it — with a gesture, a keystroke, or a cl
   <img src="docs/assets/triage-layout.png" width="716" alt="DClutter's current layout: preview above the filename and metadata, with Stage, Skip, File, and Keep buttons below.">
 </p>
 
-*Current development layout, shown with sample files. The layout and Settings
-updates described below are not included in the 1.0.0 download yet.*
+*DClutter 1.1.0, shown with sample files.*
 
 ## What this is
 
@@ -165,11 +164,11 @@ or using arrow keys inside the picker stays inside it.
 
 ## Install
 
-**[⬇ Download DClutter 1.0.0](https://github.com/RokiTheWise/DClutter/releases/download/v1.0.0/DClutter-1.0.0.zip)**
+**[⬇ Download DClutter 1.1.0](https://github.com/RokiTheWise/DClutter/releases/download/v1.1.0/DClutter-1.1.0.zip)**
 &nbsp;·&nbsp; [all releases](https://github.com/RokiTheWise/DClutter/releases)
 
-This is the latest packaged release. To try the current development layout and
-Settings, build the source checkout as described below.
+Universal app for Apple Silicon and Intel, requiring macOS 14 or later.
+The ZIP includes the app and **READ ME FIRST.txt** with installation instructions.
 
 Then, because this app isn't signed by Apple, macOS needs you to approve it
 once:
@@ -263,13 +262,12 @@ file actions, picker reentry, gesture isolation, and held-key timing:
 
 ## Status
 
-**Latest packaged release: 1.0.0.** Keep, staged trash, file, skip, rename,
+**Latest release: 1.1.0 — At your pace.** Keep, staged trash, file, skip, rename,
 undo/redo, gestures, and folder switching are implemented.
 
-**1.1.0 is being prepared for release.** Current source includes the preview-first
-layout, labeled decision buttons,
+1.1.0 includes the preview-first layout, labeled decision buttons,
 clickable destination folders, persistent interaction settings, and the fix for
-repeated folder pickers triggered by scrolling. These are pending the next release.
+repeated folder pickers triggered by scrolling. See the [release notes](docs/releases/v1.1.0.md).
 
 The app is meant for use at the end of a semester or a project, when the folder
 has gotten out of hand. Clear it once, then you won't need it again for a while.
