@@ -12,6 +12,13 @@
   --blush: #edd6d9;
   --paper: #fbfaf9;
 
+  --ink-rgb: 2 2 4;
+  --sand-rgb: 247 233 208;
+  --sage-rgb: 224 237 223;
+  --sky-rgb: 224 237 246;
+  --blush-rgb: 237 214 217;
+  --paper-rgb: 251 250 249;
+
   --text: var(--ink);
   --muted: rgba(2, 2, 4, 0.58);
   --faint: rgba(2, 2, 4, 0.4);
@@ -42,6 +49,9 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 90px;
+  /* decorative arcs overhang the viewport by design; clip rather than hidden,
+     which would make this a scroll container and break position:sticky */
+  overflow-x: clip;
   /* the ink footer should not flash white on overscroll */
   background: var(--ink);
 }
@@ -55,7 +65,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 h1,
@@ -148,9 +158,38 @@ svg {
 /* A band is one tinted section. The arc is what makes the tint
    above roll into this one instead of meeting it at a line. */
 .band {
+  --ramp: 0.72;
+  --ramp-height: clamp(120px, 18vw, 260px);
   position: relative;
   background: var(--band);
   padding-block: clamp(96px, 14vw, 176px);
+}
+
+/* the ramp carries the next tint up into this band's floor */
+.band::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  height: var(--ramp-height);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--band-next) / 0) 0%,
+    rgb(var(--band-next) / calc(var(--ramp) * 0.45)) 62%,
+    rgb(var(--band-next) / var(--ramp)) 100%
+  );
+  pointer-events: none;
+}
+
+.band > .wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.band > .band-arc {
+  z-index: 1;
 }
 
 .band-arc {
@@ -411,8 +450,8 @@ h2.display {
 .hero h1 {
   font-family: var(--serif);
   font-weight: 400;
-  font-size: clamp(2.75rem, 8.2vw, 6.75rem);
-  line-height: 0.95;
+  font-size: clamp(2.3rem, 6.6vw, 5.25rem);
+  line-height: 1.0;
   letter-spacing: -0.025em;
   margin-top: 18px;
 }
@@ -604,6 +643,7 @@ h2.display {
    ------------------------------------------------------------ */
 
 .pile-band {
+  --band-next: var(--sage-rgb);
   --band: var(--sand);
   padding-top: clamp(40px, 6vw, 72px);
 }
@@ -668,29 +708,30 @@ h2.display {
    ------------------------------------------------------------ */
 
 .dec-band {
+  --band-next: var(--paper-rgb);
   --band: var(--sage);
 }
 
 .dec-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
   gap: clamp(32px, 6vw, 88px);
   margin-top: clamp(40px, 6vw, 72px);
   align-items: start;
 }
 
+/* the list is pinned; the previews on the right are what scroll */
 .dec-list {
   position: sticky;
-  top: 120px;
+  top: 20vh;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .dec-item {
   display: block;
   width: 100%;
-  padding: 18px 0;
+  padding: 16px 0;
   border: 0;
   border-top: 1px solid rgba(2, 2, 4, 0.12);
   text-align: left;
@@ -725,11 +766,11 @@ h2.display {
 
 .dec-name {
   font-family: var(--serif);
-  font-size: clamp(1.75rem, 3.4vw, 2.5rem);
+  font-size: clamp(1.6rem, 3.1vw, 2.25rem);
   font-weight: 400;
   line-height: 1.05;
-  color: rgba(2, 2, 4, 0.28);
-  transition: color 0.4s var(--ease);
+  color: rgba(2, 2, 4, 0.26);
+  transition: color 0.45s var(--ease);
 }
 
 .dec-item[data-active="true"] .dec-name {
@@ -741,8 +782,8 @@ h2.display {
   grid-template-rows: 0fr;
   opacity: 0;
   transition:
-    grid-template-rows 0.45s var(--ease),
-    opacity 0.35s var(--ease);
+    grid-template-rows 0.5s var(--ease),
+    opacity 0.4s var(--ease);
 }
 
 .dec-item[data-active="true"] .dec-body {
@@ -752,36 +793,47 @@ h2.display {
 
 .dec-body > p {
   overflow: hidden;
-  font-size: 15px;
+  font-size: 14.5px;
+  line-height: 1.6;
   color: var(--muted);
-  padding-top: 0;
 }
 
 .dec-item[data-active="true"] .dec-body > p {
   padding-top: 10px;
 }
 
-.dec-stage {
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: clamp(380px, 50vw, 520px);
-  padding: clamp(16px, 3vw, 32px);
+/* ---- the reels ---- */
+
+.dec-reels {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 3vw, 36px);
+}
+
+.dec-reel {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(18px, 2.6vw, 30px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.46);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  overflow: hidden;
+  transition: opacity 0.5s var(--ease);
 }
 
-.dec-card-holder {
-  width: min(420px, 100%);
+.dec-reel[data-active="false"] {
+  opacity: 0.44;
 }
 
-.dec-hint {
+.reel-scene {
+  position: relative;
+  height: clamp(196px, 24vw, 248px);
+}
+
+.reel-note {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 16px;
+  bottom: 4px;
   text-align: center;
   font-family: var(--mono);
   font-size: 10.5px;
@@ -790,11 +842,138 @@ h2.display {
   color: var(--faint);
 }
 
+.reel-cap {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(2, 2, 4, 0.1);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.reel-cap b {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* a file as it appears inside a reel */
+.reel-chip {
+  position: absolute;
+  width: clamp(168px, 22vw, 210px);
+  padding: 11px 13px;
+  border: 1px solid rgba(2, 2, 4, 0.09);
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(2, 2, 4, 0.1);
+}
+
+.reel-chip--right {
+  right: 0;
+  top: 50%;
+  margin-top: -28px;
+}
+
+.reel-chip--center {
+  left: 50%;
+  top: 50%;
+  margin-left: -100px;
+  margin-top: -28px;
+}
+
+.reel-chip--bottom {
+  left: 50%;
+  bottom: 4px;
+  margin-left: -100px;
+}
+
+.reel-chip b {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reel-chip span {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.reel-target--left {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.reel-target--top {
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+/* the place a file is headed */
+.reel-target {
+  position: absolute;
+  padding: 12px 14px;
+  border: 1.5px dashed rgba(2, 2, 4, 0.22);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.reel-target h4 {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 9px;
+}
+
+.reel-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.reel-row + .reel-row {
+  margin-top: 6px;
+}
+
+.reel-row[data-hit="true"] {
+  background: var(--ink);
+  color: var(--sand);
+}
+
+.reel-tick {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--sand);
+  font-size: 14px;
+}
+
 /* ------------------------------------------------------------
    4 — Try it
    ------------------------------------------------------------ */
 
 .demo-band {
+  --band-next: var(--sky-rgb);
   --band: var(--paper);
 }
 
@@ -933,6 +1112,7 @@ h2.display {
    ------------------------------------------------------------ */
 
 .privacy-band {
+  --band-next: var(--blush-rgb);
   --band: var(--sky);
 }
 
@@ -989,7 +1169,10 @@ h2.display {
    ------------------------------------------------------------ */
 
 .undo-band {
+  --band-next: var(--ink-rgb);
   --band: var(--blush);
+  --ramp: 0.5;
+  --ramp-height: clamp(180px, 26vw, 380px);
 }
 
 .undo-grid {
@@ -1184,6 +1367,15 @@ h2.display {
   font-weight: 500;
 }
 
+.end-closer {
+  margin-top: clamp(56px, 8vw, 88px);
+  font-family: var(--serif);
+  font-size: clamp(1.5rem, 3.4vw, 2.5rem);
+  line-height: 1.1;
+  text-align: center;
+  color: var(--sand);
+}
+
 .end-foot {
   display: flex;
   flex-wrap: wrap;
@@ -1217,10 +1409,11 @@ h2.display {
 
   .dec-list {
     position: static;
+    margin-bottom: 28px;
   }
 
-  .dec-stage {
-    min-height: 360px;
+  .dec-reel[data-active="false"] {
+    opacity: 1;
   }
 
   .nav-links {
@@ -1239,6 +1432,70 @@ h2.display {
 @media (max-width: 560px) {
   body {
     font-size: 15px;
+  }
+
+  /* the reel scenes put two objects side by side; at this width they collide */
+  .reel-chip {
+    width: min(50vw, 190px);
+    padding: 9px 11px;
+  }
+
+  .reel-chip--right {
+  right: 0;
+  top: 50%;
+  margin-top: -28px;
+}
+
+.reel-chip--center {
+  left: 50%;
+  top: 50%;
+  margin-left: -100px;
+  margin-top: -28px;
+}
+
+.reel-chip--bottom {
+  left: 50%;
+  bottom: 4px;
+  margin-left: -100px;
+}
+
+.reel-chip b {
+    font-size: 11.5px;
+  }
+
+  .reel-target {
+    max-width: 44vw;
+    padding: 10px 11px;
+  }
+
+  .reel-row {
+    padding: 6px 8px;
+    font-size: 10.5px;
+  }
+
+  /* stacked instead of side by side, so the scene needs more height */
+  .reel-scene {
+    height: 290px;
+  }
+
+  .reel-chip--center,
+  .reel-chip--bottom {
+    margin-left: min(-25vw, -95px);
+  }
+
+  .reel-target--left {
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+  }
+
+  .reel-chip--right {
+    right: auto;
+    left: 50%;
+    top: auto;
+    bottom: 0;
+    margin-top: 0;
+    margin-left: min(-25vw, -95px);
   }
 
   .demo-actions {
