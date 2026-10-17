@@ -58,7 +58,9 @@ function Chip({
   );
 }
 
-/* ---- 01 Stage — left, into the holding area ---- */
+/* ---- 01 Stage — left, and the Review trash counter ticks up ----
+   Staging opens nothing. The only feedback in the app is the toolbar
+   button, which reads "Review trash <n>" and gates the commit sheet. */
 
 export function StageReel() {
   const reduced = useReducedMotion();
@@ -66,36 +68,40 @@ export function StageReel() {
   const chip: Variants = {
     rest: { x: 0, opacity: 1, scale: 1 },
     play: {
-      x: [0, 0, -168, -168, 0],
+      x: [0, 0, -172, -172, 0],
       opacity: [1, 1, 0, 0, 1],
       scale: [1, 1, 0.86, 0.86, 1],
       transition: loop([0, 0.18, 0.42, 0.86, 1]),
     },
   };
-  const landed: Variants = {
-    rest: { opacity: 0.25, scale: 0.98 },
-    play: {
-      opacity: [0.25, 0.25, 1, 1, 0.25],
-      scale: [0.98, 0.98, 1, 1, 0.98],
-      transition: loop([0, 0.38, 0.5, 0.88, 1]),
-    },
+  const before: Variants = {
+    rest: { opacity: 1 },
+    play: { opacity: [1, 1, 0, 0, 1], transition: loop([0, 0.36, 0.44, 0.9, 1]) },
+  };
+  const after: Variants = {
+    rest: { opacity: 0 },
+    play: { opacity: [0, 0, 1, 1, 0], transition: loop([0, 0.36, 0.44, 0.9, 1]) },
   };
 
   return (
     <Reel
       caption={
         <>
-          <b>Stage</b> Still on disk. Nothing is in the Trash yet.
+          <b>Stage</b> Still on disk. Nothing reaches the Trash until you confirm.
         </>
       }
     >
-      <div className="reel-target reel-target--left">
-        <h4>Staging area</h4>
-        <div className="reel-row">Archive (4).zip</div>
-        <div className="reel-row">setup-arm64.dmg</div>
-        <motion.div className="reel-row" variants={reduced ? undefined : landed}>
-          Brand assets (2).zip
-        </motion.div>
+      <div className="reel-pill" style={{ left: 0, top: "50%", marginTop: -19 }}>
+        Review trash
+        <b style={{ position: "relative" }}>
+          <motion.span variants={reduced ? undefined : before}>2</motion.span>
+          <motion.span
+            variants={reduced ? undefined : after}
+            style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}
+          >
+            3
+          </motion.span>
+        </b>
       </div>
       <Chip
         name="Brand assets (2).zip"
@@ -163,7 +169,19 @@ export function SkipReel() {
   );
 }
 
-/* ---- 03 File — up, into a destination ---- */
+/* ---- 03 File — up, and three destination bins drop in ----
+   DestinationShelf: at most three folders, each with a 1-3 shortcut,
+   sliding down from the top edge as the drag rises. */
+
+const bins = ["Projects", "Receipts", "Archive"];
+
+function FolderIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+    </svg>
+  );
+}
 
 export function FileReel() {
   const reduced = useReducedMotion();
@@ -171,33 +189,48 @@ export function FileReel() {
   const chip: Variants = {
     rest: { y: 0, opacity: 1, scale: 1 },
     play: {
-      y: [0, 0, -112, -112, 0],
+      y: [0, 0, -104, -104, 0],
       opacity: [1, 1, 0, 0, 1],
       scale: [1, 1, 0.84, 0.84, 1],
       transition: loop([0, 0.2, 0.44, 0.88, 1]),
     },
   };
+  // the shelf is "attached to the drag, not triggered by it"
+  const shelf: Variants = {
+    rest: { y: -40, opacity: 0 },
+    play: {
+      y: [-40, -40, 0, 0, -40],
+      opacity: [0, 0, 1, 1, 0],
+      transition: loop([0, 0.16, 0.36, 0.88, 1]),
+    },
+  };
   const hit: Variants = {
     rest: { scale: 1 },
-    play: { scale: [1, 1, 1.05, 1, 1], transition: loop([0, 0.4, 0.5, 0.62, 1]) },
+    play: { scale: [1, 1, 1.06, 1, 1], transition: loop([0, 0.42, 0.5, 0.62, 1]) },
   };
 
   return (
     <Reel
       caption={
         <>
-          <b>File</b> One destination, picked once, a keystroke away after that.
+          <b>File</b> Three folders, picked once. After that it is 1, 2, or 3.
         </>
       }
     >
-      <div className="reel-target reel-target--top">
-        <h4>File into</h4>
-        <motion.div className="reel-row" data-hit="true" variants={reduced ? undefined : hit}>
-          Projects
-        </motion.div>
-        <div className="reel-row">Receipts</div>
-        <div className="reel-row">Archive</div>
-      </div>
+      <motion.div className="reel-bins" variants={reduced ? undefined : shelf}>
+        {bins.map((name, i) => (
+          <motion.div
+            key={name}
+            className="reel-bin"
+            data-hit={i === 0}
+            variants={reduced || i !== 0 ? undefined : hit}
+          >
+            <FolderIcon />
+            {name}
+            <kbd>{i + 1}</kbd>
+          </motion.div>
+        ))}
+      </motion.div>
       <Chip
         name="lecture-07-slides.pdf"
         meta="6.2 MB"
