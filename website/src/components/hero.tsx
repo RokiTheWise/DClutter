@@ -4,11 +4,19 @@ import { useRef } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import WindowChrome from "./window-chrome";
 import FileCard from "./file-card";
+import { CheckIcon, FolderIcon, SkipIcon, TrashIcon } from "./icons";
 import { decisions, samples } from "@/lib/samples";
 import { platforms } from "@/lib/platforms";
 
 const mac = platforms.macos;
 const EASE = [0.22, 1, 0.36, 1] as const;
+
+const HERO_ICONS = {
+  stage: TrashIcon,
+  skip: SkipIcon,
+  file: FolderIcon,
+  keep: CheckIcon,
+} as const;
 
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
@@ -112,15 +120,19 @@ export default function Hero() {
             <FileCard file={samples[0]} />
             <div
               className="demo-actions"
-              style={{ padding: "16px 0 0" }}
+              style={{ padding: "14px 0 0" }}
               aria-hidden="true"
             >
-              {decisions.map((d) => (
-                <div className="demo-act" key={d.id}>
-                  {d.label}
-                  <kbd>{d.keyLabel}</kbd>
-                </div>
-              ))}
+              {decisions.map((d) => {
+                const Icon = HERO_ICONS[d.id];
+                return (
+                  <div className="demo-act" data-hot={d.id === "stage"} key={d.id}>
+                    <Icon />
+                    <span>{d.label}</span>
+                    <kbd>{d.keyLabel}</kbd>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </WindowChrome>

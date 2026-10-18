@@ -461,6 +461,9 @@ h2.display {
    ------------------------------------------------------------ */
 
 .win {
+  /* The app's only accent. DesignTokens.consequence, dark variant: warm
+     amber-red, trash-only, never used for chips or informational UI. */
+  --app-consequence: #ed7b4f;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
@@ -474,14 +477,15 @@ h2.display {
 .win-bar {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 13px 16px;
+  gap: 12px;
+  padding: 11px 14px;
   border-bottom: 1px solid var(--win-line);
 }
 
 .win-dots {
   display: flex;
   gap: 7px;
+  margin-right: 2px;
 }
 
 .win-dots i {
@@ -490,38 +494,98 @@ h2.display {
   border-radius: 50%;
 }
 
+.win-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #b5b3b1;
+  transition: background 0.18s var(--ease), color 0.18s var(--ease);
+}
+
+button.win-icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--win-text);
+}
+
+button.win-icon:disabled {
+  opacity: 0.4;
+}
+
+.win-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
 .win-where {
   min-width: 0;
+  margin-right: auto;
 }
 
 .win-title {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 4px;
   font-size: 13.5px;
   font-weight: 600;
   color: var(--win-text);
 }
 
-.win-path {
-  font-family: var(--mono);
-  font-size: 11px;
+.win-chevron svg {
+  width: 13px;
+  height: 13px;
+  display: block;
   color: var(--win-dim);
 }
 
-.win-tools {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
+.win-path {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--win-dim);
 }
 
-.win-tools span {
-  padding: 5px 11px;
+.win-history {
+  display: flex;
+  gap: 2px;
+}
+
+/* Review trash: secondary until something is staged, then the accent */
+.win-trash {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
   border: 1px solid #2d2d31;
-  border-radius: 9px;
-  font-size: 11.5px;
-  color: #b5b3b1;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
+  color: var(--win-dim);
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.win-trash svg {
+  width: 14px;
+  height: 14px;
+}
+
+.win-trash b {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.win-trash[data-armed="true"] {
+  color: var(--app-consequence);
+  background: rgba(237, 123, 79, 0.1);
 }
 
 .win-body {
@@ -534,9 +598,38 @@ h2.display {
 
 .fcard {
   border: 1px solid var(--win-line);
-  border-radius: 14px;
+  border-radius: 20px;
   background: var(--win-card);
   padding: 16px;
+}
+
+.fcard-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.fcard-head > div {
+  min-width: 0;
+}
+
+.fcard-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-left: auto;
+  padding: 6px 11px;
+  border: 1px solid #2d2d31;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #c6c4c2;
+}
+
+.fcard-open svg {
+  width: 13px;
+  height: 13px;
 }
 
 .fcard-preview {
@@ -544,7 +637,7 @@ h2.display {
   align-items: center;
   justify-content: center;
   height: clamp(130px, 19vw, 200px);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   background: #fff;
 }
@@ -567,7 +660,6 @@ h2.display {
 }
 
 .fcard-name {
-  margin-top: 14px;
   font-size: clamp(1rem, 1.5vw, 1.1875rem);
   font-weight: 600;
   color: var(--win-text);
@@ -992,11 +1084,13 @@ h2.display {
   display: grid;
   place-items: center;
   min-height: clamp(400px, 52vw, 540px);
-  padding: clamp(12px, 2vw, 24px);
+  /* DesignTokens.Spacing.cardMargin is 48; the card fills the window */
+  padding: clamp(16px, 3.4vw, 48px);
 }
 
 .demo-card-holder {
-  width: min(460px, 100%);
+  width: 100%;
+  max-width: 720px;
 }
 
 .demo-actions {
@@ -1008,39 +1102,140 @@ h2.display {
 
 .demo-act {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 13px 8px;
-  border: 1px solid #2d2d31;
+  gap: 7px;
+  min-height: 48px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  color: #c6c4c2;
-  font-size: 13.5px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #d8d6d4;
+  font-size: 13px;
   font-weight: 500;
   transition:
-    border-color 0.2s var(--ease),
-    background 0.2s var(--ease),
-    color 0.2s var(--ease),
-    transform 0.2s var(--ease);
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    opacity 0.2s var(--ease);
 }
 
-.demo-act:hover:not(:disabled),
-.demo-act[data-armed="true"] {
-  border-color: #58705a;
-  background: rgba(224, 237, 223, 0.1);
-  color: var(--sage);
-  transform: translateY(-2px);
+.demo-act svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
 }
 
-.demo-act:disabled {
-  opacity: 0.35;
+.demo-act span {
+  text-align: left;
 }
 
 .demo-act kbd {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin-left: auto;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* Stage is the only consequential action, and the only accent in the app */
+.demo-act[data-hot="true"] {
+  border-color: rgba(237, 123, 79, 0.22);
+  background: rgba(237, 123, 79, 0.045);
+  color: var(--app-consequence);
+}
+
+.demo-act[data-hot="true"] kbd {
+  background: rgba(237, 123, 79, 0.07);
+}
+
+.demo-act:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.demo-act[data-hot="true"]:hover:not(:disabled) {
+  background: rgba(237, 123, 79, 0.11);
+}
+
+.demo-act:disabled {
+  opacity: 0.4;
+}
+
+.demo-actions[data-dim="true"] {
+  opacity: 0.35;
+}
+
+/* the destination shelf, dropping from the top edge of the stage */
+.demo-shelf {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: clamp(14px, 2vw, 22px);
+}
+
+.demo-shelf-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--win-text);
+}
+
+.demo-bins {
+  display: flex;
+  gap: 12px;
+}
+
+.demo-bin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 112px;
+  height: 76px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: var(--win-card);
+  color: #c6c4c2;
+  font-size: 12px;
+  transition: border-color 0.18s var(--ease), color 0.18s var(--ease);
+}
+
+.demo-bin svg {
+  width: 18px;
+  height: 18px;
+}
+
+.demo-bin kbd {
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.06em;
   color: var(--win-dim);
+}
+
+.demo-bin[data-hit="true"],
+.demo-bin:hover {
+  border-color: var(--win-text);
+  border-width: 2px;
+  color: var(--win-text);
+}
+
+.demo-shelf-cancel {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--win-dim);
+}
+
+.demo-shelf-cancel:hover {
+  color: #c6c4c2;
 }
 
 .demo-status {
@@ -1059,13 +1254,8 @@ h2.display {
   color: #d4d2d0;
 }
 
-.demo-tools {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
 .demo-reset {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -1511,6 +1701,28 @@ h2.display {
 
   .demo-actions {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* three 112px bins plus gaps overflow a phone-width window */
+  .demo-bins {
+    gap: 8px;
+  }
+
+  .demo-bin {
+    width: 96px;
+    height: 70px;
+    font-size: 11.5px;
+  }
+
+  /* the control bar runs out of room; the two decorative icons go first */
+  .win-bar > .win-icon:first-of-type,
+  .win-bar > .win-icon:last-child {
+    display: none;
+  }
+
+  .win-trash {
+    padding: 0 8px;
+    font-size: 11.5px;
   }
 
   .fcard-meta {

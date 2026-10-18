@@ -1,4 +1,5 @@
 import type { SampleFile } from "@/lib/samples";
+import { OpenIcon } from "./icons";
 
 function Preview({ kind }: { kind: SampleFile["preview"] }) {
   if (kind === "notes") {
@@ -72,8 +73,16 @@ export default function FileCard({ file }: { file: SampleFile }) {
       <div className="fcard-preview">
         <Preview kind={file.preview} />
       </div>
-      <div className="fcard-name">{file.name}</div>
-      <div className="fcard-type">{file.type}</div>
+      <div className="fcard-head">
+        <div>
+          <div className="fcard-name">{file.name}</div>
+          <div className="fcard-type">{file.type}</div>
+        </div>
+        <span className="fcard-open" aria-hidden="true">
+          <OpenIcon />
+          Open
+        </span>
+      </div>
       <div className="fcard-meta">
         <div>
           <span>SIZE</span>
