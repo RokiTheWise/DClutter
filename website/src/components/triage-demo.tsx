@@ -217,6 +217,15 @@ export default function TriageDemo() {
   const file = index === undefined ? null : samples[index];
   const sorted =
     state.now.kept + state.now.staged.length + state.now.filed + state.now.trashed;
+  // Start over keys off whether anything has happened, not off undo history:
+  // committing a trash clears that history, which used to disable the button
+  // at exactly the point it was most wanted.
+  const pristine =
+    state.now.queue.length === samples.length &&
+    state.now.kept === 0 &&
+    state.now.staged.length === 0 &&
+    state.now.filed === 0 &&
+    state.now.trashed === 0;
   const unticked = state.excluded.length;
   const toTrash = state.now.staged.length - unticked;
 
@@ -483,7 +492,7 @@ export default function TriageDemo() {
             type="button"
             className="demo-reset"
             onClick={() => dispatch({ type: "reset" })}
-            disabled={state.past.length === 0 && state.future.length === 0}
+            disabled={pristine}
           >
             Start over
           </button>
