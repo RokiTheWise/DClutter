@@ -64,7 +64,33 @@ function Preview({ kind }: { kind: SampleFile["preview"] }) {
     );
   }
 
-  return <span className="fcard-glyph">ZIP · 48 ITEMS</span>;
+  return (
+    <svg className="fcard-doc" viewBox="0 0 120 150" aria-hidden="true">
+      <path
+        d="M12 8h64l32 32v102a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8V16a8 8 0 0 1 8-8Z"
+        fill="#eceaea"
+      />
+      <path d="M76 8l32 32H84a8 8 0 0 1-8-8V8Z" fill="#cfcccc" />
+      <rect x="54" y="26" width="12" height="20" rx="4" fill="#b6b3b3" />
+      <g fill="#b6b3b3">
+        <rect x="55" y="52" width="10" height="7" rx="2" />
+        <rect x="55" y="63" width="10" height="7" rx="2" />
+        <rect x="55" y="74" width="10" height="7" rx="2" />
+        <rect x="55" y="85" width="10" height="7" rx="2" />
+      </g>
+      <text
+        x="60"
+        y="128"
+        textAnchor="middle"
+        fontSize="17"
+        fontWeight="500"
+        fill="#9b9898"
+        fontFamily="var(--sans)"
+      >
+        ZIP
+      </text>
+    </svg>
+  );
 }
 
 export default function FileCard({ file }: { file: SampleFile }) {
@@ -76,7 +102,14 @@ export default function FileCard({ file }: { file: SampleFile }) {
       <div className="fcard-head">
         <div>
           <div className="fcard-name">{file.name}</div>
-          <div className="fcard-type">{file.type}</div>
+          <div className="fcard-tags">
+            <span className="fcard-type">{file.type}</span>
+            {file.chips.map((chip) => (
+              <span className="fcard-chip" key={chip}>
+                {chip}
+              </span>
+            ))}
+          </div>
         </div>
         <span className="fcard-open" aria-hidden="true">
           <OpenIcon />

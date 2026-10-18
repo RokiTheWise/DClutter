@@ -474,18 +474,30 @@ h2.display {
     0 70px 130px -40px rgba(2, 2, 4, 0.26);
 }
 
+.win-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+}
+
+.win-appname {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--win-text);
+}
+
 .win-bar {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
+  padding: 4px 16px 14px;
   border-bottom: 1px solid var(--win-line);
 }
 
 .win-dots {
   display: flex;
-  gap: 7px;
-  margin-right: 2px;
+  gap: 8px;
 }
 
 .win-dots i {
@@ -497,8 +509,8 @@ h2.display {
 .win-icon {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   flex: none;
   border: 0;
   border-radius: 8px;
@@ -529,10 +541,18 @@ button.win-icon:disabled {
 .win-title {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13.5px;
+  gap: 7px;
+  font-size: clamp(15px, 1.5vw, 19px);
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--win-text);
+}
+
+.win-folder svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+  color: #c6c4c2;
 }
 
 .win-chevron svg {
@@ -543,8 +563,9 @@ button.win-icon:disabled {
 }
 
 .win-path {
+  margin-top: 2px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--win-dim);
 }
 
@@ -558,11 +579,11 @@ button.win-icon:disabled {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 10px;
+  height: 34px;
+  padding: 0 14px;
   border: 1px solid #2d2d31;
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: 9px;
+  font-size: 12.5px;
   font-weight: 500;
   white-space: nowrap;
   color: var(--win-dim);
@@ -636,15 +657,22 @@ button.win-icon:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: clamp(130px, 19vw, 200px);
+  height: clamp(150px, 22vw, 230px);
+  border: 1px solid var(--win-line);
   border-radius: 10px;
   overflow: hidden;
-  background: #fff;
+  background: transparent;
+}
+
+.fcard-doc {
+  width: auto;
+  height: 76%;
 }
 
 .fcard-paper {
   width: 100%;
   height: 100%;
+  background: #fff;
   padding: 16px 18px;
   font-family: var(--mono);
   font-size: 10.5px;
@@ -666,9 +694,28 @@ button.win-icon:disabled {
   overflow-wrap: anywhere;
 }
 
+.fcard-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+
 .fcard-type {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--win-dim);
+}
+
+/* Chip.swift: grey, no icons, no accent. Information, not warnings. */
+.fcard-chip {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: #a8a6a4;
 }
 
 .fcard-meta {
@@ -1242,7 +1289,7 @@ button.win-icon:disabled {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 18px;
+  gap: 10px 12px;
   padding: 13px clamp(14px, 2vw, 20px);
   border-top: 1px solid var(--win-line);
   font-size: 12.5px;
@@ -1252,6 +1299,10 @@ button.win-icon:disabled {
 .demo-status b {
   font-weight: 500;
   color: #d4d2d0;
+}
+
+.demo-status .dot {
+  color: #4b4a4e;
 }
 
 .demo-reset {

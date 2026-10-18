@@ -300,6 +300,9 @@ export default function TriageDemo() {
           <span>
             <b>{state.now.queue.length}</b> left
           </span>
+          <span className="dot" aria-hidden="true">
+            ·
+          </span>
           <span>
             <b>{sorted}</b> sorted
           </span>

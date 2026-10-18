@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import {
   ChevronIcon,
   EllipsisIcon,
+  FolderIcon,
   GearIcon,
   RedoIcon,
   TrayIcon,
@@ -34,19 +35,26 @@ export default function WindowChrome({
 
   return (
     <div className={`win ${className}`.trim()}>
-      <div className="win-bar">
+      {/* the macOS title bar, then the app's own control bar below it */}
+      <div className="win-titlebar">
         <div className="win-dots" aria-hidden="true">
           <i style={{ background: "#ff5f57" }} />
           <i style={{ background: "#febc2e" }} />
           <i style={{ background: "#28c840" }} />
         </div>
+        <span className="win-appname">DClutter</span>
+      </div>
 
+      <div className="win-bar">
         <span className="win-icon" aria-hidden="true">
           <GearIcon />
         </span>
 
         <div className="win-where">
           <div className="win-title">
+            <span className="win-folder" aria-hidden="true">
+              <FolderIcon />
+            </span>
             Downloads
             <span className="win-chevron" aria-hidden="true">
               <ChevronIcon />

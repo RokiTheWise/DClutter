@@ -8,6 +8,8 @@ export type SampleFile = {
   added: string;
   from: string;
   preview: "notes" | "poster" | "archive" | "sheet";
+  /** ChipBuilder output: duplicates, never opened, already extracted. Max 3. */
+  chips: string[];
 };
 
 export const samples: SampleFile[] = [
@@ -19,6 +21,7 @@ export const samples: SampleFile[] = [
     added: "17 Oct 2026",
     from: "—",
     preview: "notes",
+    chips: [],
   },
   {
     name: "A little more clarity.pdf",
@@ -28,6 +31,7 @@ export const samples: SampleFile[] = [
     added: "2 Mar 2026",
     from: "Design inspiration",
     preview: "poster",
+    chips: ["never opened"],
   },
   {
     name: "Brand assets (2).zip",
@@ -37,6 +41,7 @@ export const samples: SampleFile[] = [
     added: "19 Jan 2026",
     from: "dropbox.com",
     preview: "archive",
+    chips: ["2 copies", "never opened", "already extracted"],
   },
   {
     name: "Reading list.csv",
@@ -46,6 +51,7 @@ export const samples: SampleFile[] = [
     added: "4 Sep 2026",
     from: "—",
     preview: "sheet",
+    chips: [],
   },
 ];
 
