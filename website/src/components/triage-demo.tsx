@@ -45,7 +45,7 @@ export default function TriageDemo() {
           kept: prev.kept + (id === "keep" ? 1 : 0),
           staged: prev.staged + (id === "stage" ? 1 : 0),
           filed: prev.filed + (id === "file" ? 1 : 0),
-          announcement: `${samples[head].name} — ${meta.result}`,
+          announcement: `${samples[head].name}: ${meta.result}`,
         };
         setHistory((h) => [...h, prev]);
         return next;

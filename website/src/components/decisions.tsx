@@ -37,8 +37,7 @@ export default function Decisions() {
     <section className="band dec-band" id="decisions" aria-labelledby="dec-heading">
       <div className="band-arc" aria-hidden="true" />
       <div className="wrap">
-        <span className="eyebrow">One question, four answers</span>
-        <h2 className="display" id="dec-heading" style={{ marginTop: 18, maxWidth: "16ch" }}>
+        <h2 className="display" id="dec-heading" style={{ maxWidth: "16ch" }}>
           Every file gets the same question.
         </h2>
 

@@ -22,8 +22,7 @@ export default function Landing() {
         <section className="band demo-band" id="try-it" aria-labelledby="try-heading">
           <div className="band-arc" aria-hidden="true" />
           <div className="wrap">
-            <span className="eyebrow">Four sample files, your keyboard</span>
-            <h2 className="display" id="try-heading" style={{ marginTop: 18, maxWidth: "18ch" }}>
+            <h2 className="display" id="try-heading" style={{ maxWidth: "18ch" }}>
               Try it before you download it.
             </h2>
             <p className="lede" style={{ marginTop: 22 }}>

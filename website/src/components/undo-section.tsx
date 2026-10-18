@@ -20,8 +20,7 @@ export default function UndoSection() {
       <div className="band-arc" aria-hidden="true" />
       <div className="wrap undo-grid">
         <div>
-          <span className="eyebrow">Staged, not deleted</span>
-          <h2 className="display" id="undo-heading" style={{ marginTop: 18 }}>
+          <h2 className="display" id="undo-heading">
             Room to change your mind.
           </h2>
           <p className="lede" style={{ marginTop: 22 }}>

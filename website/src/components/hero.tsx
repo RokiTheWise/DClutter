@@ -56,15 +56,6 @@ export default function Hero() {
         className="wrap hero-copy"
         style={reduced ? undefined : { opacity: copyFade, y: copyLift }}
       >
-        <motion.span
-          className="eyebrow"
-          initial={reduced ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, ease: EASE }}
-        >
-          Free · Open source · {mac.requirements}
-        </motion.span>
-
         <h1>
           <span className="line-mask">
             <motion.span style={{ display: "block" }} {...line(0)}>
@@ -85,9 +76,8 @@ export default function Hero() {
           transition={{ duration: 0.7, ease: EASE, delay: 0.42 }}
         >
           Think Tinder, for your folders. The sem ended, I opened Downloads,
-          and found 771 files — so DClutter shows them to you one at a time,
-          with a real preview and the details that decide a file&rsquo;s fate.
-          The whole loop takes ten seconds.
+          and found 771 files. DClutter shows them to you one at a time, with
+          a real preview and the details that decide a file&rsquo;s fate.
         </motion.p>
 
         <motion.div
@@ -105,7 +95,7 @@ export default function Hero() {
           </a>
           <span className="btn-note">
             {mac.status === "available"
-              ? `v${mac.version} · ${mac.architecture}`
+              ? `Free and open source · v${mac.version} · ${mac.requirements}`
               : "Coming soon"}
           </span>
         </motion.div>

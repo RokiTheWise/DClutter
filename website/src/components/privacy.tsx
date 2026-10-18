@@ -24,8 +24,7 @@ export default function Privacy() {
     <section className="band privacy-band" id="privacy" aria-labelledby="privacy-heading">
       <div className="band-arc" aria-hidden="true" />
       <div className="wrap">
-        <span className="eyebrow">Local by construction</span>
-        <h2 className="display" id="privacy-heading" style={{ marginTop: 18, maxWidth: "15ch" }}>
+        <h2 className="display" id="privacy-heading" style={{ maxWidth: "15ch" }}>
           Nothing leaves your Mac.
         </h2>
 

@@ -9,8 +9,7 @@ export default function SiteEnd() {
       <div className="end-arc" aria-hidden="true" />
       <div className="wrap">
         <div className="end-head">
-          <span className="eyebrow">Here&rsquo;s to a lighter desktop</span>
-          <h2 className="display" id="download-heading" style={{ marginTop: 18 }}>
+          <h2 className="display" id="download-heading">
             Go empty a folder.
           </h2>
           <p className="lede">
@@ -64,7 +63,7 @@ export default function SiteEnd() {
           ) : null}
           <a href={MAC_REPO}>GitHub</a>
           {win.repositoryUrl ? (
-            <a href={win.repositoryUrl}>Windows — in development</a>
+            <a href={win.repositoryUrl}>Windows, in development</a>
           ) : null}
           <span className="spacer">Built in a week, Aug 28 to Sep 4, 2026.</span>
         </div>

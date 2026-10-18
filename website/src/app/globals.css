@@ -200,16 +200,6 @@ svg {
   pointer-events: none;
 }
 
-.eyebrow {
-  display: block;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
 .display {
   font-family: var(--serif);
   font-weight: 400;
@@ -429,7 +419,6 @@ h2.display {
   font-size: clamp(2.3rem, 6.6vw, 5.25rem);
   line-height: 1.0;
   letter-spacing: -0.025em;
-  margin-top: 18px;
 }
 
 /* each line animates as a unit, clipped by its own mask */

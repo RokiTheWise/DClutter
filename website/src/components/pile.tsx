@@ -80,8 +80,7 @@ export default function Pile() {
     <section className="band pile-band" aria-labelledby="pile-heading">
       <div className="wrap pile-grid">
         <div>
-          <span className="eyebrow">The honest starting point</span>
-          <h2 className="display" id="pile-heading" style={{ marginTop: 18 }}>
+          <h2 className="display" id="pile-heading">
             771 files, and no
             <br />
             idea where to start.
