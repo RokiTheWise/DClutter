@@ -15,9 +15,9 @@ export default function SiteEnd() {
             Go empty a folder :&#41;
           </h2>
           <p className="lede">
-            Free, open source, and built in a week. Eighteen downloads, six stars,
-            and one fork from people who trusted it with their own files. Made for
-            the end of a semester or the end of a project.
+            Free, open source, and still being tuned. Eighteen downloads, six
+            stars, and one fork from people who trusted it with their own files.
+            Made for the end of a semester or the end of a project.
           </p>
 
           <div className="end-actions">
@@ -67,7 +67,7 @@ export default function SiteEnd() {
           {win.repositoryUrl ? (
             <a href={win.repositoryUrl}>Windows, in development</a>
           ) : null}
-          <span className="spacer">Built in a week, Aug 28 to Sep 4, 2026.</span>
+          <span className="spacer">Made for the end of a semester.</span>
         </div>
       </div>
     </section>
