@@ -29,11 +29,11 @@ function Countdown() {
   return (
     <motion.div
       className="pile-count"
-      viewport={{ once: false, amount: 0.8 }}
+      // Runs once and keeps the settled state. Replaying it on the way back up
+      // put the pile back to 771, undoing the thing the section just said.
+      viewport={{ once: true, amount: 0.8 }}
       onViewportEnter={() => {
         if (reduced) return;
-        setSorted(false);
-        count.set(START);
         // A hard ease-out lands on the value well before the duration is up,
         // so the label follows the number rather than onComplete. Otherwise it
         // sits reading "3 files in Downloads" for half a second.
