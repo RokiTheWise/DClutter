@@ -48,6 +48,12 @@ export default function Privacy() {
           </motion.div>
         </div>
 
+        <p className="lede" style={{ marginTop: 28 }}>
+          <a className="doc-link" href="/privacy">
+            Read the full privacy policy →
+          </a>
+        </p>
+
         <div className="privacy-points">
           {points.map((p) => (
             <div key={p.title}>

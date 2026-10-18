@@ -64,6 +64,7 @@ export default function SiteEnd() {
             <a href={mac.releaseNotesUrl}>Release notes</a>
           ) : null}
           <a href={MAC_REPO}>GitHub</a>
+          <a href="/privacy">Privacy policy</a>
           {win.repositoryUrl ? (
             <a href={win.repositoryUrl}>Windows, in development</a>
           ) : null}

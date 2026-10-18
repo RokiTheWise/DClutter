@@ -18,18 +18,18 @@ export default function SiteNav() {
   return (
     <div className="nav" data-stuck={stuck}>
       <div className="nav-inner">
-        <a className="wordmark" href="#top" aria-label="DClutter, back to top">
+        <a className="wordmark" href="/" aria-label="DClutter, back to top">
           <img src="/logo.png" alt="" width={22} height={22} />
           DClutter
         </a>
         <nav className="nav-links" aria-label="Main">
-          <a href="#decisions">How it works</a>
-          <a href="#try-it">Try it</a>
-          <a href="#privacy">Privacy</a>
+          <a href="/#decisions">How it works</a>
+          <a href="/#try-it">Try it</a>
+          <a href="/#privacy">Privacy</a>
         </nav>
         <a
           className="nav-cta"
-          href={mac.status === "available" ? mac.downloadUrl : "#download"}
+          href={mac.status === "available" ? mac.downloadUrl : "/#download"}
         >
           Download
         </a>
