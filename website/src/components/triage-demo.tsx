@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useReducer, useRef, type JSX } from "react";
+import { useEffect, useReducer, useRef, type JSX } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import WindowChrome from "./window-chrome";
 import FileCard from "./file-card";
@@ -30,6 +30,8 @@ type State = {
   future: Snapshot[];
   /** The destination shelf, which File opens rather than deciding. */
   shelf: boolean;
+  /** Which bin the arrows have steered to while the shelf is open. */
+  bin: number;
   vector: { x: number; y: number };
   said: string;
 };
@@ -46,6 +48,7 @@ const initial: State = {
   past: [],
   future: [],
   shelf: false,
+  bin: 0,
   vector: exitVector.keep,
   said: "",
 };
@@ -54,6 +57,8 @@ type Action =
   | { type: "decide"; id: Decision; bin?: string }
   | { type: "openShelf" }
   | { type: "closeShelf" }
+  | { type: "stepBin"; by: number }
+  | { type: "confirmShelf" }
   | { type: "undo" }
   | { type: "redo" }
   | { type: "reset" };
@@ -72,6 +77,17 @@ function reduce(state: State, action: Action): State {
     case "closeShelf":
       return { ...state, shelf: false };
 
+    // stepBin in TriageView: clamped to the row, no wrapping
+    case "stepBin":
+      return state.shelf
+        ? { ...state, bin: Math.min(Math.max(state.bin + action.by, 0), BINS.length - 1) }
+        : state;
+
+    case "confirmShelf":
+      return state.shelf
+        ? reduce(state, { type: "decide", id: "file", bin: BINS[state.bin] })
+        : state;
+
     case "decide": {
       const [head, ...rest] = state.now.queue;
       if (head === undefined) return state;
@@ -89,6 +105,7 @@ function reduce(state: State, action: Action): State {
         past: [...state.past, state.now],
         future: [],
         shelf: false,
+        bin: state.bin,
         vector: exitVector[action.id],
         said: `${samples[head].name}: ${
           action.bin ? `Filed into ${action.bin}.` : meta.result
@@ -138,36 +155,42 @@ export default function TriageDemo() {
   const file = index === undefined ? null : samples[index];
   const sorted = state.now.kept + state.now.staged + state.now.filed;
 
-  const onKey = useCallback((event: React.KeyboardEvent) => {
+  const onKey = (event: React.KeyboardEvent) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     const key = event.key;
-
-    if (key === "Escape") {
+    const take = (action: Action) => {
       event.preventDefault();
-      dispatch({ type: "closeShelf" });
+      dispatch(action);
+    };
+
+    // 1 to 3 file into a destination whether or not the shelf is open
+    const digit = Number(key);
+    if (digit >= 1 && digit <= BINS.length) {
+      take({ type: "decide", id: "file", bin: BINS[digit - 1] });
       return;
     }
+
+    // While the shelf is open the arrows steer it rather than deciding,
+    // Return files into the highlighted bin, and up, down or escape back out.
+    if (state.shelf) {
+      if (key === "ArrowLeft") take({ type: "stepBin", by: -1 });
+      else if (key === "ArrowRight") take({ type: "stepBin", by: 1 });
+      else if (key === "Enter") take({ type: "confirmShelf" });
+      else if (key === "Escape" || key === "ArrowUp" || key === "ArrowDown")
+        take({ type: "closeShelf" });
+      return;
+    }
+
     if (key.toLowerCase() === "z") {
-      event.preventDefault();
-      dispatch({ type: "undo" });
-      return;
-    }
-
-    const bin = Number(key);
-    if (bin >= 1 && bin <= BINS.length) {
-      event.preventDefault();
-      dispatch({ type: "decide", id: "file", bin: BINS[bin - 1] });
+      take({ type: "undo" });
       return;
     }
 
     const match = decisions.find((d) => d.key === key);
     if (!match) return;
-    event.preventDefault();
     // Up opens the shelf, it does not file anything on its own
-    dispatch(
-      match.id === "file" ? { type: "openShelf" } : { type: "decide", id: match.id },
-    );
-  }, []);
+    take(match.id === "file" ? { type: "openShelf" } : { type: "decide", id: match.id });
+  };
 
   // keep the keys working after the shelf is opened by a click
   useEffect(() => {
@@ -249,7 +272,7 @@ export default function TriageDemo() {
                       key={name}
                       type="button"
                       className="demo-bin"
-                      data-hit={i === 0}
+                      data-hit={i === state.bin}
                       onClick={() => dispatch({ type: "decide", id: "file", bin: name })}
                     >
                       <FolderIcon />
@@ -263,7 +286,7 @@ export default function TriageDemo() {
                   className="demo-shelf-cancel"
                   onClick={() => dispatch({ type: "closeShelf" })}
                 >
-                  Escape to go back
+                  Arrows to choose · Return to file · Escape to go back
                 </button>
               </motion.div>
             ) : null}

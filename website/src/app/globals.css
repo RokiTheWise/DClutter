@@ -1178,8 +1178,9 @@ button.win-icon:disabled {
 .demo-act kbd {
   display: grid;
   place-items: center;
-  width: 20px;
+  min-width: 20px;
   height: 20px;
+  padding: 0 5px;
   flex: none;
   margin-left: auto;
   border-radius: 4px;
