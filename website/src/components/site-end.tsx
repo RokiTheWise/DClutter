@@ -10,7 +10,9 @@ export default function SiteEnd() {
       <div className="wrap">
         <div className="end-head">
           <h2 className="display" id="download-heading">
-            Go empty a folder.
+            So what are you waiting for?
+            <br />
+            Go empty a folder :&#41;
           </h2>
           <p className="lede">
             Free, open source, and built in a week. Eighteen downloads, six stars,
