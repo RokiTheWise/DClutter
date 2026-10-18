@@ -102,19 +102,26 @@ stay, the movement stops.
 
 The website does not depend on the ignored `videos/` project or any video file.
 
-## Publishing a Windows release
+## Releases
 
-Windows currently has no download and links to
-https://github.com/RokiTheWise/DClutter-Windows. No installer, version, minimum
-OS, or release date is implied.
+Both platforms are described by `src/lib/platforms.ts`, which is the only
+place a version, a download URL or a minimum OS appears. The download
+buttons, the release blocks and the footer all read from it.
 
-When the Windows build is ready, update its record in `src/lib/platforms.ts`:
+**The Windows record is ahead of the actual release.** The asset name follows
+Tauri 2's NSIS convention, `{productName}_{version}_{arch}-setup.exe`, and
+`src-tauri/tauri.conf.json` in
+[DClutter-Windows](https://github.com/RokiTheWise/DClutter-Windows) bundles
+both `nsis` and `msi`. Windows 10 is the floor because WebView2 ships with 10
+and 11. The version is the assumption with nothing behind it: that config
+currently reads `0.1.0` and the repository has no releases, so the Windows
+download link 404s until a `v1.0.0` release exists carrying an asset of that
+name.
 
-1. Set `status` to `"available"`.
-2. Supply `version`, `downloadUrl`, `requirements`, `architecture`, and
-   `releaseNotesUrl` with confirmed release information.
-3. Run `npm run typecheck` and `npm run build` before deployment.
+To take Windows off the site, set its `status` back to `"development"`. The
+release block then reads "In development" and the button disappears.
 
-The discriminated release type requires a complete release record before an
-enabled download is rendered. The hero's requirement line, the download band and
-its fact row all read from that same configuration.
+To update either platform, change `version`, `downloadUrl`, `requirements`,
+`architecture` and `releaseNotesUrl` in its record, then run `npm run
+typecheck` and `npm run build`. The discriminated release type will not let an
+`"available"` record through without all of them.
