@@ -51,8 +51,8 @@ colors carry it, declared as tokens in `globals.css`:
 | `--blush` | `#edd6d9` | undo                      |
 
 One tint owns each band and the bands meet on arcs rather than straight edges,
-so one color rolls into the next. Ink is the only strong value on the page —
-there is no accent color. Display type is Instrument Serif; everything else is
+so one color rolls into the next. Ink is the only strong value on the page,
+and there is no accent color. Display type is Instrument Serif; everything else is
 the self-hosted Inter.
 
 ## Structure
@@ -85,8 +85,8 @@ the self-hosted Inter.
 The demo is the real interaction, not a video. Keep, Stage and File advance the
 sample queue; Skip rotates it to the back; `Z` undoes the previous decision, and
 Start over resets the run. Arrow keys and Space work while the demo region has
-keyboard focus — the handler is bound to the demo, not the document, so the page
-keeps normal arrow-key scrolling everywhere else.
+keyboard focus. The handler is bound to the demo rather than the document, so
+the page keeps normal arrow-key scrolling everywhere else.
 
 A card's exit direction is only known once the decision is made, so it arrives
 through `AnimatePresence`'s `custom` at exit time. That requires a *function
