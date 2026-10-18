@@ -1,13 +1,70 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
+  AnimatePresence,
+  animate,
   motion,
+  useMotionValue,
   useReducedMotion,
   useScroll,
   useTransform,
   type MotionValue,
 } from "motion/react";
+
+const START = 771;
+const END = 3;
+
+/**
+ * The number does what the section describes: 771 collapses to the 3 that
+ * were worth keeping. Fast at first and slow to settle, so it reads as a
+ * count running out rather than a progress bar filling.
+ */
+function Countdown() {
+  const reduced = useReducedMotion();
+  const count = useMotionValue(reduced ? END : START);
+  const shown = useTransform(count, (v) => Math.round(v));
+  const [sorted, setSorted] = useState(Boolean(reduced));
+
+  return (
+    <motion.div
+      className="pile-count"
+      viewport={{ once: false, amount: 0.8 }}
+      onViewportEnter={() => {
+        if (reduced) return;
+        setSorted(false);
+        count.set(START);
+        // A hard ease-out lands on the value well before the duration is up,
+        // so the label follows the number rather than onComplete. Otherwise it
+        // sits reading "3 files in Downloads" for half a second.
+        animate(count, END, {
+          duration: 1.6,
+          ease: [0.16, 1, 0.3, 1],
+          onUpdate: (v) => {
+            if (Math.round(v) <= END) setSorted(true);
+          },
+        });
+      }}
+    >
+      <b>
+        <motion.span>{shown}</motion.span>
+      </b>
+      <span className="pile-count-label">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={sorted ? "after" : "before"}
+            initial={reduced ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            transition={{ duration: reduced ? 0 : 0.3 }}
+          >
+            {sorted ? `left, from ${START}` : "files in Downloads"}
+          </motion.span>
+        </AnimatePresence>
+      </span>
+    </motion.div>
+  );
+}
 
 /** Deterministic scatter, so the server and client render the same thing. */
 const chits = [
@@ -95,12 +152,7 @@ export default function Pile() {
           <p className="lede" style={{ marginTop: 18 }}>
             You still make every call. The dragging is what goes.
           </p>
-          <div className="pile-count">
-            <b>771</b>
-            <span className="lede" style={{ margin: 0 }}>
-              down to the 3 I needed
-            </span>
-          </div>
+          <Countdown />
         </div>
 
         <div className="pile-stage" ref={ref} aria-hidden="true">
