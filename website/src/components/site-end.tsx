@@ -5,13 +5,11 @@ const win = platforms.windows;
 
 export default function SiteEnd() {
   return (
-    <section className="end on-ink" id="download" aria-labelledby="download-heading">
+    <section className="end" id="download" aria-labelledby="download-heading">
       <div className="end-arc" aria-hidden="true" />
       <div className="wrap">
         <div className="end-head">
-          <span className="eyebrow" style={{ color: "rgba(247,233,208,.42)" }}>
-            Here&rsquo;s to a lighter desktop
-          </span>
+          <span className="eyebrow">Here&rsquo;s to a lighter desktop</span>
           <h2 className="display" id="download-heading" style={{ marginTop: 18 }}>
             Go empty a folder.
           </h2>
@@ -23,12 +21,12 @@ export default function SiteEnd() {
 
           <div className="end-actions">
             {mac.status === "available" ? (
-              <a className="btn btn--invert" href={mac.downloadUrl}>
+              <a className="btn" href={mac.downloadUrl}>
                 Download for Mac
                 <span aria-hidden="true">↓</span>
               </a>
             ) : null}
-            <a className="btn-note" href={MAC_REPO} style={{ color: "rgba(247,233,208,.62)" }}>
+            <a className="btn-note" href={MAC_REPO}>
               View the source →
             </a>
           </div>

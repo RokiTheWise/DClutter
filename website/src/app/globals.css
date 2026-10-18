@@ -52,8 +52,8 @@ html {
   /* decorative arcs overhang the viewport by design; clip rather than hidden,
      which would make this a scroll container and break position:sticky */
   overflow-x: clip;
-  /* the ink footer should not flash white on overscroll */
-  background: var(--ink);
+  /* matches the closing band so overscroll does not flash white */
+  background: var(--sky);
 }
 
 body {
@@ -109,10 +109,6 @@ summary {
   outline: 2.5px solid var(--ink);
   outline-offset: 4px;
   border-radius: 4px;
-}
-
-.on-ink :focus-visible {
-  outline-color: var(--sand);
 }
 
 img,
@@ -267,11 +263,6 @@ h2.display {
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 6px 18px rgba(2, 2, 4, 0.07);
   backdrop-filter: blur(12px);
-}
-
-.btn--invert {
-  background: var(--sand);
-  color: var(--ink);
 }
 
 .btn-note {
@@ -1182,10 +1173,8 @@ h2.display {
    ------------------------------------------------------------ */
 
 .undo-band {
-  --band-next: var(--ink-rgb);
+  --band-next: var(--sky-rgb);
   --band: var(--blush);
-  --ramp: 0.5;
-  --ramp-height: clamp(180px, 26vw, 380px);
 }
 
 .undo-grid {
@@ -1313,8 +1302,8 @@ h2.display {
 
 .end {
   position: relative;
-  background: var(--ink);
-  color: var(--sand);
+  background: var(--sky);
+  color: var(--text);
   padding-block: clamp(110px, 16vw, 200px) 0;
 }
 
@@ -1324,19 +1313,10 @@ h2.display {
   right: -8%;
   top: -1px;
   height: clamp(60px, 9vw, 130px);
-  background: var(--ink);
+  background: var(--sky);
   border-radius: 50% 50% 0 0;
   transform: translateY(-96%);
   pointer-events: none;
-}
-
-.end .display,
-.end h3 {
-  color: var(--sand);
-}
-
-.end .lede {
-  color: rgba(247, 233, 208, 0.62);
 }
 
 .end-head {
@@ -1363,7 +1343,7 @@ h2.display {
   gap: clamp(28px, 6vw, 72px);
   margin-top: clamp(56px, 8vw, 88px);
   padding-top: clamp(32px, 5vw, 48px);
-  border-top: 1px solid rgba(247, 233, 208, 0.14);
+  border-top: 1px solid var(--hair);
 }
 
 .end-facts div span {
@@ -1372,7 +1352,7 @@ h2.display {
   font-family: var(--mono);
   font-size: 9.5px;
   letter-spacing: 0.15em;
-  color: rgba(247, 233, 208, 0.42);
+  color: var(--faint);
 }
 
 .end-facts div b {
@@ -1386,7 +1366,7 @@ h2.display {
   font-size: clamp(1.5rem, 3.4vw, 2.5rem);
   line-height: 1.1;
   text-align: center;
-  color: var(--sand);
+  color: var(--ink);
 }
 
 .end-foot {
@@ -1396,13 +1376,13 @@ h2.display {
   gap: 16px 28px;
   margin-top: clamp(64px, 9vw, 104px);
   padding-block: 28px 32px;
-  border-top: 1px solid rgba(247, 233, 208, 0.14);
+  border-top: 1px solid var(--hair);
   font-size: 13.5px;
-  color: rgba(247, 233, 208, 0.52);
+  color: var(--muted);
 }
 
 .end-foot a:hover {
-  color: var(--sand);
+  color: var(--ink);
 }
 
 .end-foot .spacer {
