@@ -21,6 +21,7 @@ export default function WindowChrome({
   canRedo = false,
   onUndo,
   onRedo,
+  onReviewTrash,
   className = "",
 }: {
   children: ReactNode;
@@ -29,6 +30,7 @@ export default function WindowChrome({
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  onReviewTrash?: () => void;
   className?: string;
 }) {
   const live = Boolean(onUndo);
@@ -86,11 +88,19 @@ export default function WindowChrome({
           </button>
         </div>
 
-        <span className="win-trash" data-armed={staged > 0} aria-hidden="true">
+        <button
+          type="button"
+          className="win-trash"
+          data-armed={staged > 0}
+          onClick={onReviewTrash}
+          disabled={!onReviewTrash || staged === 0}
+          aria-hidden={live ? undefined : true}
+          tabIndex={live ? 0 : -1}
+        >
           <TrayIcon />
           Review trash
           <b>{staged}</b>
-        </span>
+        </button>
 
         <span className="win-icon" aria-hidden="true">
           <EllipsisIcon />

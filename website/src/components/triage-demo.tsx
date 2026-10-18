@@ -20,8 +20,10 @@ const ICONS: Record<Decision, () => JSX.Element> = {
 type Snapshot = {
   queue: number[];
   kept: number;
-  staged: number;
+  /** Indices, not a count: the commit sheet has to list them. */
+  staged: number[];
   filed: number;
+  trashed: number;
 };
 
 type State = {
@@ -32,6 +34,13 @@ type State = {
   shelf: boolean;
   /** Which bin the arrows have steered to while the shelf is open. */
   bin: number;
+  /** The commit sheet behind Review trash. */
+  sheet: boolean;
+  /**
+   * Unticked files. Held out here rather than in the sheet so it survives
+   * closing and reopening, as SessionViewModel.excludedFromCommit does.
+   */
+  excluded: number[];
   vector: { x: number; y: number };
   said: string;
 };
@@ -39,8 +48,9 @@ type State = {
 const first: Snapshot = {
   queue: samples.map((_, i) => i),
   kept: 0,
-  staged: 0,
+  staged: [],
   filed: 0,
+  trashed: 0,
 };
 
 const initial: State = {
@@ -49,6 +59,8 @@ const initial: State = {
   future: [],
   shelf: false,
   bin: 0,
+  sheet: false,
+  excluded: [],
   vector: exitVector.keep,
   said: "",
 };
@@ -59,6 +71,11 @@ type Action =
   | { type: "closeShelf" }
   | { type: "stepBin"; by: number }
   | { type: "confirmShelf" }
+  | { type: "openSheet" }
+  | { type: "closeSheet" }
+  | { type: "toggleCommit"; index: number }
+  | { type: "tickAll"; ticked: boolean }
+  | { type: "confirmCommit" }
   | { type: "undo" }
   | { type: "redo" }
   | { type: "reset" };
@@ -96,8 +113,10 @@ function reduce(state: State, action: Action): State {
       const now: Snapshot = {
         queue: action.id === "skip" ? [...rest, head] : rest,
         kept: state.now.kept + (action.id === "keep" ? 1 : 0),
-        staged: state.now.staged + (action.id === "stage" ? 1 : 0),
+        staged:
+          action.id === "stage" ? [...state.now.staged, head] : state.now.staged,
         filed: state.now.filed + (action.id === "file" ? 1 : 0),
+        trashed: state.now.trashed,
       };
 
       return {
@@ -106,6 +125,8 @@ function reduce(state: State, action: Action): State {
         future: [],
         shelf: false,
         bin: state.bin,
+        sheet: false,
+        excluded: state.excluded,
         vector: exitVector[action.id],
         said: `${samples[head].name}: ${
           action.bin ? `Filed into ${action.bin}.` : meta.result
@@ -141,6 +162,47 @@ function reduce(state: State, action: Action): State {
       };
     }
 
+    case "openSheet":
+      return state.now.staged.length ? { ...state, sheet: true, shelf: false } : state;
+
+    case "closeSheet":
+      return { ...state, sheet: false };
+
+    case "toggleCommit":
+      return {
+        ...state,
+        excluded: state.excluded.includes(action.index)
+          ? state.excluded.filter((i) => i !== action.index)
+          : [...state.excluded, action.index],
+      };
+
+    case "tickAll":
+      return { ...state, excluded: action.ticked ? [] : [...state.now.staged] };
+
+    case "confirmCommit": {
+      const toTrash = state.now.staged.filter((i) => !state.excluded.includes(i));
+      const toKeep = state.now.staged.length - toTrash.length;
+      return {
+        ...state,
+        now: {
+          ...state.now,
+          // Unticking unstages to kept; it does not put the file back in
+          // the queue. DClutterSession.unstage.
+          kept: state.now.kept + toKeep,
+          staged: [],
+          trashed: state.now.trashed + toTrash.length,
+        },
+        // Trashing clears undo history, as the session does.
+        past: [],
+        future: [],
+        sheet: false,
+        excluded: [],
+        said: toTrash.length
+          ? `${toTrash.length} moved to the Trash.`
+          : "Nothing trashed. Those files stay where they are.",
+      };
+    }
+
     case "reset":
       return initial;
   }
@@ -153,7 +215,10 @@ export default function TriageDemo() {
 
   const index = state.now.queue[0];
   const file = index === undefined ? null : samples[index];
-  const sorted = state.now.kept + state.now.staged + state.now.filed;
+  const sorted =
+    state.now.kept + state.now.staged.length + state.now.filed + state.now.trashed;
+  const unticked = state.excluded.length;
+  const toTrash = state.now.staged.length - unticked;
 
   const onKey = (event: React.KeyboardEvent) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -162,6 +227,11 @@ export default function TriageDemo() {
       event.preventDefault();
       dispatch(action);
     };
+
+    if (state.sheet) {
+      if (key === "Escape") take({ type: "closeSheet" });
+      return;
+    }
 
     // 1 to 3 file into a destination whether or not the shelf is open
     const digit = Number(key);
@@ -201,7 +271,8 @@ export default function TriageDemo() {
     <div className="demo-shell">
       <WindowChrome
         className="demo-win"
-        staged={state.now.staged}
+        staged={state.now.staged.length}
+        onReviewTrash={() => dispatch({ type: "openSheet" })}
         canUndo={state.past.length > 0}
         canRedo={state.future.length > 0}
         onUndo={() => dispatch({ type: "undo" })}
@@ -248,9 +319,11 @@ export default function TriageDemo() {
               >
                 <p className="display">Folder&rsquo;s empty.</p>
                 <p>
-                  {state.now.kept} kept, {state.now.staged} staged,{" "}
-                  {state.now.filed} filed. Nothing was deleted, and every move is
-                  still reversible.
+                  {state.now.kept} kept, {state.now.staged.length} staged,{" "}
+                  {state.now.filed} filed
+                  {state.now.trashed ? `, ${state.now.trashed} trashed` : ""}.
+                  Nothing was deleted outright, and the Trash still has whatever
+                  you sent there.
                 </p>
               </motion.div>
             )}
@@ -292,6 +365,83 @@ export default function TriageDemo() {
             ) : null}
           </AnimatePresence>
         </div>
+
+        <AnimatePresence>
+          {state.sheet ? (
+            <motion.div
+              className="demo-sheet-layer"
+              initial={reduced ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16 }}
+            >
+              <motion.div
+                className="demo-sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Review staged files"
+                initial={reduced ? false : { y: 10, scale: 0.98 }}
+                animate={{ y: 0, scale: 1 }}
+                exit={reduced ? undefined : { y: 10, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+              >
+                <h3>
+                  {toTrash === 1 ? "Trash 1 file?" : `Trash ${toTrash} files?`}
+                </h3>
+                {unticked > 0 ? (
+                  <p className="demo-sheet-note">
+                    {unticked} unticked, those stay where they are.
+                  </p>
+                ) : null}
+
+                <ul className="demo-sheet-list">
+                  {state.now.staged.map((i) => {
+                    const on = !state.excluded.includes(i);
+                    return (
+                      <li key={i}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            onChange={() => dispatch({ type: "toggleCommit", index: i })}
+                          />
+                          <span className="demo-sheet-name">{samples[i].name}</span>
+                          <span className="demo-sheet-size">{samples[i].size}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className="demo-sheet-foot">
+                  <button
+                    type="button"
+                    className="demo-sheet-link"
+                    onClick={() =>
+                      dispatch({ type: "tickAll", ticked: state.excluded.length > 0 })
+                    }
+                  >
+                    {state.excluded.length > 0 ? "Tick All" : "Untick All"}
+                  </button>
+                  <button
+                    type="button"
+                    className="demo-sheet-btn"
+                    onClick={() => dispatch({ type: "closeSheet" })}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="demo-sheet-btn demo-sheet-btn--go"
+                    onClick={() => dispatch({ type: "confirmCommit" })}
+                  >
+                    {toTrash === 1 ? "Trash 1 File" : `Trash ${toTrash} Files`}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         <div className="demo-actions" data-dim={state.shelf}>
           {decisions.map((d) => {
