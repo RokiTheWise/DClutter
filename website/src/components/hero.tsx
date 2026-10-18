@@ -6,9 +6,8 @@ import WindowChrome from "./window-chrome";
 import FileCard from "./file-card";
 import { CheckIcon, FolderIcon, SkipIcon, TrashIcon } from "./icons";
 import { decisions, samples } from "@/lib/samples";
-import { platforms } from "@/lib/platforms";
+import { releases } from "@/lib/platforms";
 
-const mac = platforms.macos;
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const HERO_ICONS = {
@@ -94,18 +93,19 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.54 }}
         >
-          <a
-            className="btn"
-            href={mac.status === "available" ? mac.downloadUrl : "#download"}
-          >
-            Get DClutter for Mac
-            <span aria-hidden="true">↓</span>
-          </a>
-          <span className="btn-note">
-            {mac.status === "available"
-              ? `Free and open source · v${mac.version} · ${mac.requirements}`
-              : "Coming soon"}
-          </span>
+          {releases.map((release, i) =>
+            release.status === "available" ? (
+              <a
+                key={release.name}
+                className={i === 0 ? "btn" : "btn btn--quiet"}
+                href={release.downloadUrl}
+              >
+                Get for {release.name}
+                <span aria-hidden="true">↓</span>
+              </a>
+            ) : null,
+          )}
+          <span className="btn-note">Free and open source</span>
         </motion.div>
       </motion.div>
 

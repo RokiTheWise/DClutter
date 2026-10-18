@@ -1,7 +1,4 @@
-import { MAC_REPO, platforms } from "@/lib/platforms";
-
-const mac = platforms.macos;
-const win = platforms.windows;
+import { MAC_REPO, releases } from "@/lib/platforms";
 
 export default function SiteEnd() {
   return (
@@ -21,38 +18,64 @@ export default function SiteEnd() {
           </p>
 
           <div className="end-actions">
-            {mac.status === "available" ? (
-              <a className="btn" href={mac.downloadUrl}>
-                Download for Mac
-                <span aria-hidden="true">↓</span>
-              </a>
-            ) : null}
-            <a className="btn-note" href={MAC_REPO}>
-              View the source →
-            </a>
+            {releases.map((release, i) =>
+              release.status === "available" ? (
+                <a
+                  key={release.name}
+                  className={i === 0 ? "btn" : "btn btn--quiet"}
+                  href={release.downloadUrl}
+                >
+                  Get for {release.name}
+                  <span aria-hidden="true">↓</span>
+                </a>
+              ) : null,
+            )}
           </div>
         </div>
 
-        <div className="end-facts">
-          <div>
-            <span>VERSION</span>
-            <b>{mac.status === "available" ? `v${mac.version}` : "—"}</b>
-          </div>
-          <div>
-            <span>REQUIRES</span>
-            <b>{mac.status === "available" ? mac.requirements : "—"}</b>
-          </div>
-          <div>
-            <span>ARCHITECTURE</span>
-            <b>{mac.status === "available" ? mac.architecture : "—"}</b>
-          </div>
-          <div>
-            <span>PRICE</span>
-            <b>Free</b>
-          </div>
-          <div>
-            <span>DELETES</span>
-            <b>Nothing, ever</b>
+        <div className="end-releases">
+          {releases.map((release) =>
+            release.status === "available" ? (
+              <div className="end-release" key={release.name}>
+                <h3>{release.name}</h3>
+                <dl>
+                  <div>
+                    <dt>Version</dt>
+                    <dd>v{release.version}</dd>
+                  </div>
+                  <div>
+                    <dt>Requires</dt>
+                    <dd>{release.requirements}</dd>
+                  </div>
+                  <div>
+                    <dt>Architecture</dt>
+                    <dd>{release.architecture}</dd>
+                  </div>
+                </dl>
+              </div>
+            ) : (
+              <div className="end-release" key={release.name}>
+                <h3>{release.name}</h3>
+                <p className="end-release-soon">In development.</p>
+              </div>
+            ),
+          )}
+          <div className="end-release">
+            <h3>Both</h3>
+            <dl>
+              <div>
+                <dt>Price</dt>
+                <dd>Free</dd>
+              </div>
+              <div>
+                <dt>License</dt>
+                <dd>Apache 2.0</dd>
+              </div>
+              <div>
+                <dt>Deletes</dt>
+                <dd>Nothing, ever</dd>
+              </div>
+            </dl>
           </div>
         </div>
 
@@ -60,14 +83,15 @@ export default function SiteEnd() {
 
         <div className="end-foot">
           <span>DClutter</span>
-          {mac.status === "available" ? (
-            <a href={mac.releaseNotesUrl}>Release notes</a>
-          ) : null}
+          {releases.map((release) =>
+            release.status === "available" && release.releaseNotesUrl ? (
+              <a href={release.releaseNotesUrl} key={release.name}>
+                {release.name} release notes
+              </a>
+            ) : null,
+          )}
           <a href={MAC_REPO}>GitHub</a>
           <a href="/privacy">Privacy policy</a>
-          {win.repositoryUrl ? (
-            <a href={win.repositoryUrl}>Windows, in development</a>
-          ) : null}
           <span className="spacer">Made for the end of a semester.</span>
         </div>
       </div>

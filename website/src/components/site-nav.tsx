@@ -1,10 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { platforms } from "@/lib/platforms";
-
-const mac = platforms.macos;
-
 export default function SiteNav() {
   const [stuck, setStuck] = useState(false);
 
@@ -27,10 +23,7 @@ export default function SiteNav() {
           <a href="/#try-it">Try it</a>
           <a href="/#privacy">Privacy</a>
         </nav>
-        <a
-          className="nav-cta"
-          href={mac.status === "available" ? mac.downloadUrl : "/#download"}
-        >
+        <a className="nav-cta" href="/#download">
           Download
         </a>
       </div>

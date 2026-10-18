@@ -262,6 +262,18 @@ h2.display {
   transform: translateY(0);
 }
 
+.btn--quiet {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(2, 2, 4, 0.22);
+  box-shadow: none;
+}
+
+.btn--quiet:hover {
+  border-color: var(--ink);
+  box-shadow: none;
+}
+
 .btn--ghost {
   background: rgba(255, 255, 255, 0.6);
   color: var(--ink);
@@ -1613,28 +1625,54 @@ button.win-icon:disabled {
   margin-top: 38px;
 }
 
-.end-facts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: clamp(28px, 6vw, 72px);
+.end-releases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: clamp(24px, 4vw, 48px);
   margin-top: clamp(56px, 8vw, 88px);
   padding-top: clamp(32px, 5vw, 48px);
   border-top: 1px solid var(--hair);
 }
 
-.end-facts div span {
-  display: block;
-  margin-bottom: 7px;
+.end-release h3 {
   font-family: var(--mono);
   font-size: 9.5px;
+  font-weight: 500;
   letter-spacing: 0.15em;
+  text-transform: uppercase;
   color: var(--faint);
 }
 
-.end-facts div b {
-  font-size: 14.5px;
+.end-release dl {
+  margin: 12px 0 0;
+}
+
+.end-release dl > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.end-release dl > div + div {
+  margin-top: 6px;
+}
+
+.end-release dt {
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 8.5ch;
+}
+
+.end-release dd {
+  margin: 0;
+  font-size: 14px;
   font-weight: 500;
+}
+
+.end-release-soon {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 .end-closer {
