@@ -88,9 +88,13 @@ export default function Pile() {
           </h2>
           <p className="lede" style={{ marginTop: 22 }}>
             I opened my Mac after finals and wondered when I had last organized
-            anything. Then I opened Downloads. Whiplash. Downloads fills up
-            because every file asks for a decision, and 771 decisions in a row is
-            more than anyone sits down to make.
+            anything. Then I opened Downloads. Whiplash. Deciding on a file takes
+            about half a second. Opening it, dragging it somewhere, clicking back,
+            and finding my place again is what turned that half second into an
+            afternoon.
+          </p>
+          <p className="lede" style={{ marginTop: 18 }}>
+            You still make every call. The dragging is what goes.
           </p>
           <div className="pile-count">
             <b>771</b>
