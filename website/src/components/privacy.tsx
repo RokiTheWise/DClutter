@@ -9,7 +9,7 @@ const points = [
   },
   {
     title: "Nothing is uploaded.",
-    body: "File names, contents, and previews are read on your Mac and never leave it. There is no server to send them to.",
+    body: "File names, contents, and previews are read on your own machine and never leave it. There is no server to send them to.",
   },
   {
     title: "No telemetry.",
@@ -25,7 +25,7 @@ export default function Privacy() {
       <div className="band-arc" aria-hidden="true" />
       <div className="wrap">
         <h2 className="display" id="privacy-heading" style={{ maxWidth: "15ch" }}>
-          Nothing leaves your Mac.
+          Nothing leaves your computer.
         </h2>
 
         <div className="privacy-stage" aria-hidden="true">

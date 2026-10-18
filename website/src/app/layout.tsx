@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DClutter: a little less cluttery, a little more clarity.",
     description:
-      "Sort your files, one decision at a time. Available for macOS. Windows is in development.",
+      "Sort your files, one decision at a time. Available for macOS and Windows.",
     type: "website",
   },
 };
