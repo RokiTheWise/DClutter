@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import SiteNav from "@/components/site-nav";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "License · DClutter",
-  description: "The full Apache License 2.0 for DClutter.",
-};
+export const metadata = pageMetadata("License · DClutter", "Read DClutter’s full Apache License 2.0, with a plain-text copy available to download.", "/license");
 
 export default async function License() {
   const license = await readFile(join(process.cwd(), "public/license.txt"), "utf8");

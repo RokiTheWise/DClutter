@@ -33,10 +33,11 @@ export default function SiteEnd() {
               <a href={release.repositoryUrl} key={release.id}>{release.name}</a>
             ) : null)}
           </nav>
-          <nav className="end-links" aria-label="Release notes">
-            <h3>Release notes</h3>
+          <nav className="end-links" aria-label="Resources">
+            <h3>Resources</h3>
+            <a href="/help">Help</a>
             {releases.map((release) => release.status === "available" ? (
-              <a href={release.releaseNotesUrl} key={release.id}>{release.name} · v{release.version}</a>
+              <a href={release.releaseNotesUrl} key={release.id}>{release.name} release notes</a>
             ) : null)}
           </nav>
           <div className="end-bottom">

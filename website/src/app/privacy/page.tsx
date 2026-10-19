@@ -1,12 +1,8 @@
-import type { Metadata } from "next";
 import SiteNav from "@/components/site-nav";
 import { MAC_REPO, WIN_REPO } from "@/lib/platforms";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Privacy · DClutter",
-  description:
-    "DClutter has no account, no server, and no analytics. This page says exactly what stays on your Mac and what does not.",
-};
+export const metadata = pageMetadata("Privacy · DClutter", "How DClutter handles your files on Mac and Windows, what the app stores locally, and how this website requests public GitHub counts.", "/privacy");
 
 const UPDATED = "19 October 2026";
 

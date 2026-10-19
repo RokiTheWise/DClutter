@@ -6,7 +6,8 @@
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:github-stats": "node scripts/test-github-stats.cjs"
+    "test:github-stats": "node scripts/test-github-stats.cjs",
+    "test:metadata": "node scripts/test-metadata.cjs"
   },
   "dependencies": {
     "motion": "14.3.0",

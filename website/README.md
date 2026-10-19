@@ -27,16 +27,50 @@ npm run dev -- --port 3020
 npm run typecheck
 npm run test:github-stats
 npm run build
+npm run test:metadata
 ```
 
 Type checking generates Next.js route types first, so it also works before the
-first development run or build. The Website GitHub Actions workflow runs both
-checks for website pull requests; it does not deploy the site.
+first development run or build. The Website GitHub Actions workflow runs these
+checks for website pull requests;
+it does not deploy the site.
 
 `npm run build` exports the static site into `out/`. Deploy that directory to a
 static host, or select `website` as the project root in a Next.js hosting service.
 The current site assumes deployment at the root of a domain. GitHub Pages under
 `/DClutter/` would need a base path and corresponding public-asset paths.
+
+## Domain, sharing, and search
+
+The canonical production host is `https://dclutter.djenriquez.dev` (without an
+extra `www`). `src/lib/site.ts` owns that URL, page descriptions, and all social
+metadata. Every public page declares its own canonical and Open Graph URL.
+`robots.txt` and `sitemap.xml` are statically exported from the App Router.
+
+The sharing image is `public/og/dclutter.png`: an opaque 1200×630 PNG, about
+155 KB, used by Open Graph and Twitter large-image cards. Its editable vector
+source is `public/og/dclutter.svg`; text is outlined so rasterization does not
+depend on installed fonts. To regenerate the PNG after editing the SVG, use
+the existing Sharp dependency from the `website` directory:
+
+```sh
+node -e 'require("sharp")("public/og/dclutter.svg").flatten({background:"#e0edf6"}).png().toFile("public/og/dclutter.png")'
+```
+
+The homepage includes WebSite, SoftwareApplication, and author JSON-LD using
+public product facts. There are no invented ratings/reviews; software-app rich
+results are not guaranteed. `/help` provides direct, readable answers about the
+app, supported platforms, offline use, staging, undo, and installation. Important
+information and metadata are present in the exported HTML, without waiting for
+animation or client requests. No special AI-only pages or hidden keyword text
+are used.
+
+Before production launch, connect `dclutter.djenriquez.dev` to this project in
+Vercel and apply the DNS records Vercel provides. Redirect any alternate public
+host to the canonical host through the hosting settings. After deployment,
+submit `/sitemap.xml` in Google Search Console/Bing Webmaster Tools and check the
+actual public URL in the platforms' share debuggers. Local previews cannot
+confirm Messenger's cached production preview.
 
 ## Design
 
