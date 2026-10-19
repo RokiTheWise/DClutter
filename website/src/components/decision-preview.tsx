@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
 import type { Decision, SampleFile } from "@/lib/samples";
 import { EASE } from "@/lib/card-motion";
@@ -41,16 +41,33 @@ const directions = {
 /** Each visible scene demonstrates its own action; incoming files avoid an empty hold. */
 export function DecisionPreview({ decision, description, enabled = true }: { decision: Decision; description: string; enabled?: boolean }) {
   const ref = useRef<HTMLElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.35 });
   const reduced = useReducedMotion();
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+  const [scale, setScale] = useState(1);
   const frames = decision === "file" ? filing : sorting;
   const frame = reduced ? frames[decision === "file" ? 1 : 0] : frames[index];
   const file = files[frame.file];
   const acting = frame.phase === "act";
   const shelving = frame.phase === "shelf";
   const sorted = frame.resolved && decision !== "skip" ? 1 : 0;
+
+  useLayoutEffect(() => {
+    const host = ref.current;
+    const canvas = canvasRef.current;
+    if (!host || !canvas) return;
+    const fit = () => {
+      if (!canvas.offsetWidth || !canvas.offsetHeight) return;
+      setScale(Math.min(1, host.clientWidth / canvas.offsetWidth, host.clientHeight / canvas.offsetHeight));
+    };
+    const observer = new ResizeObserver(fit);
+    observer.observe(host);
+    observer.observe(canvas);
+    fit();
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const update = () => setVisible(!document.hidden);
@@ -71,7 +88,7 @@ export function DecisionPreview({ decision, description, enabled = true }: { dec
 
   return (
     <figure ref={ref} className="dec-example" data-decision={decision} data-phase={frame.phase} aria-label={`${decision}: ${description}`}>
-      <div aria-hidden="true" inert>
+      <div className="dec-preview-canvas" ref={canvasRef} style={{ transform: `translate(-50%, -50%) scale(${scale})` }} aria-hidden="true" inert>
         <WindowChrome className="dec-preview-win win--light" staged={decision === "stage" && frame.resolved ? 1 : 0}>
           <div className="dec-file-stage">
             <AnimatePresence initial={false} mode="popLayout">

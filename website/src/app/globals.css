@@ -1737,16 +1737,28 @@ button.win-icon:disabled {
   --band-next: var(--paper-rgb);
   --band: var(--sage);
   padding-block: clamp(80px, 8vw, 112px);
-  padding-top: clamp(56px, 5vw, 80px);
+  padding-top: 32px;
   /* Reserve the next section's raised arc, then leave a visible gap above it. */
   padding-bottom: calc(clamp(60px, 9vw, 130px) + clamp(64px, 6vw, 96px));
 }
 
-.dec-heading {
-  max-width: 22ch;
-  margin: 0 0 56px;
+.dec-frame {
+  display: flex;
+  flex-direction: column;
+  height: min(900px, calc(100svh - 146px));
+  padding: 24px;
+  border: 1px solid #cbd6c5;
+  border-radius: 28px;
+  background: rgba(250, 249, 242, 0.66);
+}
+
+.dec-frame .dec-heading {
+  flex: none;
+  max-width: 24ch;
+  margin: 0 0 24px;
   text-align: left;
-  line-height: 1.12;
+  font-size: clamp(2rem, 3.6vw, 3.3rem);
+  line-height: 1.1;
 }
 
 .dec-band > .wrap {
@@ -1754,47 +1766,83 @@ button.win-icon:disabled {
 }
 
 .dec-accordion {
-  --dec-rail: 80px;
+  --dec-rail: 64px;
   --dec-gap: 12px;
+  --dec-ease: cubic-bezier(0.165, 0.84, 0.44, 1);
   container-type: inline-size;
   display: flex;
+  flex: 1;
+  min-height: 0;
   gap: var(--dec-gap);
-  height: 800px;
+  perspective: 1400px;
 }
 
 .dec-pane {
+  --pane-tint: #efd9c8;
+  --pane-line: #d5b69e;
+  --pane-ink: #754a32;
   position: relative;
-  flex: 0 0 var(--dec-rail);
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #cbd8ca;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.28);
-  transition:
-    flex-grow 0.55s var(--ease),
-    flex-basis 0.55s var(--ease),
-    background 0.3s var(--ease),
-    border-color 0.3s var(--ease);
+  border: 1px solid var(--pane-line);
+  border-radius: 18px;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--pane-tint), white 30%), var(--pane-tint));
+  transform-style: preserve-3d;
+  will-change: flex-grow, transform;
 }
 
-.dec-pane[data-open="true"] {
-  flex: 1 1 0;
-  border-color: #bfcfbe;
-  background: rgba(255, 255, 255, 0.56);
+.dec-pane[data-decision="skip"] {
+  --pane-tint: #e2dcf0;
+  --pane-line: #c3b7d6;
+  --pane-ink: #65517b;
+}
+
+.dec-pane[data-decision="file"] {
+  --pane-tint: #d5e5f1;
+  --pane-line: #aec7d9;
+  --pane-ink: #3e627d;
+}
+
+.dec-pane[data-decision="keep"] {
+  --pane-tint: #dce9d7;
+  --pane-line: #b5c9ab;
+  --pane-ink: #4d6644;
+}
+
+.dec-pane::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 40%, rgba(39, 28, 47, 0.07));
+  opacity: 1;
+  transition: opacity 0.6s var(--dec-ease);
+}
+
+.dec-pane[data-open="true"]::after {
+  opacity: 0;
 }
 
 .dec-pane-heading {
   position: absolute;
   inset: 0 auto 0 0;
-  width: var(--dec-rail);
+  z-index: 2;
+  width: 100%;
   margin: 0;
+  transition: width 0.6s var(--dec-ease);
+}
+
+.dec-pane[data-open="true"] .dec-pane-heading {
+  width: var(--dec-rail);
 }
 
 .dec-pane-trigger {
   position: relative;
   width: 100%;
   height: 100%;
-  color: #49614e;
+  color: var(--pane-ink);
 }
 
 .dec-pane-trigger:hover {
@@ -1815,7 +1863,7 @@ button.win-icon:disabled {
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 400;
-  color: #617366;
+  color: var(--pane-ink);
 }
 
 .dec-pane-label {
@@ -1849,38 +1897,46 @@ button.win-icon:disabled {
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 400;
-  color: #617366;
+  color: var(--pane-ink);
 }
 
 .dec-pane-content {
   position: absolute;
   left: var(--dec-rail);
-  top: 24px;
-  bottom: 24px;
-  /* Keep the native app at its final width while its panel expands. */
-  width: calc(100cqw - 4 * var(--dec-rail) - 3 * var(--dec-gap) - 24px);
-  opacity: 0;
-  transform: translateX(14px);
-  transition: opacity 0.2s var(--ease), transform 0.4s var(--ease);
+  top: 20px;
+  bottom: 20px;
+  /* Expanded width stays stable while the accordion animates around it. */
+  width: calc((100cqw - 3 * var(--dec-gap)) * 0.72 - var(--dec-rail) - 20px);
 }
 
-.dec-pane[data-open="true"] .dec-pane-content {
-  opacity: 1;
-  transform: none;
-  transition-delay: 0.12s;
+.dec-pane-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .dec-pane-description {
-  margin-bottom: 20px;
+  flex: none;
+  margin-bottom: 16px;
   font-size: 13px;
   line-height: 1.6;
-  color: #58665c;
+  color: var(--pane-ink);
 }
 
 .dec-example {
   position: relative;
+  flex: 1;
   min-width: 0;
+  min-height: 0;
   margin: 0;
+}
+
+.dec-preview-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 900px;
+  transform-origin: center;
 }
 
 .dec-preview-win {
@@ -1913,8 +1969,8 @@ button.win-icon:disabled {
 
 .dec-file-stage {
   position: relative;
-  height: 484px;
-  padding: 32px;
+  height: 410px;
+  padding: 24px;
   overflow: hidden;
 }
 
@@ -1923,16 +1979,16 @@ button.win-icon:disabled {
 }
 
 .dec-file-stage .fcard {
-  padding: 22px;
+  padding: 16px;
   border-radius: 16px;
 }
 
 .dec-file-stage .fcard-preview {
-  height: 180px;
+  height: 150px;
 }
 
 .dec-file-stage .fcard-name {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .dec-file-stage .fcard-open {
@@ -1942,9 +1998,9 @@ button.win-icon:disabled {
 
 .dec-file-stage .fcard-meta {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16px 22px;
-  margin-top: 18px;
-  padding-top: 16px;
+  gap: 12px 22px;
+  margin-top: 14px;
+  padding-top: 13px;
 }
 
 .dec-file-stage .fcard-meta b {
@@ -2664,7 +2720,13 @@ button.win-icon:disabled {
 }
 
 @media (max-width: 900px) {
-  .dec-heading {
+  .dec-frame {
+    height: auto;
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .dec-frame .dec-heading {
     font-size: clamp(2rem, 5.5vw, 3.5rem);
   }
 
@@ -2679,14 +2741,16 @@ button.win-icon:disabled {
     display: grid;
     grid-template-rows: 68px 0fr;
     border-radius: 16px;
-    transition: grid-template-rows 0.5s var(--ease), background 0.3s var(--ease);
+    transform: none !important;
+    transition: grid-template-rows 0.6s var(--dec-ease);
   }
 
   .dec-pane[data-open="true"] {
     grid-template-rows: 68px 1fr;
   }
 
-  .dec-pane-heading {
+  .dec-pane-heading,
+  .dec-pane[data-open="true"] .dec-pane-heading {
     position: static;
     width: 100%;
   }
@@ -2723,7 +2787,23 @@ button.win-icon:disabled {
   }
 
   .dec-pane-inner {
-    padding: 0 16px 20px;
+    height: auto;
+    padding: 0 12px 16px;
+  }
+
+  .dec-example {
+    flex: none;
+  }
+
+  .dec-preview-canvas {
+    position: static;
+    width: 100%;
+    transform: none !important;
+  }
+
+  .dec-preview-win .win-bar {
+    padding-inline: 10px;
+    gap: 6px;
   }
 
   .dec-pane-description {

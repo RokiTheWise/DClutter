@@ -78,10 +78,15 @@ use Poppins. Both fonts are self-hosted through Next.js.
 - `src/components/decisions.tsx`: an accordion gallery of the four actions,
   inspired by the React Bits expanding-panel pattern. Desktop uses vertical
   action rails beside one large live preview; mobile stacks accordion rows.
+  Peach, lavender, blue, and sage tints distinguish the actions. The title and
+  gallery share a frame sized to the laptop viewport. Panel expansion uses
+  a 0.6-second power3.out curve, an 8-degree tilt on closed rails, and a
+  0.06-second content stagger. The active panel takes 72% of the gallery.
   Fine-pointer hover on desktop, click/tap, focus, arrow keys, Home, and End
   select a panel. Hover follows actual pointer movement so resizing panels
   cannot override keyboard selection. Native app content
-  keeps a fixed width during expansion to avoid text reflow. Only the open
+  keeps a fixed width during expansion to avoid text reflow, then scales
+  uniformly to fit the available width and height via ResizeObserver. Only the open
   panel plays; closed previews reset and are inert and hidden from assistive
   technology. `decision-preview.tsx` loops each action, including directional
   exits, incoming files, synchronized counters, and the destination shelf.
