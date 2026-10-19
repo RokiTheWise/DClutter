@@ -2798,6 +2798,17 @@ button.win-icon:disabled {
   color: var(--muted);
 }
 
+.end-attribution a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.end-legal {
+  display: flex;
+  gap: 24px;
+  margin-left: auto;
+}
+
 @media (max-width: 1000px) {
   .end-cta {
     grid-template-columns: 1fr;
@@ -3112,7 +3123,7 @@ button.win-icon:disabled {
 }
 
 /* ------------------------------------------------------------
-   Prose pages (privacy)
+   Prose pages (privacy and license)
    ------------------------------------------------------------ */
 
 .doc {
@@ -3185,6 +3196,19 @@ button.win-icon:disabled {
 
 .doc-back {
   margin-top: 28px;
+}
+
+.license-text {
+  margin-top: 40px;
+  overflow-wrap: anywhere;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.license-text p + p {
+  margin-top: 20px;
 }
 
 .doc-link {

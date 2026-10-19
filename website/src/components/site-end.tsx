@@ -23,7 +23,7 @@ export default function SiteEnd() {
           </div>
         </div>
         <footer className="end-foot">
-          <a className="end-brand" href="/" aria-label="DClutter, back to top">
+          <a className="end-brand" href="#top" aria-label="DClutter, back to top">
             <img src="/logo.png" alt="" width={28} height={28} />
             DClutter
           </a>
@@ -40,8 +40,11 @@ export default function SiteEnd() {
             ) : null)}
           </nav>
           <div className="end-bottom">
-            <span>Built by <a href="https://www.djenriquez.dev/">Dexter Jethro Enriquez</a></span>
-            <a href="/privacy">Privacy policy</a>
+            <span className="end-attribution">Built by <a href="https://www.djenriquez.dev/">Dexter Jethro Enriquez</a></span>
+            <nav className="end-legal" aria-label="Legal">
+              <a href="/license">License</a>
+              <a href="/privacy">Privacy policy</a>
+            </nav>
           </div>
         </footer>
       </div>

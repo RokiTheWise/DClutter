@@ -122,7 +122,10 @@ use Poppins. Both fonts are self-hosted through Next.js.
   This website's privacy policy describes the GitHub requests.
 - `src/components/site-end.tsx`: a compact closing invitation with platform
   requirements directly below each download, followed by source-code links,
-  versioned release notes, and the privacy policy.
+  versioned release notes, author attribution, and privacy/license links. The
+  footer brand uses the existing smooth-scrolling `#top` anchor.
+- `src/app/license/page.tsx`: renders `public/license.txt` into the static export.
+  This plain-text copy must stay identical to the repository's root `LICENSE`.
 - `src/components/file-card.tsx`, `window-chrome.tsx`: shared product chrome.
 - `src/lib/samples.ts`: sample files, the four decisions with their key
   bindings, and each decision's exit vector.
