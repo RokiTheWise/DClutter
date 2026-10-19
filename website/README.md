@@ -98,10 +98,13 @@ use Poppins. Both fonts are self-hosted through Next.js.
   scales uniformly to the available area; file changes, sorting, folder shelves,
   trash review, undo, and completion preserve the same window and control positions.
   Phones use a fixed 700px-tall window with full-size text and tap targets.
-- `src/components/privacy.tsx`: a compact, static privacy section. A local folder
-  holds the same document previews as the product demos, beside the headline
-  and policy link; three short points cover accounts, uploads, and tracking.
-  The layout stacks on phones and adds no client-side animation or dependencies.
+- `src/components/privacy.tsx`: one two-line offline/privacy headline and a
+  quiet policy link. `privacy-folder.tsx` fits the user-supplied React Bits Folder
+  to the available width, including its expanded document spread. The original
+  TS/CSS source lives in `components/react-bits/`, with deterministic hex parsing
+  added for server/client color consistency. The light glass folder peeks on
+  hover, opens on click/tap or Enter/Space, previews the local demo documents,
+  and closes on Escape. Dragging is disabled. No dependencies were added.
 - `src/components/undo-section.tsx`, `site-end.tsx`: the closing bands.
 - `src/components/file-card.tsx`, `window-chrome.tsx`: shared product chrome.
 - `src/lib/samples.ts`: sample files, the four decisions with their key
