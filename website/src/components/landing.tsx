@@ -26,9 +26,7 @@ export default function Landing() {
               Try it before you download it.
             </h2>
             <p className="lede demo-intro">
-              Click in and use the arrow keys, or the buttons if you&rsquo;d
-              rather. These four are stand-ins, and nothing here touches anything
-              on your computer.
+              Use the arrow keys, or click the buttons.
             </p>
             <TriageDemo />
           </div>
