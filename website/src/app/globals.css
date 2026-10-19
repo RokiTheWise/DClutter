@@ -2468,6 +2468,27 @@ button.win-icon:disabled {
   height: 360px;
 }
 
+.privacy-folder-card {
+  height: 100%;
+  padding: calc(13px * var(--folder-scale));
+  background: #fcfcfa;
+  color: #263e4c;
+}
+
+.privacy-folder-card h3 {
+  font-size: calc(13px * var(--folder-scale));
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.privacy-folder-card p {
+  margin-top: calc(10px * var(--folder-scale));
+  font-size: calc(10px * var(--folder-scale));
+  line-height: 1.55;
+  color: #536772;
+}
+
 @media (max-width: 760px) {
   .privacy-grid {
     grid-template-columns: 1fr;

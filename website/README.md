@@ -102,9 +102,11 @@ use Poppins. Both fonts are self-hosted through Next.js.
   quiet policy link. `privacy-folder.tsx` fits the user-supplied React Bits Folder
   to the available width, including its expanded document spread. The original
   TS/CSS source lives in `components/react-bits/`, with deterministic hex parsing
-  added for server/client color consistency. The light glass folder peeks on
-  hover, opens on click/tap or Enter/Space, previews the local demo documents,
-  and closes on Escape. Dragging is disabled. No dependencies were added.
+  added for server/client color consistency. The light glass folder starts open
+  with the account, upload, and tracking explanations as headline-and-subtext
+  cards. Click/tap a card to enlarge it; Escape returns it to the folder.
+  The folder itself supports click/tap or Enter/Space and a hover peek.
+  Dragging is disabled. No dependencies were added.
 - `src/components/undo-section.tsx`, `site-end.tsx`: the closing bands.
 - `src/components/file-card.tsx`, `window-chrome.tsx`: shared product chrome.
 - `src/lib/samples.ts`: sample files, the four decisions with their key
