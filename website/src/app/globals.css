@@ -1736,290 +1736,364 @@ button.win-icon:disabled {
 .dec-band {
   --band-next: var(--paper-rgb);
   --band: var(--sage);
+  padding-block: clamp(80px, 8vw, 112px);
+}
+
+.dec-intro {
+  max-width: 760px;
+}
+
+.dec-eyebrow {
+  margin-bottom: 22px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4e6656;
+}
+
+.dec-intro .display {
+  font-size: clamp(2.5rem, 3.4vw, 3rem);
+  line-height: 1.12;
+}
+
+.dec-lede {
+  margin-top: 20px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
 }
 
 .dec-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
-  gap: clamp(32px, 6vw, 88px);
-  margin-top: clamp(40px, 6vw, 72px);
-  align-items: start;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(32px, 6vw, 80px);
+  align-items: center;
 }
 
-/* the list is pinned; the previews on the right are what scroll */
 .dec-list {
-  position: sticky;
-  top: 20vh;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  margin-top: 28px;
 }
 
 .dec-item {
   display: block;
   width: 100%;
-  padding: 16px 0;
-  border: 0;
-  border-top: 1px solid rgba(2, 2, 4, 0.12);
+  padding: 20px;
+  border: 1px solid transparent;
+  border-radius: 16px;
   text-align: left;
+  transition: background 0.18s var(--ease), border-color 0.18s var(--ease);
 }
 
-.dec-item:last-child {
-  border-bottom: 1px solid rgba(2, 2, 4, 0.12);
+.dec-item:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.dec-item[data-active="true"] {
+  border-color: rgba(44, 65, 48, 0.12);
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 5px 18px rgba(35, 57, 41, 0.035);
 }
 
 .dec-head {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
 }
 
-.dec-num {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  color: var(--faint);
+.dec-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border: 1px solid rgba(44, 65, 48, 0.1);
+  border-radius: 12px;
+  color: #4d6253;
 }
 
-.dec-key {
-  margin-left: auto;
-  padding: 3px 9px;
-  border: 1px solid rgba(2, 2, 4, 0.2);
-  border-radius: 6px;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--muted);
+.dec-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.dec-item[data-active="true"][data-decision="stage"] .dec-icon {
+  border-color: #edc9bd;
+  background: #f4ece9;
+  color: #c84d28;
+}
+
+.dec-label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
 }
 
 .dec-name {
-  font-family: var(--serif);
-  font-size: clamp(1.6rem, 3.1vw, 2.25rem);
-  font-weight: 400;
-  line-height: 1.05;
-  color: rgba(2, 2, 4, 0.26);
-  transition: color 0.45s var(--ease);
-}
-
-.dec-item[data-active="true"] .dec-name {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.2;
   color: var(--ink);
 }
 
-.dec-body {
+.dec-summary {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #58665c;
+}
+
+.dec-key {
   display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition:
-    grid-template-rows 0.5s var(--ease),
-    opacity 0.4s var(--ease);
+  place-items: center;
+  min-width: 30px;
+  height: 28px;
+  flex: none;
+  margin-left: auto;
+  padding: 0 7px;
+  border: 1px solid rgba(2, 2, 4, 0.12);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #58665c;
 }
 
-.dec-item[data-active="true"] .dec-body {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-
-.dec-body > p {
-  overflow: hidden;
-  font-size: 14.5px;
-  line-height: 1.6;
+.dec-body {
+  display: block;
+  margin: 14px 0 0 58px;
+  font-size: 13px;
+  line-height: 1.75;
   color: var(--muted);
 }
 
-.dec-item[data-active="true"] .dec-body > p {
-  padding-top: 10px;
+.dec-preview {
+  min-width: 0;
 }
 
-/* ---- the reels ---- */
-
-.dec-reels {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(20px, 3vw, 36px);
+.dec-example {
+  margin: 0;
 }
 
-.dec-reel {
-  display: flex;
-  flex-direction: column;
-  padding: clamp(8px, 1.4vw, 16px) 0;
-  transition: opacity 0.5s var(--ease);
+.dec-preview-win {
+  font-size: 13px;
 }
 
-.dec-reel[data-active="false"] {
-  opacity: 0.44;
+.dec-preview-win .win-titlebar {
+  padding: 10px 14px;
 }
 
-.reel-scene {
-  --chip-w: clamp(190px, 25vw, 248px);
-  position: relative;
-  height: clamp(236px, 28vw, 296px);
-}
-
-.reel-note {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 4px;
-  text-align: center;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
-/* a file as it appears inside a reel */
-.reel-chip {
-  position: absolute;
-  width: var(--chip-w);
-  padding: 13px 15px;
-  border: 1px solid rgba(2, 2, 4, 0.09);
-  border-radius: 11px;
-  background: #fff;
-  box-shadow: 0 10px 24px rgba(2, 2, 4, 0.1);
-}
-
-.reel-chip--right {
-  right: 0;
-  top: 50%;
-  margin-top: -30px;
-}
-
-.reel-chip--center {
-  left: 0;
-  right: 0;
-  top: 50%;
-  margin-inline: auto;
-  margin-top: -30px;
-}
-
-.reel-chip--bottom {
-  left: 0;
-  right: 0;
-  bottom: 4px;
-  margin-inline: auto;
-}
-
-.reel-chip b {
-  display: block;
-  font-size: 12.5px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.reel-chip span {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--faint);
-}
-
-.reel-row {
-  display: flex;
-  align-items: center;
+.dec-preview-win .win-bar {
+  padding: 10px 14px 14px;
   gap: 8px;
-  padding: 8px 11px;
-  border-radius: 9px;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(2, 2, 4, 0.06);
-  font-size: 11.5px;
-  white-space: nowrap;
 }
 
-/* File (↑) reveals three destination bins that slide down from the top */
-/* Centred by the box, not by a transform: motion drives `y` on this element
-   and writes its own `transform`, which would overwrite translateX(-50%). */
-.reel-bins {
+.dec-preview-win .win-history,
+.dec-preview-win .win-bar > .win-icon:last-child {
+  display: none;
+}
+
+.dec-preview-win .win-title {
+  font-size: 15px;
+}
+
+.dec-preview-win .win-trash {
+  padding-inline: 8px;
+  font-size: 11px;
+}
+
+.dec-file-stage {
+  position: relative;
+  padding: 24px;
+}
+
+.dec-file-stage .fcard {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.dec-file-stage .fcard-preview {
+  height: 140px;
+}
+
+.dec-file-stage .fcard-name {
+  font-size: 17px;
+}
+
+.dec-file-stage .fcard-open {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+.dec-file-stage .fcard-meta {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.dec-file-stage .fcard-meta b {
+  font-size: 12px;
+}
+
+.dec-file-stage[data-shelf="true"] > .fcard {
+  opacity: 0.3;
+}
+
+.dec-folder-shelf {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  display: flex;
-  justify-content: center;
+  left: 16px;
+  right: 16px;
+  top: 24px;
+  padding: 18px;
+  border: 1px solid #dedede;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.dec-folder-shelf > b {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dec-folder-shelf > p {
+  margin-top: 5px;
+  font-size: 10px;
+  color: #777;
+}
+
+.dec-folders {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  margin-top: 18px;
 }
 
-.reel-bin {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  width: clamp(88px, 11.5vw, 112px);
-  padding: 14px 9px;
-  border: 1px solid rgba(2, 2, 4, 0.1);
+.dec-folders > div {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 4px;
+  border: 2px solid #ededed;
   border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 6px 16px rgba(2, 2, 4, 0.07);
+  font-size: 11px;
+}
+
+.dec-folders > div[data-selected="true"] {
+  border-color: #2b2b2b;
+}
+
+.dec-folders svg {
+  width: 23px;
+  height: 23px;
+}
+
+.dec-folders kbd {
+  font-size: 10px;
+  color: #777;
+}
+
+.dec-sample-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  padding: 0 24px 20px;
+}
+
+.dec-sample-actions > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 1px solid #d5d5d5;
+  border-radius: 9px;
+  background: #ebebeb;
+  font-size: 11px;
+}
+
+.dec-sample-actions svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.dec-sample-actions kbd {
+  display: none;
+}
+
+.dec-sample-actions > div[data-selected="true"] {
+  border-color: #8b958d;
+  background: #dde5df;
+}
+
+.dec-sample-actions > div[data-hot="true"] {
+  border-color: #edc9bd;
+  color: #c84d28;
+  background: #f4ece9;
+}
+
+.dec-sample-actions > div[data-selected="true"][data-hot="true"] {
+  border-color: #c84d28;
+  background: #efd8cf;
+}
+
+.dec-window-status {
+  display: flex;
+  gap: 10px;
+  padding: 12px 24px;
+  border-top: 1px solid #dedede;
+  font-size: 11px;
+  color: #777;
+}
+
+.dec-outcome {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  padding: 22px 8px 0;
+}
+
+.dec-outcome-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: 1px solid rgba(44, 65, 48, 0.15);
+  border-radius: 50%;
+  color: #4d6253;
+}
+
+.dec-outcome-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dec-example[data-decision="stage"] .dec-outcome-icon {
+  color: #c84d28;
+}
+
+.dec-outcome strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dec-outcome strong + span {
+  display: block;
+  margin-top: 5px;
   font-size: 11.5px;
-  text-align: center;
+  line-height: 1.6;
+  color: #58665c;
 }
 
-.reel-bin[data-hit="true"] {
-  border-color: var(--ink);
-  border-width: 2px;
-  padding: 11px 7px;
-}
-
-.reel-bin svg {
-  width: 17px;
-  height: 17px;
-}
-
-.reel-bin kbd {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  color: var(--faint);
-}
-
-/* the toolbar counter that Stage actually feeds */
-.reel-pill {
-  position: absolute;
+.dec-try {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
-  border: 1px solid rgba(2, 2, 4, 0.12);
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 6px 16px rgba(2, 2, 4, 0.07);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.reel-pill b {
-  display: grid;
-  place-items: center;
-  min-width: 21px;
-  height: 21px;
-  padding: 0 6px;
-  border-radius: 6px;
-  background: var(--ink);
-  color: var(--sand);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.reel-row + .reel-row {
-  margin-top: 6px;
-}
-
-.reel-row[data-hit="true"] {
-  background: var(--ink);
-  color: var(--sand);
-}
-
-.reel-tick {
-  left: 50%;
-  /* clears the card's 16px nudge, so the two never touch mid-cycle */
-  margin-left: calc(var(--chip-w) / 2 + 30px);
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--ink);
-  color: var(--sand);
-  font-size: 14px;
+  gap: 20px;
+  margin: 36px 0 0 20px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(44, 65, 48, 0.25);
+  font-size: 13px;
 }
 
 /* ------------------------------------------------------------
@@ -2596,51 +2670,37 @@ button.win-icon:disabled {
 
 @media (max-width: 900px) {
   .pile-grid,
-  .dec-grid,
   .undo-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* Dia drops the sticky column entirely below 800 and interleaves the
-     pairs instead. display:contents lets both wrappers dissolve so the
-     items and reels can be ordered against each other. */
   .dec-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    /* the desktop grid sets align-items:start for the sticky column; left as
-       it is here the reels shrink to nothing, since a scene's contents are
-       all absolutely positioned */
-    align-items: stretch;
-  }
-
-  .dec-list,
-  .dec-reels {
-    display: contents;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 24px;
   }
 
   .dec-item {
-    order: var(--pair);
-    padding-top: 26px;
+    padding: 16px 12px;
   }
 
-  .dec-item:last-child {
-    border-bottom: 0;
+  .dec-head {
+    gap: 10px;
   }
 
-  .dec-reel {
-    order: calc(var(--pair) + 1);
-    opacity: 1;
-  }
-
-  /* every blurb is open on mobile; there is no active item to track */
   .dec-body {
-    grid-template-rows: 1fr;
-    opacity: 1;
+    margin-left: 0;
   }
 
-  .dec-body > p {
-    padding-top: 10px;
+  .dec-preview-win .win-bar > .win-icon {
+    display: none;
+  }
+
+  .dec-file-stage {
+    padding: 16px;
+  }
+
+  .dec-file-stage .fcard-open {
+    display: none;
   }
 
   .nav-links {
@@ -2656,60 +2716,73 @@ button.win-icon:disabled {
   }
 }
 
+@media (max-width: 700px) {
+  .dec-intro .display {
+    font-size: clamp(2.1rem, 8vw, 2.75rem);
+  }
+
+  .dec-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .dec-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .dec-item {
+    padding: 14px 12px;
+  }
+
+  .dec-head {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .dec-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+
+  .dec-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .dec-key {
+    min-width: 26px;
+    height: 25px;
+    font-size: 10px;
+  }
+
+  .dec-label {
+    order: 1;
+    flex-basis: 100%;
+  }
+
+  .dec-name {
+    font-size: 18px;
+  }
+
+  .dec-summary {
+    font-size: 11px;
+  }
+
+  .dec-body {
+    display: none;
+  }
+
+  .dec-try {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 560px) {
   body {
     font-size: 15px;
-  }
-
-  /* the reel scenes put two objects side by side; at this width they collide */
-  .reel-chip {
-    width: min(50vw, 190px);
-    padding: 9px 11px;
-  }
-
-  .reel-chip--right {
-  right: 0;
-  top: 50%;
-  margin-top: -30px;
-}
-
-.reel-chip--center {
-  left: 0;
-  right: 0;
-  top: 50%;
-  margin-inline: auto;
-  margin-top: -30px;
-}
-
-.reel-chip--bottom {
-  left: 0;
-  right: 0;
-  bottom: 4px;
-  margin-inline: auto;
-}
-
-.reel-chip b {
-    font-size: 11.5px;
-  }
-
-
-  .reel-row {
-    padding: 6px 8px;
-    font-size: 10.5px;
-  }
-
-  /* stacked instead of side by side, so the scene needs more height */
-  .reel-scene {
-    height: 300px;
-  }
-
-    .reel-chip--right {
-    right: 0;
-    left: 0;
-    top: auto;
-    bottom: 0;
-    margin-top: 0;
-    margin-inline: auto;
   }
 
   .demo-actions {
