@@ -1,64 +1,54 @@
-"use client";
-
-import { motion, useReducedMotion } from "motion/react";
+import { LaptopIcon } from "./icons";
 
 const points = [
   {
-    title: "No account, ever.",
-    body: "There is nothing to sign up for. Open it and it works, offline, on the first launch.",
+    title: "No account.",
+    body: "Open the app and get straight to your files.",
   },
   {
-    title: "Nothing is uploaded.",
-    body: "File names, contents, and previews are read on your own machine and never leave it. There is no server to send them to.",
+    title: "No uploads.",
+    body: "File names, contents, and previews stay on your device.",
   },
   {
-    title: "No telemetry.",
-    body: "No analytics, no crash pings, no usage counters. The app has no idea what you sorted, and neither do I.",
+    title: "No tracking.",
+    body: "No analytics, crash pings, or usage counters.",
   },
 ];
 
 export default function Privacy() {
-  const reduced = useReducedMotion();
-
   return (
     <section className="band privacy-band" id="privacy" aria-labelledby="privacy-heading">
       <div className="band-arc" aria-hidden="true" />
       <div className="wrap">
-        <h2 className="display" id="privacy-heading" style={{ maxWidth: "15ch" }}>
-          Nothing leaves your computer.
-        </h2>
+        <div className="privacy-grid">
+          <div className="privacy-copy">
+            <h2 className="display" id="privacy-heading">
+              Nothing leaves your computer.
+            </h2>
+            <p className="lede">
+              Sort your files, even offline. Everything happens on your device.
+            </p>
+            <a className="doc-link privacy-policy-link" href="/privacy">
+              Read the privacy policy <span aria-hidden="true">↗</span>
+            </a>
+          </div>
 
-        <div className="privacy-stage" aria-hidden="true">
-          <div className="privacy-fence" />
-          <motion.div
-            className="pile-chit"
-            style={{ position: "relative", left: "auto", top: "auto", margin: 0 }}
-            initial={reduced ? false : { x: 0 }}
-            whileInView={reduced ? undefined : { x: [0, 260, 260, 0] }}
-            viewport={{ once: true, amount: 0.6 }}
-            transition={{
-              duration: 2.4,
-              times: [0, 0.42, 0.58, 1],
-              ease: [0.22, 1, 0.36, 1],
-              delay: 0.3,
-            }}
-          >
-            <b>Semester planning notes.txt</b>
-            <span>174 bytes · stays here</span>
-          </motion.div>
+          <div className="privacy-visual" aria-hidden="true">
+            <div className="privacy-folder-back" />
+            <img className="privacy-paper privacy-paper--left" src="/demo/invoice.svg" alt="" width={144} height={190} />
+            <img className="privacy-paper privacy-paper--right" src="/demo/lecture-notes.svg" alt="" width={144} height={190} />
+            <img className="privacy-paper privacy-paper--center" src="/demo/research-proposal.svg" alt="" width={144} height={190} />
+            <div className="privacy-folder-front">
+              <span className="privacy-device"><LaptopIcon /> On your device</span>
+            </div>
+          </div>
         </div>
 
-        <p className="lede" style={{ marginTop: 28 }}>
-          <a className="doc-link" href="/privacy">
-            Read the full privacy policy →
-          </a>
-        </p>
-
         <div className="privacy-points">
-          {points.map((p) => (
-            <div key={p.title}>
-              <h3>{p.title}</h3>
-              <p>{p.body}</p>
+          {points.map((point) => (
+            <div key={point.title}>
+              <h3>{point.title}</h3>
+              <p>{point.body}</p>
             </div>
           ))}
         </div>

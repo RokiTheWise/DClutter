@@ -2433,54 +2433,195 @@ button.win-icon:disabled {
 .privacy-band {
   --band-next: var(--blush-rgb);
   --band: var(--sky);
+  padding-block: clamp(80px, 8vw, 112px) clamp(112px, 12vw, 176px);
 }
 
-.privacy-stage {
+.privacy-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 72px);
+}
+
+.privacy-copy .display {
+  max-width: 14ch;
+  font-size: clamp(2.5rem, 4.8vw, 4.4rem);
+  line-height: 1.08;
+}
+
+.privacy-copy .lede {
+  max-width: 34ch;
+  margin-top: 24px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #536772;
+}
+
+.privacy-policy-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 18px;
+  font-size: 14px;
+  color: #344e5d;
+}
+
+/* The files sit inside a local folder, rather than travelling toward a boundary. */
+.privacy-visual {
   position: relative;
-  height: clamp(230px, 30vw, 300px);
-  margin-top: clamp(32px, 5vw, 56px);
+  width: 100%;
+  max-width: 470px;
+  height: 340px;
+  justify-self: center;
+  isolation: isolate;
+}
+
+.privacy-visual::before {
+  content: "";
+  position: absolute;
+  inset: 20% -5% -6%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.7), transparent 70%);
+}
+
+.privacy-folder-back {
+  position: absolute;
+  width: 76%;
+  height: 225px;
+  bottom: 25px;
+  left: 12%;
+  border: 1px solid #86b4d3;
+  border-radius: 12px 16px 22px 22px;
+  background: linear-gradient(150deg, #b0d5ed, #78afd3);
+}
+
+.privacy-folder-back::before {
+  content: "";
+  position: absolute;
+  width: 33%;
+  height: 20px;
+  top: -20px;
+  left: -1px;
+  border: 1px solid #86b4d3;
+  border-bottom: 0;
+  border-radius: 10px 12px 0 0;
+  background: #b0d5ed;
+}
+
+.privacy-paper {
+  position: absolute;
+  top: 18px;
+  width: 31%;
+  height: 190px;
+  object-fit: cover;
+  object-position: top;
+  border: 1px solid #e7eaec;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(38, 67, 84, 0.12);
+}
+
+.privacy-paper--left {
+  left: 14%;
+  top: 34px;
+  transform: rotate(-10deg);
+}
+
+.privacy-paper--right {
+  right: 13%;
+  top: 28px;
+  transform: rotate(10deg);
+}
+
+.privacy-paper--center {
+  left: 35%;
+  transform: rotate(-2deg);
+}
+
+.privacy-folder-front {
+  position: absolute;
   display: grid;
   place-items: center;
-  overflow: hidden;
+  width: 82%;
+  height: 178px;
+  bottom: 20px;
+  left: 9%;
+  border: 1px solid #7caecf;
+  border-radius: 14px 14px 22px 22px;
+  background: linear-gradient(155deg, #aed6ef 0%, #8ebfe0 50%, #81b4d7 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 20px 35px -17px rgba(54, 93, 119, 0.4);
 }
 
-.privacy-fence {
-  position: absolute;
-  inset: 12% 0;
-  border: 1.5px dashed rgba(2, 2, 4, 0.18);
-  border-radius: 20px;
+.privacy-device {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  background: rgba(245, 251, 255, 0.76);
+  color: #355a73;
+  font-size: 12px;
+  font-weight: 500;
 }
 
-.privacy-fence::after {
-  content: "YOUR MAC";
-  position: absolute;
-  top: -9px;
-  left: 24px;
-  padding: 0 10px;
-  background: var(--sky);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  color: var(--faint);
+.privacy-device svg {
+  width: 19px;
+  height: 19px;
 }
 
 .privacy-points {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(24px, 4vw, 48px);
-  margin-top: clamp(40px, 6vw, 64px);
+  margin-top: 48px;
+}
+
+.privacy-points > div {
+  padding-top: 20px;
+  border-top: 1px solid rgba(54, 85, 105, 0.2);
 }
 
 .privacy-points h3 {
-  font-family: var(--serif);
-  font-size: 1.5rem;
-  font-weight: 400;
   margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #263e4c;
 }
 
 .privacy-points p {
-  font-size: 15px;
-  color: var(--muted);
+  max-width: 31ch;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #536772;
+}
+
+@media (max-width: 760px) {
+  .privacy-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .privacy-copy .display {
+    max-width: 17ch;
+  }
+
+  .privacy-visual {
+    max-width: 400px;
+    height: 320px;
+  }
+
+  .privacy-points {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-top: 28px;
+  }
+
+  .privacy-points p {
+    max-width: 40ch;
+  }
 }
 
 /* ------------------------------------------------------------
