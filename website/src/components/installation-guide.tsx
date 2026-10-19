@@ -38,33 +38,30 @@ export default function InstallationGuide({ platform, version, step }: { platfor
     <div className={`installation-visual installation-visual--${platform}`} aria-hidden="true">
       {platform === "macos" && step === 0 && (
         <MacWindow title="Downloads">
-          <div className="guide-finder-files">
-            <div className="guide-file-item guide-file-selected">
-              <span className="guide-zip"><span>ZIP</span><b>⋮</b></span>
-              <span>DClutter-{version}.zip</span><Pointer />
-            </div>
-            <span className="guide-unzip-arrow">→</span>
+          <div className="guide-finder-layout">
+            <div className="guide-finder-sidebar"><span>Favorites</span><span>Downloads</span><strong><Folder />Applications<Pointer /></strong></div>
+            <span className="guide-finder-drag">←</span>
             <div className="guide-file-item"><AppIcon /><span>DClutter.app</span></div>
           </div>
         </MacWindow>
       )}
       {platform === "macos" && step === 1 && (
-        <MacWindow title="Applications">
-          <div className="guide-move-app">
-            <div className="guide-file-item"><AppIcon /><span>DClutter.app</span><Pointer /></div>
-            <span className="guide-drag-path">········→</span>
-            <div className="guide-file-item"><Folder /><span>Applications</span></div>
-          </div>
-        </MacWindow>
+        <div className="guide-warning-shot">
+          <img className="guide-mac-screenshot guide-mac-screenshot--warning" src="/install/mac-blocked.png" alt="" />
+          <span className="guide-done-highlight" />
+          <Pointer />
+        </div>
       )}
       {platform === "macos" && step === 2 && (
-        <MacWindow title="Privacy & Security">
-          <div className="guide-mac-security">
-            <strong>Security</strong>
-            <p>“DClutter” was blocked to protect your Mac.</p>
-            <span className="guide-ui-button guide-ui-button--mac">Open Anyway<Pointer /></span>
-          </div>
-        </MacWindow>
+        <img className="guide-mac-screenshot" src="/install/mac-privacy-security.png" alt="" />
+      )}
+      {platform === "macos" && step === 3 && (
+        <div className="guide-mac-confirm">
+          <AppIcon />
+          <strong>Confirm the first launch</strong>
+          <span className="guide-ui-button guide-ui-button--mac">Open<Pointer /></span>
+          <p>Touch ID or password, if asked</p>
+        </div>
       )}
       {platform === "windows" && step === 0 && (
         <div className="guide-explorer">

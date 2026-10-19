@@ -1,0 +1,21 @@
+INSTALL DCLUTTER
+===============
+
+1. Drag DClutter onto the Applications shortcut in this window.
+   This copies the app to your Mac. Don't run it from the disk image.
+
+2. Eject the DClutter disk image in Finder.
+
+3. Open DClutter from Applications.
+   If macOS shows "DClutter Not Opened", click Done.
+
+4. Open System Settings > Privacy & Security, scroll down to Security,
+   and click Open Anyway next to DClutter.
+
+5. Confirm Open and authenticate if asked.
+   After this one-time approval, open DClutter normally from Applications.
+
+This build is not Developer ID signed or notarized. Packaging it as a DMG
+does not change its signing status or remove the first-launch warning.
+
+Source code and releases: https://github.com/RokiTheWise/DClutter

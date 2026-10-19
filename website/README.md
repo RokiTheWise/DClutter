@@ -94,10 +94,14 @@ use Poppins. Both fonts are self-hosted through Next.js.
 ## Interactions
 
 The platform download links in the hero and footer start the download and open
-a native modal with three illustrated installation steps for the chosen OS.
+a native modal with platform-specific installation steps. Mac has four stages:
+unzip and manually move the app in Finder, attempt the first launch and dismiss
+the warning with Done, choose Open Anyway in Privacy & Security, and confirm Open.
+Windows has three steps.
 Release attachments target a hidden frame, keeping the current page visible
 instead of opening an empty tab during the download handoff.
-The visuals are focused HTML/CSS illustrations, not captured OS screenshots.
+Mac’s blocked-app and Privacy & Security panels use supplied screenshots in
+`public/install/`; the other visuals are focused HTML/CSS illustrations.
 A “Download again” link retries the same release asset. Escape, the close button, or
 clicking the backdrop dismisses it; keyboard focus returns to the trigger.
 
