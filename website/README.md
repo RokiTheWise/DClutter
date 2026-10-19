@@ -96,12 +96,13 @@ use Poppins. Both fonts are self-hosted through Next.js.
 The platform download links in the hero and footer start the download and open
 a native modal with platform-specific installation steps. Mac has four stages:
 open the DMG and drag the app to Applications, eject the image and dismiss
-the warning with Done, choose Open Anyway in Privacy & Security, and confirm Open.
+the warning with Done, choose Open Anyway in Privacy & Security, and confirm
+Open Anyway in the final dialog.
 Windows has three steps.
 Release attachments target a hidden frame, keeping the current page visible
 instead of opening an empty tab during the download handoff.
-Mac’s blocked-app and Privacy & Security panels use supplied screenshots in
-`public/install/`; the other visuals are focused HTML/CSS illustrations.
+All four Mac panels use supplied light-mode screenshots in `public/install/`,
+with highlights on the relevant buttons. Windows uses focused HTML/CSS illustrations.
 A “Download again” link retries the same release asset. Escape, the close button, or
 clicking the backdrop dismisses it; keyboard focus returns to the trigger.
 

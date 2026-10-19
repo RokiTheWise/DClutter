@@ -466,27 +466,30 @@ h2.display {
   row-gap: 30px;
 }
 
+.installation-steps[data-platform="macos"] .installation-visual { min-height: 302px; }
+.guide-screenshot-frame { position: relative; max-width: 100%; width: fit-content; line-height: 0; }
 .guide-mac-screenshot {
   display: block;
+  width: auto;
+  height: auto;
   max-width: 100%;
-  max-height: 190px;
+  max-height: 260px;
   object-fit: contain;
   border-radius: 8px;
 }
 
-.guide-mac-screenshot--warning { max-height: 220px; }
-.guide-warning-shot { position: relative; }
-.guide-done-highlight {
+.guide-action-highlight {
   position: absolute;
-  left: 5.5%;
-  right: 13%;
-  bottom: 8%;
-  height: 11%;
   border: 2px solid #83b8ff;
   border-radius: 12px;
   box-shadow: 0 0 0 2px rgba(131, 184, 255, 0.2);
 }
-.guide-warning-shot > .guide-pointer { right: 20%; bottom: 0; }
+.guide-screenshot-frame[data-action="done"] .guide-action-highlight { left: 6%; right: 6%; bottom: 6%; height: 11%; }
+.guide-screenshot-frame[data-action="done"] > .guide-pointer { right: 16%; bottom: 0; }
+.guide-screenshot-frame[data-action="settings"] .guide-action-highlight { left: 81%; right: 4%; bottom: 38%; height: 14%; border-radius: 6px; }
+.guide-screenshot-frame[data-action="settings"] > .guide-pointer { right: 7%; bottom: 24%; }
+.guide-screenshot-frame[data-action="confirm"] .guide-action-highlight { left: 6%; right: 6%; bottom: 15%; height: 8%; }
+.guide-screenshot-frame[data-action="confirm"] > .guide-pointer { right: 16%; bottom: 8%; }
 
 .download-modal-explanation {
   max-width: 65ch;
@@ -566,7 +569,7 @@ h2.display {
 }
 
 .installation-visual--windows { background: #eaf1fa; }
-.guide-mac-window, .guide-explorer, .guide-setup {
+.guide-explorer, .guide-setup {
   width: 100%;
   border: 1px solid #d2d7dc;
   border-radius: 8px;
@@ -574,25 +577,9 @@ h2.display {
   box-shadow: 0 8px 16px -8px #33475b40;
   overflow: hidden;
 }
-.guide-window-bar {
-  position: relative;
-  padding: 9px 5px;
-  background: #f4f4f4;
-  border-bottom: 1px solid #e7e7e7;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-}
-.guide-traffic { position: absolute; left: 9px; top: 12px; display: flex; gap: 4px; }
-.guide-traffic i { width: 5px; height: 5px; background: #ff615a; border-radius: 50%; }
-.guide-traffic i:nth-child(2) { background: #ffbe2f; }
-.guide-traffic i:nth-child(3) { background: #29c940; }
-.guide-file-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 9px; min-width: 0; font-size: 10px; white-space: nowrap; }
 .guide-app-icon { display: inline-block; flex-shrink: 0; width: 48px; height: 48px; background: url('/logo.png') center / contain no-repeat; }
 .guide-pointer { position: absolute; width: 21px; height: 27px; right: 4px; bottom: -12px; filter: drop-shadow(0 2px 1px #0003); }
-.guide-folder { width: 60px; height: 48px; }
 .guide-ui-button { position: relative; display: inline-block; padding: 4px 10px; font-size: 12px; line-height: 1.4; border-radius: 4px; background: #fff; border: 1px solid #d7dce1; box-shadow: 0 1px 2px #0001; }
-.guide-ui-button--mac { margin-left: 38%; outline: 3px solid #bad7f7; outline-offset: 2px; }
 .guide-explorer, .guide-setup { border-radius: 5px; }
 .guide-explorer-title { display: flex; justify-content: space-between; padding: 9px; font-size: 10px; }
 .guide-explorer-path { border-block: 1px solid #edf0f5; padding: 9px; font-size: 10px; }
@@ -617,19 +604,6 @@ h2.display {
 .guide-setup-footer { display: flex; justify-content: flex-end; border-top: 1px solid #ddd; background: #f5f5f5; padding: 10px 15px 12px; }
 .guide-ui-button--windows { min-width: 57px; text-align: center; border-color: #267cbd; outline: 2px solid #c8e4ff; outline-offset: 2px; }
 
-.guide-dmg-layout {
-  display: flex;
-  align-items: center;
-  min-height: 142px;
-  justify-content: center;
-  padding: 22px 12px;
-  gap: 16px;
-}
-.guide-dmg-arrow { color: #7598b8; font-size: 32px; }
-.guide-mac-confirm { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-block: 10px; }
-.guide-mac-confirm strong { font-size: 14px; }
-.guide-mac-confirm .guide-ui-button--mac { margin-left: 0; min-width: 100px; text-align: center; background: #087aff; border-color: #087aff; color: #fff; }
-.guide-mac-confirm p { font-size: 10px; }
 
 @media (max-width: 900px) {
   .download-modal { width: min(460px, calc(100% - 24px)); border-radius: 18px; }

@@ -10,7 +10,7 @@ const installation = {
     { title: "Open the DMG and drag to install", text: "Double-click the DClutter DMG in Downloads. In the window that opens, drag DClutter onto the Applications shortcut." },
     { title: "Open it, then choose Done", text: "Eject the disk image and open DClutter from Applications. When “DClutter” Not Opened appears, click Done to dismiss it and continue." },
     { title: "Choose Open Anyway", text: "Open System Settings → Privacy & Security. Scroll down to Security and click Open Anyway next to DClutter." },
-    { title: "Confirm and open", text: "Click Open in the confirmation prompt and authenticate if asked. After this one-time approval, DClutter opens normally from Applications." },
+    { title: "Confirm Open Anyway", text: "When “Open DClutter?” appears, click Open Anyway and authenticate if asked. After this one-time approval, DClutter opens normally from Applications." },
   ],
   windows: [
     { title: "Open the installer", text: "In Downloads, double-click the DClutter setup .exe to begin." },
