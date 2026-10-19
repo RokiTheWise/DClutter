@@ -75,9 +75,15 @@ use Poppins. Both fonts are self-hosted through Next.js.
   and the modal trash checklist. The website fonts apply outside this window.
 - `src/components/pile.tsx`: scattered files that sort into a deck. Scrubbed to
   scroll position, so scrolling back un-sorts it.
-- `src/components/decisions.tsx`: four selectable actions with concise explanations
-  and keyboard navigation. `decision-preview.tsx` keeps a light app preview
-  visible for each choice, including the destination shelf and outcome caption.
+- `src/components/decisions.tsx`: a pinned action list tracks four scrolling
+  app previews beneath a left-aligned title. The wider section and roomier
+  document cards keep the native UI legible. Each action has one short explanation.
+  Labels reserve their space so scroll tracking never shifts the list. On mobile, each
+  label is followed by its preview. `decision-preview.tsx` loops the native
+  Stage, Skip, File, and Keep actions with directional card exits, new files,
+  and synchronized counters. File dismisses the shelf as the card slides up.
+  Subtle scroll parallax stays off for reduced motion; loops pause offscreen
+  and in hidden tabs. No extra outcome captions or next-section link.
 - `src/components/triage-demo.tsx`: the interactive demo.
 - `src/components/privacy.tsx`, `undo-section.tsx`, `site-end.tsx`: the closing
   bands.
