@@ -75,15 +75,18 @@ use Poppins. Both fonts are self-hosted through Next.js.
   and the modal trash checklist. The website fonts apply outside this window.
 - `src/components/pile.tsx`: scattered files that sort into a deck. Scrubbed to
   scroll position, so scrolling back un-sorts it.
-- `src/components/decisions.tsx`: a pinned action list tracks four scrolling
-  app previews beneath a left-aligned title. The wider section and roomier
-  document cards keep the native UI legible. Each action has one short explanation.
-  Labels reserve their space so scroll tracking never shifts the list. On mobile, each
-  label is followed by its preview. `decision-preview.tsx` loops the native
-  Stage, Skip, File, and Keep actions with directional card exits, new files,
-  and synchronized counters. File dismisses the shelf as the card slides up.
-  Subtle scroll parallax stays off for reduced motion; loops pause offscreen
-  and in hidden tabs. No extra outcome captions or next-section link.
+- `src/components/decisions.tsx`: an accordion gallery of the four actions,
+  inspired by the React Bits expanding-panel pattern. Desktop uses vertical
+  action rails beside one large live preview; mobile stacks accordion rows.
+  Fine-pointer hover on desktop, click/tap, focus, arrow keys, Home, and End
+  select a panel. Hover follows actual pointer movement so resizing panels
+  cannot override keyboard selection. Native app content
+  keeps a fixed width during expansion to avoid text reflow. Only the open
+  panel plays; closed previews reset and are inert and hidden from assistive
+  technology. `decision-preview.tsx` loops each action, including directional
+  exits, incoming files, synchronized counters, and the destination shelf.
+  Autoplay pauses offscreen/in hidden tabs and respects reduced motion.
+  The section reserves clearance above the following band's raised arc.
 - `src/components/triage-demo.tsx`: the interactive demo.
 - `src/components/privacy.tsx`, `undo-section.tsx`, `site-end.tsx`: the closing
   bands.

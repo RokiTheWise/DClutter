@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useInView, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
+import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
 import type { Decision, SampleFile } from "@/lib/samples";
 import { EASE } from "@/lib/card-motion";
 import FileCard from "./file-card";
@@ -39,7 +39,7 @@ const directions = {
 };
 
 /** Each visible scene demonstrates its own action; incoming files avoid an empty hold. */
-export function DecisionPreview({ decision, description }: { decision: Decision; description: string }) {
+export function DecisionPreview({ decision, description, enabled = true }: { decision: Decision; description: string; enabled?: boolean }) {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { amount: 0.35 });
   const reduced = useReducedMotion();
@@ -48,9 +48,6 @@ export function DecisionPreview({ decision, description }: { decision: Decision;
   const frames = decision === "file" ? filing : sorting;
   const frame = reduced ? frames[decision === "file" ? 1 : 0] : frames[index];
   const file = files[frame.file];
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const driftTarget = useTransform(scrollYProgress, [0, 1], [20, -20]);
-  const drift = useSpring(driftTarget, { stiffness: 120, damping: 28, mass: 0.35 });
   const acting = frame.phase === "act";
   const shelving = frame.phase === "shelf";
   const sorted = frame.resolved && decision !== "skip" ? 1 : 0;
@@ -63,13 +60,17 @@ export function DecisionPreview({ decision, description }: { decision: Decision;
   }, []);
 
   useEffect(() => {
+    if (!enabled) {
+      setIndex(0);
+      return;
+    }
     if (!inView || !visible || reduced) return;
     const timer = window.setTimeout(() => setIndex((current) => (current + 1) % frames.length), frame.duration);
     return () => window.clearTimeout(timer);
-  }, [index, inView, visible, reduced, frames, frame.duration]);
+  }, [index, inView, visible, reduced, frames, frame.duration, enabled]);
 
   return (
-    <motion.figure ref={ref} className="dec-example" data-decision={decision} data-phase={frame.phase} aria-label={`${decision}: ${description}`} style={{ y: reduced ? 0 : drift }}>
+    <figure ref={ref} className="dec-example" data-decision={decision} data-phase={frame.phase} aria-label={`${decision}: ${description}`}>
       <div aria-hidden="true" inert>
         <WindowChrome className="dec-preview-win win--light" staged={decision === "stage" && frame.resolved ? 1 : 0}>
           <div className="dec-file-stage">
@@ -107,6 +108,6 @@ export function DecisionPreview({ decision, description }: { decision: Decision;
           <div className="dec-window-status"><span>{4 - sorted} left</span><span>·</span><span>{sorted} sorted</span></div>
         </WindowChrome>
       </div>
-    </motion.figure>
+    </figure>
   );
 }
