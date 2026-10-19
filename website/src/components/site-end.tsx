@@ -8,8 +8,8 @@ export default function SiteEnd() {
       <div className="wrap">
         <div className="end-cta">
           <div className="end-head">
-            <h2 className="display" id="download-heading">Start with one file.</h2>
-            <p className="lede">A clearer Downloads folder, a few minutes at a time.</p>
+            <h2 className="display" id="download-heading">Ready to start with one file?</h2>
+            <p className="lede">A clearer folder, a few minutes at a time.</p>
           </div>
           <div className="end-actions">
             {releases.map((release) =>
@@ -20,7 +20,6 @@ export default function SiteEnd() {
                 </div>
               ) : null,
             )}
-            <p className="end-free">Free and open source.</p>
           </div>
         </div>
         <footer className="end-foot">
@@ -41,7 +40,7 @@ export default function SiteEnd() {
             ) : null)}
           </nav>
           <div className="end-bottom">
-            <span>Open source under Apache 2.0.</span>
+            <span>Built by <a href="https://www.djenriquez.dev/">Dexter Jethro Enriquez</a></span>
             <a href="/privacy">Privacy policy</a>
           </div>
         </footer>
