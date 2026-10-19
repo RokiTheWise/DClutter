@@ -2501,153 +2501,158 @@ button.win-icon:disabled {
 }
 
 /* ------------------------------------------------------------
-   6 — Undo
+   6 — GitHub community
    ------------------------------------------------------------ */
 
-.undo-band {
+.github-band {
   --band-next: var(--sky-rgb);
   --band: var(--blush);
+  padding-block: clamp(80px, 8vw, 112px) clamp(112px, 12vw, 176px);
 }
 
-.undo-grid {
+.github-header {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
-  gap: clamp(32px, 6vw, 80px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   align-items: center;
+  gap: 48px;
 }
 
-.undo-panel {
-  padding: clamp(20px, 3vw, 30px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.5);
+.github-header .display {
+  max-width: 13ch;
+  font-size: clamp(2.5rem, 4.8vw, 4.4rem);
+  line-height: 1.08;
 }
 
-.undo-log {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 22px;
+.github-totals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
 }
 
-.undo-row {
-  display: flex;
+.github-total b {
+  display: block;
+  font-family: var(--serif);
+  font-size: clamp(4rem, 8vw, 7rem);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.06em;
+  line-height: 1.2;
+}
+
+.github-total > span {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #66545a;
+}
+
+.github-repos {
+  display: grid;
+  margin-top: 48px;
+  border-top: 1px solid rgba(89, 60, 71, 0.2);
+}
+
+.github-repo {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) 210px 120px;
   align-items: center;
-  gap: 12px;
-  padding: 11px 14px;
-  border: 1px solid rgba(2, 2, 4, 0.08);
-  border-radius: 11px;
-  background: #fff;
-  font-size: 13.5px;
-  transition:
-    opacity 0.3s var(--ease),
-    filter 0.3s var(--ease);
+  gap: 20px;
+  min-height: 88px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(89, 60, 71, 0.2);
+  transition: color 0.2s ease-out;
 }
 
-.undo-row[data-undone="true"] {
-  opacity: 0.32;
-  filter: grayscale(1);
+.github-repo:hover .github-repo-link,
+.github-repo:focus-visible .github-repo-link {
+  text-decoration-color: currentColor;
 }
 
-.undo-row b {
+.github-platform {
+  font-size: 14px;
   font-weight: 500;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
-.undo-verb {
-  margin-left: auto;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--sage);
+.github-repo-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  font-size: 12px;
+  color: #66545a;
 }
 
-.undo-row[data-undone="true"] .undo-verb {
-  background: rgba(2, 2, 4, 0.08);
-}
-
-/* A continuous drag that springs to the nearest stop, rather than a native
-   range input stepping between them. */
-.undo-track {
-  position: relative;
-  height: 26px;
-  margin-top: 6px;
-  touch-action: pan-y;
-}
-
-.undo-track::before {
-  content: "";
-  position: absolute;
-  left: 13px;
-  right: 13px;
-  top: 50%;
-  height: 3px;
-  margin-top: -1.5px;
-  border-radius: 999px;
-  background: rgba(2, 2, 4, 0.16);
-}
-
-.undo-stops {
-  position: absolute;
-  left: 13px;
-  right: 13px;
-  top: 50%;
+.github-repo-counts {
   display: flex;
-  justify-content: space-between;
-  pointer-events: none;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-size: 12px;
+  color: #66545a;
 }
 
-/* Stations, not tick marks: big enough to read as the stops the handle
-   snaps to, with a ring so they sit on the line rather than in it. */
-.undo-stops i {
-  width: 10px;
-  height: 10px;
-  margin-top: -5px;
-  border-radius: 50%;
-  background: var(--blush);
-  box-shadow: inset 0 0 0 2px rgba(2, 2, 4, 0.2);
-  transition:
-    background 0.25s var(--ease),
-    box-shadow 0.25s var(--ease);
+.github-repo-counts b {
+  color: var(--ink);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
-.undo-stops i[data-past="true"] {
-  background: var(--ink);
-  box-shadow: inset 0 0 0 2px var(--ink);
+.github-repo-link {
+  justify-self: end;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(89, 60, 71, 0.3);
 }
 
-.undo-knob {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--ink);
-  border: 3px solid #fff;
-  box-shadow: 0 3px 10px rgba(2, 2, 4, 0.3);
-  cursor: grab;
-  touch-action: none;
-}
-
-.undo-knob:active {
-  cursor: grabbing;
-}
-
-.undo-scrub-label {
+.github-foot {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--faint);
+  gap: 8px 24px;
+  margin-top: 18px;
+  font-size: 11px;
+  color: #75636a;
+}
+
+@media (max-width: 900px) {
+  .github-header {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .github-header .display {
+    max-width: none;
+  }
+
+  .github-repo {
+    grid-template-columns: 80px minmax(0, 1fr) 110px;
+    gap: 10px 16px;
+  }
+
+  .github-repo-counts {
+    grid-column: 2;
+  }
+
+  .github-repo-link {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .github-repo {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 16px;
+  }
+
+  .github-repo-name,
+  .github-repo-counts {
+    grid-column: 1;
+  }
+
+  .github-repo-link {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
 }
 
 /* ------------------------------------------------------------
@@ -2774,8 +2779,7 @@ button.win-icon:disabled {
    ------------------------------------------------------------ */
 
 @media (max-width: 900px) {
-  .pile-grid,
-  .undo-grid {
+  .pile-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 

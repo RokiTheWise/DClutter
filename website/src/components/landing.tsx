@@ -4,7 +4,7 @@ import Pile from "./pile";
 import Decisions from "./decisions";
 import TriageDemo from "./triage-demo";
 import Privacy from "./privacy";
-import UndoSection from "./undo-section";
+import GitHubStats from "./github-stats";
 import SiteEnd from "./site-end";
 
 export default function Landing() {
@@ -35,7 +35,7 @@ export default function Landing() {
         </section>
 
         <Privacy />
-        <UndoSection />
+        <GitHubStats />
         <SiteEnd />
       </main>
     </>

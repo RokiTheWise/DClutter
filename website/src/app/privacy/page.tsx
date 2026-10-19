@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "DClutter has no account, no server, and no analytics. This page says exactly what stays on your Mac and what does not.",
 };
 
-const UPDATED = "18 October 2026";
+const UPDATED = "19 October 2026";
 
 export default function Privacy() {
   return (
@@ -73,13 +73,23 @@ export default function Privacy() {
           <p>
             The site is a set of static files. It sets no cookies, runs no
             analytics, and has no forms or sign-ins. The two typefaces are
-            served from the same place as the page, so loading it does not call
-            out to a font service or anyone else.
+            served from the same place as the page, so loading them does not call
+            out to a font service.
           </p>
           <p>
             Whoever hosts the site will keep ordinary server logs, which
             normally include IP addresses. That is the host&rsquo;s doing rather
             than something the page asks for.
+          </p>
+
+          <h2>GitHub counts on this website</h2>
+          <p>
+            When the GitHub metrics section comes into view, your browser asks
+            GitHub for the public star and release-download counts of the two
+            repositories. GitHub receives your IP address and browser information
+            with those requests. File names, file contents, and sorting decisions
+            are never part of them. The public counts are cached in session
+            storage for fifteen minutes to reduce repeat requests.
           </p>
 
           <h2>Downloading the app</h2>
@@ -90,8 +100,8 @@ export default function Privacy() {
             <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">
               their privacy statement
             </a>
-            . This is the one part of using DClutter that another company
-            observes, which is why it is on this page.
+            . These download requests are separate from the app, which works
+            offline.
           </p>
 
           <h2>Your rights</h2>

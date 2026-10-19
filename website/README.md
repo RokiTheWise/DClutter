@@ -25,6 +25,7 @@ npm run dev -- --port 3020
 
 ```sh
 npm run typecheck
+npm run test:github-stats
 npm run build
 ```
 
@@ -48,7 +49,7 @@ colors carry it, declared as tokens in `globals.css`:
 | `--sand`  | `#f7e9d0` | hero floor, the pile      |
 | `--sage`  | `#e0eddf` | four decisions            |
 | `--sky`   | `#e0edf6` | hero sky, privacy         |
-| `--blush` | `#edd6d9` | undo                      |
+| `--blush` | `#edd6d9` | GitHub metrics            |
 
 One tint owns each band and the bands meet on arcs rather than straight edges,
 so one color rolls into the next. Ink is the only strong value on the page,
@@ -107,7 +108,15 @@ use Poppins. Both fonts are self-hosted through Next.js.
   cards. Click/tap a card to enlarge it; Escape returns it to the folder.
   The folder itself supports click/tap or Enter/Space and a hover peek.
   Dragging is disabled. No dependencies were added.
-- `src/components/undo-section.tsx`, `site-end.tsx`: the closing bands.
+- `src/components/github-stats.tsx`: combined app downloads and stars, a breakdown
+  for each platform, and direct links to both repositories. `lib/github-stats.ts`
+  reads GitHub's public REST API when the section enters view; counts are cached
+  in session storage for 15 minutes. It paginates all releases and counts DMG,
+  ZIP, EXE, and MSI assets, excluding checksums and manifests. API failures use a
+  dated cached snapshot when available, or show unavailable counts without
+  replacing them with zero. The static export needs no server or API token.
+  This website's privacy policy describes the GitHub requests.
+- `src/components/site-end.tsx`: download links, release details, and footer.
 - `src/components/file-card.tsx`, `window-chrome.tsx`: shared product chrome.
 - `src/lib/samples.ts`: sample files, the four decisions with their key
   bindings, and each decision's exit vector.

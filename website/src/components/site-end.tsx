@@ -13,8 +13,7 @@ export default function SiteEnd() {
             Go empty a folder :&#41;
           </h2>
           <p className="lede">
-            Free, open source, and still being tuned. Eighteen downloads, six
-            stars, and one fork from people who trusted it with their own files.
+            Free, open source, and still being tuned.
             Made for the end of a semester or the end of a project.
           </p>
 
