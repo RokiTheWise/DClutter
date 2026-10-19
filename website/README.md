@@ -79,7 +79,7 @@ use Poppins. Both fonts are self-hosted through Next.js.
   inspired by the React Bits expanding-panel pattern. Desktop uses vertical
   action rails beside one large live preview; mobile stacks accordion rows.
   Peach, lavender, blue, and sage tints distinguish the actions. The title and
-  gallery share a frame sized to the laptop viewport. Panel expansion uses
+  gallery share a borderless layout sized to the laptop viewport. Panel expansion uses
   a 0.6-second power3.out curve, an 8-degree tilt on closed rails, and a
   0.06-second content stagger. The active panel takes 72% of the gallery.
   Fine-pointer hover on desktop, click/tap, focus, arrow keys, Home, and End
