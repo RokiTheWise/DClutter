@@ -24,7 +24,7 @@
   --faint: rgba(2, 2, 4, 0.4);
   --hair: rgba(2, 2, 4, 0.1);
 
-  /* the product window is the one dark object above the fold */
+  /* Default product tokens; light previews override these inside the window. */
   --win-bg: #121214;
   --win-card: #1c1c1f;
   --win-line: #28282b;
@@ -1131,11 +1131,6 @@ button.win-icon:disabled {
 }
 
 .hero-demo-win {
-  --win-bg: #1e1e1e;
-  --win-card: #303030;
-  --win-line: #414141;
-  --win-text: #dcdcdc;
-  --win-dim: #858585;
   position: relative;
   background: var(--win-bg);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -3032,4 +3027,182 @@ button.win-icon:disabled {
 
 .demo-sheet-btn--go:hover {
   background: rgba(237, 123, 79, 0.2);
+}
+
+/* ------------------------------------------------------------
+   Light product previews — matches the native app's light appearance
+   ------------------------------------------------------------ */
+
+.win--light {
+  --win-bg: #f4f4f4;
+  --win-card: #fff;
+  --win-line: #dedede;
+  --win-text: #2b2b2b;
+  --win-dim: #777;
+  --app-consequence: #c84d28;
+  --win-control: #ebebeb;
+  --win-control-hover: #e1e1e1;
+  --win-stage-tint: #f4ece9;
+  border-color: #d9d9d9;
+  color: var(--win-text);
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  box-shadow:
+    0 2px 4px rgba(2, 2, 4, 0.04),
+    0 24px 60px -20px rgba(2, 2, 4, 0.16);
+}
+
+.win--light :focus-visible {
+  outline-color: #007aff;
+}
+
+.win--light .win-titlebar {
+  background: #fff;
+  border-bottom: 1px solid var(--win-line);
+}
+
+.win--light .win-appname {
+  color: #555;
+}
+
+.win--light .win-icon {
+  background: var(--win-control);
+  color: var(--win-dim);
+}
+
+.win--light button.win-icon:hover:not(:disabled) {
+  background: var(--win-control-hover);
+  color: var(--win-text);
+}
+
+.win--light .win-folder svg,
+.win--light .fcard-meta b {
+  color: var(--win-text);
+}
+
+.win--light .win-trash {
+  border-color: var(--win-line);
+}
+
+.win--light .win-trash b {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.win--light .win-trash[data-armed="true"] {
+  border-color: #dfcec8;
+  background: var(--win-stage-tint);
+}
+
+.win--light .fcard-open {
+  border-color: transparent;
+  background: var(--win-control);
+  color: var(--win-text);
+}
+
+.win--light .fcard-chip {
+  background: #ededed;
+  color: var(--win-dim);
+}
+
+.win--light .fcard-meta span {
+  color: var(--win-dim);
+}
+
+.win--light .demo-act {
+  border-color: #d5d5d5;
+  background: var(--win-control);
+  color: var(--win-text);
+}
+
+.win--light .demo-act kbd {
+  background: #dedede;
+}
+
+.win--light .demo-act[data-hot="true"] {
+  border-color: #edc9bd;
+  background: var(--win-stage-tint);
+  color: var(--app-consequence);
+}
+
+.win--light .demo-act[data-hot="true"] kbd {
+  background: #f0dfd9;
+}
+
+.win--light .demo-act:hover:not(:disabled),
+.win--light .demo-act[data-active="true"] {
+  border-color: #aaa;
+  background: var(--win-control-hover);
+}
+
+.win--light .demo-act[data-hot="true"]:hover:not(:disabled),
+.win--light .demo-act[data-hot="true"][data-active="true"] {
+  border-color: var(--app-consequence);
+  background: #efd8cf;
+}
+
+.win--light .hero-demo-typing {
+  border-color: var(--win-text);
+}
+
+.win--light .hero-demo-input {
+  border-color: #aaa;
+  outline-color: #7bb5ee;
+  background: #fff;
+  color: var(--win-text);
+}
+
+.win--light .hero-demo-input [data-selected="true"] {
+  background: #b8d7fb;
+}
+
+.win--light .hero-demo-folders p {
+  color: var(--win-dim);
+}
+
+.win--light .hero-demo-shelf-close {
+  background: #f7f7f7;
+  color: var(--win-dim);
+}
+
+.win--light .hero-demo-bin[data-selected="true"] {
+  border-color: var(--win-text);
+}
+
+.win--light .hero-demo-remove {
+  background: #bfbfbf;
+  color: #fff;
+}
+
+.win--light .hero-demo-review-overlay {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.win--light .hero-demo-panel {
+  border-color: #bbb;
+  background: var(--win-bg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.win--light .hero-demo-review-list {
+  background: #fff;
+}
+
+.win--light .hero-demo-review-file {
+  border-color: var(--win-line);
+}
+
+.win--light .hero-demo-checkbox {
+  background: #007aff;
+}
+
+.win--light .hero-demo-untick {
+  color: #0068d9;
+}
+
+.win--light .hero-demo-cancel {
+  background: #e3e3e3;
+}
+
+.win--light .hero-demo-complete p {
+  color: var(--win-dim);
 }

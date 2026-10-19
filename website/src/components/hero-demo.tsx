@@ -112,7 +112,7 @@ export default function HeroDemo() {
 
       {/* This is a demonstration, so its simulated controls never take focus. */}
       <div aria-hidden="true" inert>
-        <WindowChrome className="hero-demo-win" staged={shot.staged}>
+        <WindowChrome className="hero-demo-win win--light" staged={shot.staged}>
           <div className="hero-demo-stage">
             <AnimatePresence initial={false} mode="popLayout">
               <motion.div
