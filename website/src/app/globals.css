@@ -1842,10 +1842,6 @@ button.win-icon:disabled {
   color: var(--pane-ink);
 }
 
-.dec-pane-trigger:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
 .dec-pane-trigger:focus-visible {
   outline: 2px solid #354e3c;
   outline-offset: -7px;
