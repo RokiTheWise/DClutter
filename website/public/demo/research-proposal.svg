@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+  <rect width="600" height="800" fill="#fff"/>
+  <text x="50" y="49" fill="#808080" font-family="Arial, sans-serif" font-size="10" letter-spacing="1.5">RESEARCH METHODS · PROPOSAL DRAFT</text>
+  <path d="M50 64H550" stroke="#b8b8b8"/>
+  <g font-family="Georgia, serif" fill="#272727">
+    <text x="50" y="115" font-size="31" font-weight="700">Research proposal</text>
+    <text x="50" y="149" font-size="19">Urban green spaces and student well-being</text>
+    <text x="50" y="183" font-size="13" fill="#787878">Alex Rivera · 17 October 2026</text>
+    <text x="50" y="239" font-size="19" font-weight="700">1. Introduction</text>
+    <g font-size="13"><text x="50" y="268">Access to green space is often associated with better mental</text><text x="50" y="290">health. For university students, small moments outdoors may</text><text x="50" y="312">offer a meaningful break from demanding academic routines.</text><text x="50" y="345">This study explores how the frequency and quality of visits</text><text x="50" y="367">to campus green spaces relate to self-reported well-being.</text></g>
+    <text x="50" y="413" font-size="19" font-weight="700">2. Research questions</text>
+    <g font-size="13"><text x="61" y="443">1. How often do students use campus green spaces?</text><text x="61" y="467">2. What activities do they engage in during these visits?</text><text x="61" y="491">3. How do visits relate to perceived stress levels?</text></g>
+    <text x="50" y="543" font-size="19" font-weight="700">3. Proposed methodology</text>
+    <g font-size="13"><text x="50" y="573">A mixed-method approach will combine an anonymous survey</text><text x="50" y="595">with short interviews. Participants will be recruited across</text><text x="50" y="617">year levels to capture a range of campus experiences.</text><text x="50" y="650">Survey responses will be analyzed descriptively. Interview</text><text x="50" y="672">transcripts will be coded for recurring themes and patterns.</text></g>
+  </g>
+  <path d="M50 738H550" stroke="#d4d4d4"/>
+  <text x="50" y="766" fill="#999" font-family="Arial, sans-serif" font-size="10">WORKING DRAFT · FOR REVIEW</text>
+  <text x="544" y="766" fill="#999" font-family="Georgia, serif" font-size="11">1</text>
+</svg>

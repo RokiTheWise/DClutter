@@ -1,0 +1,112 @@
+import type { ReactNode } from "react";
+import {
+  ChevronIcon,
+  EllipsisIcon,
+  FolderIcon,
+  GearIcon,
+  RedoIcon,
+  TrayIcon,
+  UndoIcon,
+} from "./icons";
+
+/**
+ * The app's control bar, in the order TriageView builds it: settings, the
+ * folder field with its path, undo and redo, the Review trash counter, and
+ * the session menu.
+ */
+export default function WindowChrome({
+  children,
+  staged = 0,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
+  onReviewTrash,
+  className = "",
+}: {
+  children: ReactNode;
+  staged?: number;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onReviewTrash?: () => void;
+  className?: string;
+}) {
+  const live = Boolean(onUndo);
+
+  return (
+    <div className={`win ${className}`.trim()}>
+      {/* the macOS title bar, then the app's own control bar below it */}
+      <div className="win-titlebar">
+        <div className="win-dots" aria-hidden="true">
+          <i style={{ background: "#ff5f57" }} />
+          <i style={{ background: "#febc2e" }} />
+          <i style={{ background: "#28c840" }} />
+        </div>
+        <span className="win-appname">DClutter</span>
+      </div>
+
+      <div className="win-bar">
+        <span className="win-icon" aria-hidden="true">
+          <GearIcon />
+        </span>
+
+        <div className="win-where">
+          <div className="win-title">
+            <span className="win-folder" aria-hidden="true">
+              <FolderIcon />
+            </span>
+            Downloads
+            <span className="win-chevron" aria-hidden="true">
+              <ChevronIcon />
+            </span>
+          </div>
+          <div className="win-path">~/Downloads</div>
+        </div>
+
+        <div className="win-history">
+          <button
+            type="button"
+            className="win-icon"
+            onClick={onUndo}
+            disabled={!live || !canUndo}
+            aria-label="Undo"
+            tabIndex={live ? 0 : -1}
+          >
+            <UndoIcon />
+          </button>
+          <button
+            type="button"
+            className="win-icon"
+            onClick={onRedo}
+            disabled={!live || !canRedo}
+            aria-label="Redo"
+            tabIndex={live ? 0 : -1}
+          >
+            <RedoIcon />
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className="win-trash"
+          data-armed={staged > 0}
+          onClick={onReviewTrash}
+          disabled={!onReviewTrash || staged === 0}
+          aria-hidden={live ? undefined : true}
+          tabIndex={live ? 0 : -1}
+        >
+          <TrayIcon />
+          Review trash
+          <b>{staged}</b>
+        </button>
+
+        <span className="win-icon" aria-hidden="true">
+          <EllipsisIcon />
+        </span>
+      </div>
+      {children}
+    </div>
+  );
+}

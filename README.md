@@ -233,6 +233,12 @@ Swift 6 toolchain, run the core, platform, and UI regression tests from the term
 swift test --package-path DClutterKit
 ```
 
+## Website
+
+The Next.js product website lives in [`website/`](website/README.md) and builds
+independently from the macOS app. Run `npm ci` and `npm run dev` from that directory
+to preview it locally.
+
 ## Architecture
 
 Three modules, with a hard boundary between metadata acquisition and everything
