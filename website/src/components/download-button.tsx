@@ -7,9 +7,10 @@ import InstallationGuide from "./installation-guide";
 
 const installation = {
   macos: [
-    { title: "Open the ZIP", text: "In Downloads, double-click the DClutter ZIP to unpack the app." },
-    { title: "Move to Applications", text: "Drag DClutter.app into your Applications folder." },
-    { title: "Allow the first launch", text: "Open DClutter once. If macOS blocks it, go to System Settings → Privacy & Security → Open Anyway, then confirm Open." },
+    { title: "Unzip and move the app", text: "Double-click the ZIP in Downloads. In Finder, drag DClutter.app to Applications in the sidebar. The ZIP doesn’t open an installer window." },
+    { title: "Open it, then choose Done", text: "Open DClutter from Applications. When “DClutter” Not Opened appears, click Done to dismiss it and continue to the next step." },
+    { title: "Choose Open Anyway", text: "Open System Settings → Privacy & Security. Scroll down to Security and click Open Anyway next to DClutter." },
+    { title: "Confirm and open", text: "Click Open in the confirmation prompt and authenticate if asked. After this one-time approval, DClutter opens normally from Applications." },
   ],
   windows: [
     { title: "Open the installer", text: "In Downloads, double-click the DClutter setup .exe to begin." },
@@ -88,10 +89,10 @@ export default function DownloadButton({
           <p className="download-modal-eyebrow"><span aria-hidden="true">↧</span> Your download is starting</p>
           <h2 id={titleId}>How to install DClutter</h2>
           <p className="download-modal-description" id={descriptionId}>
-            Three steps to install DClutter for {release.shortName}.
+            {installation[release.id].length} steps to install DClutter for {release.shortName}.
           </p>
 
-          <ol className="installation-steps">
+          <ol className="installation-steps" data-platform={release.id}>
             {installation[release.id].map((step, index) => (
               <li key={step.title}>
                 <div className="installation-image-wrap">
@@ -104,6 +105,11 @@ export default function DownloadButton({
             ))}
           </ol>
 
+          {release.id === "macos" && (
+            <p className="download-modal-explanation">
+              This ZIP release isn’t Developer ID signed or notarized, so macOS requires approval on the first launch.
+            </p>
+          )}
           <p className="download-modal-retry">Download didn’t start? <a href={release.downloadUrl} target={downloadTarget} referrerPolicy="no-referrer">Download again</a></p>
           <p className="download-modal-footer">
             {release.requirements} · {release.architecture} · v{release.version}

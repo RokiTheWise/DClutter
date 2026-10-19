@@ -461,6 +461,41 @@ h2.display {
   min-width: 0;
 }
 
+.installation-steps[data-platform="macos"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  row-gap: 30px;
+}
+
+.guide-mac-screenshot {
+  display: block;
+  max-width: 100%;
+  max-height: 190px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.guide-mac-screenshot--warning { max-height: 220px; }
+.guide-warning-shot { position: relative; }
+.guide-done-highlight {
+  position: absolute;
+  left: 5.5%;
+  right: 13%;
+  bottom: 8%;
+  height: 11%;
+  border: 2px solid #83b8ff;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px rgba(131, 184, 255, 0.2);
+}
+.guide-warning-shot > .guide-pointer { right: 20%; bottom: 0; }
+
+.download-modal-explanation {
+  max-width: 65ch;
+  margin: 0 auto 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .installation-image-wrap {
   position: relative;
   margin-bottom: 20px;
@@ -552,22 +587,10 @@ h2.display {
 .guide-traffic i { width: 5px; height: 5px; background: #ff615a; border-radius: 50%; }
 .guide-traffic i:nth-child(2) { background: #ffbe2f; }
 .guide-traffic i:nth-child(3) { background: #29c940; }
-.guide-finder-files, .guide-move-app { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 25px 7px; }
 .guide-file-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 9px; min-width: 0; font-size: 10px; white-space: nowrap; }
-.guide-file-selected { padding: 5px; border-radius: 6px; background: #e3efff; }
 .guide-app-icon { display: inline-block; flex-shrink: 0; width: 48px; height: 48px; background: url('/logo.png') center / contain no-repeat; }
 .guide-pointer { position: absolute; width: 21px; height: 27px; right: 4px; bottom: -12px; filter: drop-shadow(0 2px 1px #0003); }
-.guide-file-selected .guide-pointer { right: 20px; bottom: 9px; }
-.guide-zip { position: relative; display: flex; align-items: flex-end; justify-content: center; width: 36px; height: 48px; padding-bottom: 5px; background: linear-gradient(135deg, #fff 83%, #e0e4e8); border: 1px solid #d7dade; border-radius: 4px; color: #91969e; font-size: 9px; }
-.guide-zip b { position: absolute; top: 0; font-size: 27px; line-height: 1; }
-.guide-unzip-arrow { color: #9ba8b6; font-size: 17px; }
-.guide-drag-path { align-self: flex-start; margin-top: 18px; color: #6b98ba; font-size: 17px; letter-spacing: 1px; }
 .guide-folder { width: 60px; height: 48px; }
-.guide-move-app { gap: 10px; }
-.guide-move-app .guide-pointer { right: 8px; bottom: 10px; }
-.guide-mac-security { padding: 20px 15px; font-size: 11px; }
-.guide-mac-security strong { font-size: 14px; }
-.guide-mac-security p { margin: 10px 0 16px; font-size: 11px; }
 .guide-ui-button { position: relative; display: inline-block; padding: 4px 10px; font-size: 12px; line-height: 1.4; border-radius: 4px; background: #fff; border: 1px solid #d7dce1; box-shadow: 0 1px 2px #0001; }
 .guide-ui-button--mac { margin-left: 38%; outline: 3px solid #bad7f7; outline-offset: 2px; }
 .guide-explorer, .guide-setup { border-radius: 5px; }
@@ -594,12 +617,47 @@ h2.display {
 .guide-setup-footer { display: flex; justify-content: flex-end; border-top: 1px solid #ddd; background: #f5f5f5; padding: 10px 15px 12px; }
 .guide-ui-button--windows { min-width: 57px; text-align: center; border-color: #267cbd; outline: 2px solid #c8e4ff; outline-offset: 2px; }
 
+.guide-finder-layout {
+  display: flex;
+  align-items: center;
+  min-height: 142px;
+  padding-right: 18px;
+  gap: 16px;
+}
+.guide-finder-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-self: stretch;
+  padding: 16px 8px;
+  background: #f2f4f6;
+  font-size: 11px;
+}
+.guide-finder-sidebar > span:first-child { color: #78818d; font-size: 9px; }
+.guide-finder-sidebar strong {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 4px;
+  background: #d3e7fd;
+  font-weight: 500;
+}
+.guide-finder-sidebar .guide-folder { width: 17px; height: 15px; }
+.guide-finder-sidebar .guide-pointer { right: 0; bottom: -19px; }
+.guide-finder-drag { color: #7598b8; font-size: 25px; }
+.guide-mac-confirm { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-block: 10px; }
+.guide-mac-confirm strong { font-size: 14px; }
+.guide-mac-confirm .guide-ui-button--mac { margin-left: 0; min-width: 100px; text-align: center; background: #087aff; border-color: #087aff; color: #fff; }
+.guide-mac-confirm p { font-size: 10px; }
+
 @media (max-width: 900px) {
   .download-modal { width: min(460px, calc(100% - 24px)); border-radius: 18px; }
   .download-modal-panel { padding: 36px 22px 24px; }
   .download-modal-eyebrow { font-size: 11px; }
   .download-modal h2 { max-width: 13ch; margin-inline: auto; }
-  .installation-steps { grid-template-columns: 1fr; gap: 30px; margin-top: 32px; }
+  .installation-steps, .installation-steps[data-platform="macos"] { grid-template-columns: 1fr; gap: 30px; margin-top: 32px; }
   .installation-image-wrap { max-width: 300px; margin: 0 auto 16px; }
   .installation-visual { min-height: 230px; padding-inline: 20px; }
   .installation-steps p { max-width: 35ch; margin-inline: auto; }

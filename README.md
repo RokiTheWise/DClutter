@@ -233,6 +233,14 @@ Swift 6 toolchain, run the core, platform, and UI regression tests from the term
 swift test --package-path DClutterKit
 ```
 
+### Packaging a DMG
+
+An existing release app can be packaged into a drag-to-Applications disk image
+with [`tools/build-dmg.sh`](tools/build-dmg.sh). See the
+[packaging instructions](tools/dmg/README.md) for setup and verification.
+Creating a DMG does not require an Apple Developer account, and does not sign
+or notarize the app.
+
 ## Website
 
 The Next.js product website lives in [`website/`](website/README.md) and builds
