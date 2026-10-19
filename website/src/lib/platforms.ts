@@ -37,7 +37,7 @@ export const platforms: Record<Platform, PlatformRelease> = {
     shortName: "Mac",
     status: "available",
     version: "1.1.0",
-    downloadUrl: `${MAC_REPO}/releases/download/v1.1.0/DClutter-1.1.0.zip`,
+    downloadUrl: `${MAC_REPO}/releases/download/v1.1.0/DClutter-1.1.0.dmg`,
     requirements: "macOS 14+",
     architecture: "Apple Silicon & Intel",
     repositoryUrl: MAC_REPO,

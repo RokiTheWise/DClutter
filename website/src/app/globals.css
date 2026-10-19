@@ -617,36 +617,15 @@ h2.display {
 .guide-setup-footer { display: flex; justify-content: flex-end; border-top: 1px solid #ddd; background: #f5f5f5; padding: 10px 15px 12px; }
 .guide-ui-button--windows { min-width: 57px; text-align: center; border-color: #267cbd; outline: 2px solid #c8e4ff; outline-offset: 2px; }
 
-.guide-finder-layout {
+.guide-dmg-layout {
   display: flex;
   align-items: center;
   min-height: 142px;
-  padding-right: 18px;
+  justify-content: center;
+  padding: 22px 12px;
   gap: 16px;
 }
-.guide-finder-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-self: stretch;
-  padding: 16px 8px;
-  background: #f2f4f6;
-  font-size: 11px;
-}
-.guide-finder-sidebar > span:first-child { color: #78818d; font-size: 9px; }
-.guide-finder-sidebar strong {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px;
-  border-radius: 4px;
-  background: #d3e7fd;
-  font-weight: 500;
-}
-.guide-finder-sidebar .guide-folder { width: 17px; height: 15px; }
-.guide-finder-sidebar .guide-pointer { right: 0; bottom: -19px; }
-.guide-finder-drag { color: #7598b8; font-size: 25px; }
+.guide-dmg-arrow { color: #7598b8; font-size: 32px; }
 .guide-mac-confirm { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-block: 10px; }
 .guide-mac-confirm strong { font-size: 14px; }
 .guide-mac-confirm .guide-ui-button--mac { margin-left: 0; min-width: 100px; text-align: center; background: #087aff; border-color: #087aff; color: #fff; }

@@ -95,7 +95,7 @@ use Poppins. Both fonts are self-hosted through Next.js.
 
 The platform download links in the hero and footer start the download and open
 a native modal with platform-specific installation steps. Mac has four stages:
-unzip and manually move the app in Finder, attempt the first launch and dismiss
+open the DMG and drag the app to Applications, eject the image and dismiss
 the warning with Done, choose Open Anyway in Privacy & Security, and confirm Open.
 Windows has three steps.
 Release attachments target a hidden frame, keeping the current page visible
@@ -126,6 +126,10 @@ stay, the movement stops.
 The website does not depend on the ignored `videos/` project or any video file.
 
 ## Releases
+
+Mac v1.1.0 links to the published DMG, with its drag-to-Applications window.
+The original ZIP remains available on GitHub. Both packages contain the same app;
+adding a disk image does not change the app version or signing status.
 
 Both platforms are described by `src/lib/platforms.ts`, which is the only
 place a version, a download URL or a minimum OS appears. The download

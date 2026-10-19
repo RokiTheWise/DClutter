@@ -37,11 +37,11 @@ export default function InstallationGuide({ platform, version, step }: { platfor
   return (
     <div className={`installation-visual installation-visual--${platform}`} aria-hidden="true">
       {platform === "macos" && step === 0 && (
-        <MacWindow title="Downloads">
-          <div className="guide-finder-layout">
-            <div className="guide-finder-sidebar"><span>Favorites</span><span>Downloads</span><strong><Folder />Applications<Pointer /></strong></div>
-            <span className="guide-finder-drag">←</span>
+        <MacWindow title="DClutter">
+          <div className="guide-dmg-layout">
             <div className="guide-file-item"><AppIcon /><span>DClutter.app</span></div>
+            <span className="guide-dmg-arrow">→</span>
+            <div className="guide-file-item"><Folder /><span>Applications</span><Pointer /></div>
           </div>
         </MacWindow>
       )}
