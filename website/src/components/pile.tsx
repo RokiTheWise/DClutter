@@ -58,7 +58,7 @@ function Countdown() {
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
             transition={{ duration: reduced ? 0 : 0.3 }}
           >
-            {sorted ? `left, from ${START}` : "files in Downloads"}
+            {sorted ? `left. Down from ${START}.` : "files in Downloads"}
           </motion.span>
         </AnimatePresence>
       </span>
@@ -143,14 +143,19 @@ export default function Pile() {
             idea where to start.
           </h2>
           <p className="lede" style={{ marginTop: 22 }}>
-            I opened my Mac after finals and wondered when I had last organized
-            anything. Then I opened Downloads. Whiplash. Deciding on a file takes
-            about half a second. Opening it, dragging it somewhere, clicking back,
-            and finding my place again is what turned that half second into an
-            afternoon.
+            I opened my Mac after finals and wondered when I’d last organized
+            anything. Then I opened Downloads. Whiplash. Deciding what to keep was
+            easy. Opening files, dragging them around, and finding my place again
+            was what turned it into an afternoon.
           </p>
           <p className="lede" style={{ marginTop: 18 }}>
-            You still make every call. The dragging is what goes.
+            So I built DClutter. That afternoon became a few minutes here and
+            there, one file at a time. Somewhere between old assignments and
+            forgotten projects, cleaning up started to feel like going down
+            memory lane.
+          </p>
+          <p className="lede" style={{ marginTop: 18 }}>
+            Who would’ve thought sorting files could be a little enjoyable?
           </p>
           <Countdown />
         </div>

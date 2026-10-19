@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { Platform } from "@/lib/platforms";
 
 function Pointer() {
@@ -13,56 +12,30 @@ function AppIcon() {
   return <span className="guide-app-icon" />;
 }
 
-function Folder() {
-  return (
-    <svg className="guide-folder" viewBox="0 0 88 70" fill="none">
-      <path d="M4 15a8 8 0 0 1 8-8h22l9 9h33a8 8 0 0 1 8 8v36a7 7 0 0 1-7 7H11a7 7 0 0 1-7-7V15Z" fill="#66b9ec" />
-      <path d="M4 28a7 7 0 0 1 7-7h66a7 7 0 0 1 7 7v32a7 7 0 0 1-7 7H11a7 7 0 0 1-7-7V28Z" fill="#8dd1f6" />
-      <path d="m32 52 12-21 12 21M36 45h16" stroke="#4d9ccc" strokeWidth="4" strokeLinecap="round" />
-    </svg>
-  );
-}
+const macScreenshots = [
+  { src: "mac-dmg-light.png", width: 1286, height: 884 },
+  { src: "mac-blocked-light.png", width: 522, height: 540, action: "done" },
+  { src: "mac-privacy-security-light.png", width: 1450, height: 362, action: "settings" },
+  { src: "mac-confirm-open-light.png", width: 522, height: 716, action: "confirm" },
+];
 
-function MacWindow({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="guide-mac-window">
-      <div className="guide-window-bar"><span className="guide-traffic"><i /><i /><i /></span><span>{title}</span></div>
-      {children}
-    </div>
-  );
-}
-
-/** Focused, illustrative OS guides. The surrounding captions carry all instructions. */
+/** Real Mac screenshots and illustrative Windows guides, with accessible captions outside. */
 export default function InstallationGuide({ platform, version, step }: { platform: Platform; version: string; step: number }) {
+  if (platform === "macos") {
+    const screenshot = macScreenshots[step];
+    if (!screenshot) return null;
+    return (
+      <div className="installation-visual installation-visual--macos" aria-hidden="true">
+        <div className="guide-screenshot-frame" data-action={screenshot.action}>
+          <img className="guide-mac-screenshot" src={`/install/${screenshot.src}`} width={screenshot.width} height={screenshot.height} alt="" />
+          {screenshot.action && <><span className="guide-action-highlight" /><Pointer /></>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`installation-visual installation-visual--${platform}`} aria-hidden="true">
-      {platform === "macos" && step === 0 && (
-        <MacWindow title="DClutter">
-          <div className="guide-dmg-layout">
-            <div className="guide-file-item"><AppIcon /><span>DClutter.app</span></div>
-            <span className="guide-dmg-arrow">→</span>
-            <div className="guide-file-item"><Folder /><span>Applications</span><Pointer /></div>
-          </div>
-        </MacWindow>
-      )}
-      {platform === "macos" && step === 1 && (
-        <div className="guide-warning-shot">
-          <img className="guide-mac-screenshot guide-mac-screenshot--warning" src="/install/mac-blocked.png" alt="" />
-          <span className="guide-done-highlight" />
-          <Pointer />
-        </div>
-      )}
-      {platform === "macos" && step === 2 && (
-        <img className="guide-mac-screenshot" src="/install/mac-privacy-security.png" alt="" />
-      )}
-      {platform === "macos" && step === 3 && (
-        <div className="guide-mac-confirm">
-          <AppIcon />
-          <strong>Confirm the first launch</strong>
-          <span className="guide-ui-button guide-ui-button--mac">Open<Pointer /></span>
-          <p>Touch ID or password, if asked</p>
-        </div>
-      )}
       {platform === "windows" && step === 0 && (
         <div className="guide-explorer">
           <div className="guide-explorer-title">Downloads <span>−　□　×</span></div>

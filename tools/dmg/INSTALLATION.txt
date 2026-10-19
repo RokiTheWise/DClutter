@@ -12,7 +12,7 @@ INSTALL DCLUTTER
 4. Open System Settings > Privacy & Security, scroll down to Security,
    and click Open Anyway next to DClutter.
 
-5. Confirm Open and authenticate if asked.
+5. In the "Open DClutter?" prompt, click Open Anyway and authenticate if asked.
    After this one-time approval, open DClutter normally from Applications.
 
 This build is not Developer ID signed or notarized. Packaging it as a DMG

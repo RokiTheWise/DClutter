@@ -4,7 +4,7 @@ import Pile from "./pile";
 import Decisions from "./decisions";
 import TriageDemo from "./triage-demo";
 import Privacy from "./privacy";
-import UndoSection from "./undo-section";
+import GitHubStats from "./github-stats";
 import SiteEnd from "./site-end";
 
 export default function Landing() {
@@ -21,21 +21,19 @@ export default function Landing() {
 
         <section className="band demo-band" id="try-it" aria-labelledby="try-heading">
           <div className="band-arc" aria-hidden="true" />
-          <div className="wrap">
-            <h2 className="display" id="try-heading" style={{ maxWidth: "18ch" }}>
+          <div className="wrap demo-layout">
+            <h2 className="display" id="try-heading">
               Try it before you download it.
             </h2>
-            <p className="lede" style={{ marginTop: 22 }}>
-              Click in and use the arrow keys, or the buttons if you&rsquo;d
-              rather. These four are stand-ins, and nothing here touches anything
-              on your computer.
+            <p className="lede demo-intro">
+              Use the arrow keys, or click the buttons.
             </p>
             <TriageDemo />
           </div>
         </section>
 
         <Privacy />
-        <UndoSection />
+        <GitHubStats />
         <SiteEnd />
       </main>
     </>

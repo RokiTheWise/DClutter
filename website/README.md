@@ -25,17 +25,52 @@ npm run dev -- --port 3020
 
 ```sh
 npm run typecheck
+npm run test:github-stats
 npm run build
+npm run test:metadata
 ```
 
 Type checking generates Next.js route types first, so it also works before the
-first development run or build. The Website GitHub Actions workflow runs both
-checks for website pull requests; it does not deploy the site.
+first development run or build. The Website GitHub Actions workflow runs these
+checks for website pull requests;
+it does not deploy the site.
 
 `npm run build` exports the static site into `out/`. Deploy that directory to a
 static host, or select `website` as the project root in a Next.js hosting service.
 The current site assumes deployment at the root of a domain. GitHub Pages under
 `/DClutter/` would need a base path and corresponding public-asset paths.
+
+## Domain, sharing, and search
+
+The canonical production host is `https://dclutter.djenriquez.dev` (without an
+extra `www`). `src/lib/site.ts` owns that URL, page descriptions, and all social
+metadata. Every public page declares its own canonical and Open Graph URL.
+`robots.txt` and `sitemap.xml` are statically exported from the App Router.
+
+The sharing image is `public/og/dclutter.png`: an opaque 1200×630 PNG, about
+155 KB, used by Open Graph and Twitter large-image cards. Its editable vector
+source is `public/og/dclutter.svg`; text is outlined so rasterization does not
+depend on installed fonts. To regenerate the PNG after editing the SVG, use
+the existing Sharp dependency from the `website` directory:
+
+```sh
+node -e 'require("sharp")("public/og/dclutter.svg").flatten({background:"#e0edf6"}).png().toFile("public/og/dclutter.png")'
+```
+
+The homepage includes WebSite, SoftwareApplication, and author JSON-LD using
+public product facts. There are no invented ratings/reviews; software-app rich
+results are not guaranteed. `/help` provides direct, readable answers about the
+app, supported platforms, offline use, staging, undo, and installation. Important
+information and metadata are present in the exported HTML, without waiting for
+animation or client requests. No special AI-only pages or hidden keyword text
+are used.
+
+Before production launch, connect `dclutter.djenriquez.dev` to this project in
+Vercel and apply the DNS records Vercel provides. Redirect any alternate public
+host to the canonical host through the hosting settings. After deployment,
+submit `/sitemap.xml` in Google Search Console/Bing Webmaster Tools and check the
+actual public URL in the platforms' share debuggers. Local previews cannot
+confirm Messenger's cached production preview.
 
 ## Design
 
@@ -48,7 +83,7 @@ colors carry it, declared as tokens in `globals.css`:
 | `--sand`  | `#f7e9d0` | hero floor, the pile      |
 | `--sage`  | `#e0eddf` | four decisions            |
 | `--sky`   | `#e0edf6` | hero sky, privacy         |
-| `--blush` | `#edd6d9` | undo                      |
+| `--blush` | `#edd6d9` | GitHub metrics            |
 
 One tint owns each band and the bands meet on arcs rather than straight edges,
 so one color rolls into the next. Ink is the only strong value on the page,
@@ -75,11 +110,56 @@ use Poppins. Both fonts are self-hosted through Next.js.
   and the modal trash checklist. The website fonts apply outside this window.
 - `src/components/pile.tsx`: scattered files that sort into a deck. Scrubbed to
   scroll position, so scrolling back un-sorts it.
-- `src/components/decisions.tsx`: the sticky four-decision column and the card
-  that leaves in the matching direction.
-- `src/components/triage-demo.tsx`: the interactive demo.
-- `src/components/privacy.tsx`, `undo-section.tsx`, `site-end.tsx`: the closing
-  bands.
+- `src/components/decisions.tsx`: an accordion gallery of the four actions,
+  inspired by the React Bits expanding-panel pattern. Desktop uses vertical
+  action rails beside one large live preview; mobile stacks accordion rows.
+  Peach, lavender, blue, and sage tints distinguish the actions. The title and
+  gallery share a borderless layout sized to the laptop viewport. Panel expansion uses
+  a 0.6-second power3.out curve, an 8-degree tilt on closed rails, and a
+  0.06-second content stagger. The active panel takes 72% of the gallery.
+  Fine-pointer hover on desktop, click/tap, focus, arrow keys, Home, and End
+  select a panel. Hover follows actual pointer movement so resizing panels
+  cannot override keyboard selection. Native app content
+  keeps a fixed width during expansion to avoid text reflow, then scales
+  uniformly to fit the available width and height via ResizeObserver. Only the open
+  panel plays; closed previews reset and are inert and hidden from assistive
+  technology. `decision-preview.tsx` loops each action, including directional
+  exits, incoming files, synchronized counters, and the destination shelf.
+  Autoplay pauses offscreen/in hidden tabs and respects reduced motion.
+  The section reserves clearance above the following band's raised arc.
+- `src/components/triage-demo.tsx`: the interactive demo. The fixed 900×640 app
+  canvas fits the laptop viewport independently of its title and introduction,
+  which can scroll away while the app stays comfortably large. The canvas
+  scales uniformly to the available area; file changes, sorting, folder shelves,
+  trash review, undo, and completion preserve the same window and control positions.
+  Phones use a fixed 700px-tall window with full-size text and tap targets.
+- `src/components/privacy.tsx`: one two-line offline/privacy headline and a
+  quiet policy link. `privacy-folder.tsx` fits the user-supplied React Bits Folder
+  to the available width, including its expanded document spread. The original
+  TS/CSS source lives in `components/react-bits/`, with deterministic hex parsing
+  added for server/client color consistency. The light glass folder starts open
+  with the account, upload, and tracking explanations as headline-and-subtext
+  cards. Click/tap a card to enlarge it; Escape returns it to the folder.
+  The folder itself supports click/tap or Enter/Space and a hover peek.
+  Dragging is disabled. No dependencies were added.
+- `src/components/github-stats.tsx`: combined app downloads, stars, forks, and
+  published releases in a two-by-two layout, beside a left-aligned title and two
+  platform-specific GitHub buttons. A soft arch picks up the blush palette.
+  Counts animate once after loading, with a slight stagger and reduced-motion
+  support; their final values remain static for assistive technology. Each
+  number's tooltip gives the platform breakdown. `lib/github-stats.ts`
+  reads GitHub's public REST API when the section enters view; counts are cached
+  in session storage for 15 minutes. It paginates all releases and counts DMG,
+  ZIP, EXE, and MSI assets, excluding checksums and manifests. API failures use a
+  cached snapshot with a saved-count notice when available, or show unavailable counts without
+  replacing them with zero. The static export needs no server or API token.
+  This website's privacy policy describes the GitHub requests.
+- `src/components/site-end.tsx`: a compact closing invitation with platform
+  requirements directly below each download, followed by source-code links,
+  versioned release notes, author attribution, and privacy/license links. The
+  footer brand uses the existing smooth-scrolling `#top` anchor.
+- `src/app/license/page.tsx`: renders `public/license.txt` into the static export.
+  This plain-text copy must stay identical to the repository's root `LICENSE`.
 - `src/components/file-card.tsx`, `window-chrome.tsx`: shared product chrome.
 - `src/lib/samples.ts`: sample files, the four decisions with their key
   bindings, and each decision's exit vector.
@@ -96,12 +176,13 @@ use Poppins. Both fonts are self-hosted through Next.js.
 The platform download links in the hero and footer start the download and open
 a native modal with platform-specific installation steps. Mac has four stages:
 open the DMG and drag the app to Applications, eject the image and dismiss
-the warning with Done, choose Open Anyway in Privacy & Security, and confirm Open.
+the warning with Done, choose Open Anyway in Privacy & Security, and confirm
+Open Anyway in the final dialog.
 Windows has three steps.
 Release attachments target a hidden frame, keeping the current page visible
 instead of opening an empty tab during the download handoff.
-Mac’s blocked-app and Privacy & Security panels use supplied screenshots in
-`public/install/`; the other visuals are focused HTML/CSS illustrations.
+All four Mac panels use supplied light-mode screenshots in `public/install/`,
+with highlights on the relevant buttons. Windows uses focused HTML/CSS illustrations.
 A “Download again” link retries the same release asset. Escape, the close button, or
 clicking the backdrop dismisses it; keyboard focus returns to the trigger.
 
@@ -110,6 +191,11 @@ sample queue; Skip rotates it to the back; `Z` undoes the previous decision, and
 Start over resets the run. Arrow keys and Space work while the demo region has
 keyboard focus. The handler is bound to the demo rather than the document, so
 the page keeps normal arrow-key scrolling everywhere else.
+
+Both product windows use the native app's light appearance via `win--light`:
+white file cards and folder shelves, gray controls, orange trash actions, and
+blue checklist selections and focus rings. The theme is scoped to the preview
+windows, including rename and trash review, independently of the page palette.
 
 A card's exit direction is only known once the decision is made, so it arrives
 through `AnimatePresence`'s `custom` at exit time. That requires a *function

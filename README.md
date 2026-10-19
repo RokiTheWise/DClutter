@@ -180,7 +180,7 @@ once:
    **“DClutter” Not Opened**, click **Done**.
 3. Open **System Settings → Privacy & Security**, scroll to the bottom, and click
    **Open Anyway** next to DClutter.
-4. Click **Open** to confirm.
+4. Click **Open Anyway** in the confirmation prompt and authenticate if asked.
 
 That's it. It opens normally from then on.
 

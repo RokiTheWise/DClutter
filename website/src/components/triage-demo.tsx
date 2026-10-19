@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef, type JSX } from "react";
+import { useEffect, useLayoutEffect, useReducer, useRef, useState, type JSX } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import WindowChrome from "./window-chrome";
 import FileCard from "./file-card";
@@ -211,7 +211,26 @@ function reduce(state: State, action: Action): State {
 export default function TriageDemo() {
   const reduced = useReducedMotion();
   const stageRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
   const [state, dispatch] = useReducer(reduce, initial);
+
+  // Fit the fixed app canvas; file changes never alter the window's geometry.
+  useLayoutEffect(() => {
+    const host = shellRef.current;
+    const canvas = canvasRef.current;
+    if (!host || !canvas) return;
+    const fit = () => {
+      if (!canvas.offsetWidth || !canvas.offsetHeight) return;
+      setScale(Math.min(1, host.clientWidth / canvas.offsetWidth, host.clientHeight / canvas.offsetHeight));
+    };
+    const observer = new ResizeObserver(fit);
+    observer.observe(host);
+    observer.observe(canvas);
+    fit();
+    return () => observer.disconnect();
+  }, []);
 
   const index = state.now.queue[0];
   const file = index === undefined ? null : samples[index];
@@ -277,227 +296,230 @@ export default function TriageDemo() {
   }, [state.shelf]);
 
   return (
-    <div className="demo-shell">
-      <WindowChrome
-        className="demo-win"
-        staged={state.now.staged.length}
-        onReviewTrash={() => dispatch({ type: "openSheet" })}
-        canUndo={state.past.length > 0}
-        canRedo={state.future.length > 0}
-        onUndo={() => dispatch({ type: "undo" })}
-        onRedo={() => dispatch({ type: "redo" })}
-      >
-        <div
-          className="demo-stage"
-          ref={stageRef}
-          tabIndex={0}
-          onKeyDown={onKey}
-          role="group"
-          aria-label="Interactive DClutter demo. Arrow keys and space to sort, up for folders, Z to undo."
+    <div className="demo-shell" ref={shellRef}>
+      <div className="demo-canvas" ref={canvasRef} style={{ transform: `translate(-50%, -50%) scale(${scale})` }}>
+        <WindowChrome
+          className="demo-win win--light"
+          staged={state.now.staged.length}
+          onReviewTrash={() => dispatch({ type: "openSheet" })}
+          canUndo={state.past.length > 0}
+          canRedo={state.future.length > 0}
+          onUndo={() => dispatch({ type: "undo" })}
+          onRedo={() => dispatch({ type: "redo" })}
         >
-          <AnimatePresence mode="popLayout" custom={state.vector} initial={false}>
-            {file ? (
-              <motion.div
-                className="demo-card-holder"
-                key={`${index}-${state.past.length}-${state.now.queue.length}`}
-                custom={state.vector}
-                variants={reduced ? cardMotionReduced : cardMotion}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                {/* the card recedes behind the shelf, as it does in the app */}
+          <div
+            className="demo-stage"
+            ref={stageRef}
+            tabIndex={0}
+            onKeyDown={onKey}
+            role="group"
+            aria-label="Interactive DClutter demo. Arrow keys and space to sort, up for folders, Z to undo."
+          >
+            <AnimatePresence mode="popLayout" custom={state.vector} initial={false}>
+              {file ? (
                 <motion.div
-                  animate={
-                    reduced
-                      ? undefined
-                      : { scale: state.shelf ? 0.85 : 1, opacity: state.shelf ? 0.35 : 1 }
-                  }
+                  className="demo-card-holder"
+                  key={`${index}-${state.past.length}-${state.now.queue.length}`}
+                  custom={state.vector}
+                  variants={reduced ? cardMotionReduced : cardMotion}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                >
+                  {/* the card recedes behind the shelf, as it does in the app */}
+                  <motion.div
+                    className="demo-card-surface"
+                    animate={
+                      reduced
+                        ? undefined
+                        : { scale: state.shelf ? 0.85 : 1, opacity: state.shelf ? 0.35 : 1 }
+                    }
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                  >
+                    <FileCard file={file} />
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  className="demo-done"
+                  key="done"
+                  initial={reduced ? false : { opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: EASE }}
+                >
+                  <p className="display">Folder&rsquo;s empty.</p>
+                  <p>
+                    {state.now.kept} kept, {state.now.staged.length} staged,{" "}
+                    {state.now.filed} filed
+                    {state.now.trashed ? `, ${state.now.trashed} trashed` : ""}.
+                    Nothing was deleted outright, and the Trash still has whatever
+                    you sent there.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {state.shelf ? (
+                <motion.div
+                  className="demo-shelf"
+                  initial={reduced ? false : { y: -40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={reduced ? { opacity: 0 } : { y: -40, opacity: 0 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
                 >
-                  <FileCard file={file} />
+                  <p className="demo-shelf-title">File into a folder</p>
+                  <div className="demo-bins">
+                    {BINS.map((name, i) => (
+                      <button
+                        key={name}
+                        type="button"
+                        className="demo-bin"
+                        data-hit={i === state.bin}
+                        onClick={() => dispatch({ type: "decide", id: "file", bin: name })}
+                      >
+                        <FolderIcon />
+                        {name}
+                        <kbd>{i + 1}</kbd>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="demo-shelf-cancel"
+                    onClick={() => dispatch({ type: "closeShelf" })}
+                  >
+                    Arrows to choose · Return to file · Escape to go back
+                  </button>
                 </motion.div>
-              </motion.div>
-            ) : (
-              <motion.div
-                className="demo-done"
-                key="done"
-                initial={reduced ? false : { opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: EASE }}
-              >
-                <p className="display">Folder&rsquo;s empty.</p>
-                <p>
-                  {state.now.kept} kept, {state.now.staged.length} staged,{" "}
-                  {state.now.filed} filed
-                  {state.now.trashed ? `, ${state.now.trashed} trashed` : ""}.
-                  Nothing was deleted outright, and the Trash still has whatever
-                  you sent there.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              ) : null}
+            </AnimatePresence>
+          </div>
 
           <AnimatePresence>
-            {state.shelf ? (
+            {state.sheet ? (
               <motion.div
-                className="demo-shelf"
-                initial={reduced ? false : { y: -40, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={reduced ? { opacity: 0 } : { y: -40, opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="demo-sheet-layer"
+                initial={reduced ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.16 }}
               >
-                <p className="demo-shelf-title">File into a folder</p>
-                <div className="demo-bins">
-                  {BINS.map((name, i) => (
-                    <button
-                      key={name}
-                      type="button"
-                      className="demo-bin"
-                      data-hit={i === state.bin}
-                      onClick={() => dispatch({ type: "decide", id: "file", bin: name })}
-                    >
-                      <FolderIcon />
-                      {name}
-                      <kbd>{i + 1}</kbd>
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="demo-shelf-cancel"
-                  onClick={() => dispatch({ type: "closeShelf" })}
+                <motion.div
+                  className="demo-sheet"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Review staged files"
+                  initial={reduced ? false : { y: 10, scale: 0.98 }}
+                  animate={{ y: 0, scale: 1 }}
+                  exit={reduced ? undefined : { y: 10, scale: 0.98 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
                 >
-                  Arrows to choose · Return to file · Escape to go back
-                </button>
+                  <h3>
+                    {toTrash === 1 ? "Trash 1 file?" : `Trash ${toTrash} files?`}
+                  </h3>
+                  {unticked > 0 ? (
+                    <p className="demo-sheet-note">
+                      {unticked} unticked, those stay where they are.
+                    </p>
+                  ) : null}
+
+                  <ul className="demo-sheet-list">
+                    {state.now.staged.map((i) => {
+                      const on = !state.excluded.includes(i);
+                      return (
+                        <li key={i}>
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={on}
+                              onChange={() => dispatch({ type: "toggleCommit", index: i })}
+                            />
+                            <span className="demo-sheet-name">{samples[i].name}</span>
+                            <span className="demo-sheet-size">{samples[i].size}</span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  <div className="demo-sheet-foot">
+                    <button
+                      type="button"
+                      className="demo-sheet-link"
+                      onClick={() =>
+                        dispatch({ type: "tickAll", ticked: state.excluded.length > 0 })
+                      }
+                    >
+                      {state.excluded.length > 0 ? "Tick All" : "Untick All"}
+                    </button>
+                    <button
+                      type="button"
+                      className="demo-sheet-btn"
+                      onClick={() => dispatch({ type: "closeSheet" })}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="demo-sheet-btn demo-sheet-btn--go"
+                      onClick={() => dispatch({ type: "confirmCommit" })}
+                    >
+                      {toTrash === 1 ? "Trash 1 File" : `Trash ${toTrash} Files`}
+                    </button>
+                  </div>
+                </motion.div>
               </motion.div>
             ) : null}
           </AnimatePresence>
-        </div>
 
-        <AnimatePresence>
-          {state.sheet ? (
-            <motion.div
-              className="demo-sheet-layer"
-              initial={reduced ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16 }}
+          <div className="demo-actions" data-dim={state.shelf}>
+            {decisions.map((d) => {
+              const Icon = ICONS[d.id];
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  className="demo-act"
+                  data-hot={d.id === "stage"}
+                  disabled={!file || state.shelf}
+                  onClick={() =>
+                    dispatch(
+                      d.id === "file"
+                        ? { type: "openShelf" }
+                        : { type: "decide", id: d.id },
+                    )
+                  }
+                >
+                  <Icon />
+                  <span>{d.label}</span>
+                  <kbd>{d.keyLabel}</kbd>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="demo-status">
+            <span>
+              <b>{state.now.queue.length}</b> left
+            </span>
+            <span className="dot" aria-hidden="true">
+              ·
+            </span>
+            <span>
+              <b>{sorted}</b> sorted
+            </span>
+            <button
+              type="button"
+              className="demo-reset"
+              onClick={() => dispatch({ type: "reset" })}
+              disabled={pristine}
             >
-              <motion.div
-                className="demo-sheet"
-                role="dialog"
-                aria-modal="true"
-                aria-label="Review staged files"
-                initial={reduced ? false : { y: 10, scale: 0.98 }}
-                animate={{ y: 0, scale: 1 }}
-                exit={reduced ? undefined : { y: 10, scale: 0.98 }}
-                transition={{ duration: 0.18, ease: "easeOut" }}
-              >
-                <h3>
-                  {toTrash === 1 ? "Trash 1 file?" : `Trash ${toTrash} files?`}
-                </h3>
-                {unticked > 0 ? (
-                  <p className="demo-sheet-note">
-                    {unticked} unticked, those stay where they are.
-                  </p>
-                ) : null}
-
-                <ul className="demo-sheet-list">
-                  {state.now.staged.map((i) => {
-                    const on = !state.excluded.includes(i);
-                    return (
-                      <li key={i}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={on}
-                            onChange={() => dispatch({ type: "toggleCommit", index: i })}
-                          />
-                          <span className="demo-sheet-name">{samples[i].name}</span>
-                          <span className="demo-sheet-size">{samples[i].size}</span>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                <div className="demo-sheet-foot">
-                  <button
-                    type="button"
-                    className="demo-sheet-link"
-                    onClick={() =>
-                      dispatch({ type: "tickAll", ticked: state.excluded.length > 0 })
-                    }
-                  >
-                    {state.excluded.length > 0 ? "Tick All" : "Untick All"}
-                  </button>
-                  <button
-                    type="button"
-                    className="demo-sheet-btn"
-                    onClick={() => dispatch({ type: "closeSheet" })}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="demo-sheet-btn demo-sheet-btn--go"
-                    onClick={() => dispatch({ type: "confirmCommit" })}
-                  >
-                    {toTrash === 1 ? "Trash 1 File" : `Trash ${toTrash} Files`}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-
-        <div className="demo-actions" data-dim={state.shelf}>
-          {decisions.map((d) => {
-            const Icon = ICONS[d.id];
-            return (
-              <button
-                key={d.id}
-                type="button"
-                className="demo-act"
-                data-hot={d.id === "stage"}
-                disabled={!file || state.shelf}
-                onClick={() =>
-                  dispatch(
-                    d.id === "file"
-                      ? { type: "openShelf" }
-                      : { type: "decide", id: d.id },
-                  )
-                }
-              >
-                <Icon />
-                <span>{d.label}</span>
-                <kbd>{d.keyLabel}</kbd>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="demo-status">
-          <span>
-            <b>{state.now.queue.length}</b> left
-          </span>
-          <span className="dot" aria-hidden="true">
-            ·
-          </span>
-          <span>
-            <b>{sorted}</b> sorted
-          </span>
-          <button
-            type="button"
-            className="demo-reset"
-            onClick={() => dispatch({ type: "reset" })}
-            disabled={pristine}
-          >
-            Start over
-          </button>
-        </div>
-      </WindowChrome>
+              Start over
+            </button>
+          </div>
+        </WindowChrome>
+      </div>
 
       <p aria-live="polite" className="visually-hidden">
         {state.said}

@@ -1,4 +1,4 @@
-import { MAC_REPO, releases } from "@/lib/platforms";
+import { releases } from "@/lib/platforms";
 import DownloadButton from "./download-button";
 
 export default function SiteEnd() {
@@ -6,91 +6,48 @@ export default function SiteEnd() {
     <section className="end" id="download" aria-labelledby="download-heading">
       <div className="end-arc" aria-hidden="true" />
       <div className="wrap">
-        <div className="end-head">
-          <h2 className="display" id="download-heading">
-            So what are you waiting for?
-            <br />
-            Go empty a folder :&#41;
-          </h2>
-          <p className="lede">
-            Free, open source, and still being tuned. Eighteen downloads, six
-            stars, and one fork from people who trusted it with their own files.
-            Made for the end of a semester or the end of a project.
-          </p>
-
+        <div className="end-cta">
+          <div className="end-head">
+            <h2 className="display" id="download-heading">Ready to start with one file?</h2>
+            <p className="lede">A clearer folder, a few minutes at a time.</p>
+          </div>
           <div className="end-actions">
             {releases.map((release) =>
               release.status === "available" ? (
-                <DownloadButton
-                  key={release.name}
-                  release={release}
-                />
+                <div className="end-platform" key={release.id}>
+                  <DownloadButton release={release} />
+                  <p>{release.requirements}<br />{release.architecture}</p>
+                </div>
               ) : null,
             )}
           </div>
         </div>
-
-        <div className="end-releases">
-          {releases.map((release) =>
-            release.status === "available" ? (
-              <div className="end-release" key={release.name}>
-                <h3>{release.name}</h3>
-                <dl>
-                  <div>
-                    <dt>Version</dt>
-                    <dd>v{release.version}</dd>
-                  </div>
-                  <div>
-                    <dt>Requires</dt>
-                    <dd>{release.requirements}</dd>
-                  </div>
-                  <div>
-                    <dt>Architecture</dt>
-                    <dd>{release.architecture}</dd>
-                  </div>
-                </dl>
-              </div>
-            ) : (
-              <div className="end-release" key={release.name}>
-                <h3>{release.name}</h3>
-                <p className="end-release-soon">In development.</p>
-              </div>
-            ),
-          )}
-          <div className="end-release">
-            <h3>Both</h3>
-            <dl>
-              <div>
-                <dt>Price</dt>
-                <dd>Free</dd>
-              </div>
-              <div>
-                <dt>License</dt>
-                <dd>Apache 2.0</dd>
-              </div>
-              <div>
-                <dt>Deletes</dt>
-                <dd>Nothing, ever</dd>
-              </div>
-            </dl>
+        <footer className="end-foot">
+          <a className="end-brand" href="#top" aria-label="DClutter, back to top">
+            <img src="/logo.png" alt="" width={28} height={28} />
+            DClutter
+          </a>
+          <nav className="end-links" aria-label="GitHub repositories">
+            <h3>Source code</h3>
+            {releases.map((release) => release.repositoryUrl ? (
+              <a href={release.repositoryUrl} key={release.id}>{release.name}</a>
+            ) : null)}
+          </nav>
+          <nav className="end-links" aria-label="Resources">
+            <h3>Resources</h3>
+            <a href="/help">Help</a>
+            {releases.map((release) => release.status === "available" ? (
+              <a href={release.releaseNotesUrl} key={release.id}>{release.name} release notes</a>
+            ) : null)}
+          </nav>
+          <div className="end-bottom">
+            <span className="end-attribution">Built by <a href="https://www.djenriquez.dev/">Dexter Jethro Enriquez</a></span>
+            <nav className="end-legal" aria-label="Legal">
+              <a href="/license">License</a>
+              <a href="/privacy">Privacy policy</a>
+            </nav>
           </div>
-        </div>
-
-        <p className="end-closer">771 unmade decisions, finally made.</p>
-
-        <div className="end-foot">
-          <span>DClutter</span>
-          {releases.map((release) =>
-            release.status === "available" && release.releaseNotesUrl ? (
-              <a href={release.releaseNotesUrl} key={release.name}>
-                {release.name} release notes
-              </a>
-            ) : null,
-          )}
-          <a href={MAC_REPO}>GitHub</a>
-          <a href="/privacy">Privacy policy</a>
-          <span className="spacer">Made for the end of a semester.</span>
-        </div>
+        </footer>
       </div>
     </section>
   );

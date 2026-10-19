@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Merriweather, Poppins } from "next/font/google";
+import { AUTHOR, pageMetadata, SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -18,15 +19,23 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "DClutter: Meet your files. Again.",
-  description:
-    "Rediscover what’s worth keeping. Clear out what isn’t",
+  ...pageMetadata(SITE_TITLE, SITE_DESCRIPTION, "/", "DClutter: Meet your files. Again."),
+  metadataBase: new URL(SITE_URL),
+  applicationName: "DClutter",
+  authors: [AUTHOR],
+  creator: AUTHOR.name,
+  category: "utilities",
   icons: { icon: "/logo.png", apple: "/logo.png" },
-  openGraph: {
-    title: "DClutter: Meet your files. Again.",
-    description:
-      "Rediscover what’s worth keeping. Clear out what isn’t",
-    type: "website",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 
