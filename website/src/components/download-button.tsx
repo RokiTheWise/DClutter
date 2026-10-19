@@ -7,8 +7,8 @@ import InstallationGuide from "./installation-guide";
 
 const installation = {
   macos: [
-    { title: "Unzip and move the app", text: "Double-click the ZIP in Downloads. In Finder, drag DClutter.app to Applications in the sidebar. The ZIP doesn’t open an installer window." },
-    { title: "Open it, then choose Done", text: "Open DClutter from Applications. When “DClutter” Not Opened appears, click Done to dismiss it and continue to the next step." },
+    { title: "Open the DMG and drag to install", text: "Double-click the DClutter DMG in Downloads. In the window that opens, drag DClutter onto the Applications shortcut." },
+    { title: "Open it, then choose Done", text: "Eject the disk image and open DClutter from Applications. When “DClutter” Not Opened appears, click Done to dismiss it and continue." },
     { title: "Choose Open Anyway", text: "Open System Settings → Privacy & Security. Scroll down to Security and click Open Anyway next to DClutter." },
     { title: "Confirm and open", text: "Click Open in the confirmation prompt and authenticate if asked. After this one-time approval, DClutter opens normally from Applications." },
   ],
@@ -107,7 +107,7 @@ export default function DownloadButton({
 
           {release.id === "macos" && (
             <p className="download-modal-explanation">
-              This ZIP release isn’t Developer ID signed or notarized, so macOS requires approval on the first launch.
+              This release isn’t Developer ID signed or notarized, so macOS requires approval on the first launch.
             </p>
           )}
           <p className="download-modal-retry">Download didn’t start? <a href={release.downloadUrl} target={downloadTarget} referrerPolicy="no-referrer">Download again</a></p>

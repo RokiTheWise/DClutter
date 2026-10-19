@@ -164,17 +164,20 @@ or using arrow keys inside the picker stays inside it.
 
 ## Install
 
-**[⬇ Download DClutter 1.1.0](https://github.com/RokiTheWise/DClutter/releases/download/v1.1.0/DClutter-1.1.0.zip)**
+**[⬇ Download DClutter 1.1.0](https://github.com/RokiTheWise/DClutter/releases/download/v1.1.0/DClutter-1.1.0.dmg)**
+&nbsp;·&nbsp; [ZIP alternative](https://github.com/RokiTheWise/DClutter/releases/download/v1.1.0/DClutter-1.1.0.zip)
 &nbsp;·&nbsp; [all releases](https://github.com/RokiTheWise/DClutter/releases)
 
 Universal app for Apple Silicon and Intel, requiring macOS 14 or later.
-The ZIP includes the app and **READ ME FIRST.txt** with installation instructions.
+The DMG includes the app, an **Applications** shortcut, and **READ ME FIRST.txt**
+with installation instructions. It contains the same v1.1.0 app as the ZIP.
 
 Then, because this app isn't signed by Apple, macOS needs you to approve it
 once:
 
-1. Unzip it and drag **DClutter.app** into your **Applications** folder.
-2. Double-click it. **macOS will refuse to open it — this is expected.**
+1. Open the DMG and drag **DClutter** onto the **Applications** shortcut.
+2. Eject the disk image, then open DClutter from Applications. If macOS shows
+   **“DClutter” Not Opened**, click **Done**.
 3. Open **System Settings → Privacy & Security**, scroll to the bottom, and click
    **Open Anyway** next to DClutter.
 4. Click **Open** to confirm.
