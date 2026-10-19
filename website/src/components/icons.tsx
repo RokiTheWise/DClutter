@@ -87,3 +87,18 @@ export const ChevronIcon = () => (
     <path d="m7 10 5 5 5-5" />
   </svg>
 );
+
+/** Original device symbols for platform downloads, without third-party logos. */
+export const LaptopIcon = () => (
+  <svg {...base}>
+    <rect x="5" y="4" width="14" height="11" rx="1.5" />
+    <path d="m5 15-3 4h20l-3-4M9 19h6" />
+  </svg>
+);
+
+export const DesktopIcon = () => (
+  <svg {...base}>
+    <rect x="3" y="4" width="18" height="13" rx="2" />
+    <path d="M12 17v4M8 21h8" />
+  </svg>
+);

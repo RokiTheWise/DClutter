@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#fff"/>
+  <rect width="800" height="12" fill="#29485e"/>
+  <g font-family="Arial, sans-serif">
+    <text x="48" y="58" fill="#6a7780" font-size="13" letter-spacing="2">INFORMATION SYSTEMS · WEEK 06</text>
+    <text x="48" y="110" fill="#203b50" font-size="35" font-weight="700">Relational databases</text>
+    <text x="48" y="142" fill="#6a7780" font-size="16">Keys, relationships, and the structure of a good schema</text>
+    <path d="M48 166H752" stroke="#d7dfe4"/>
+    <text x="48" y="206" fill="#203b50" font-size="19" font-weight="700">What makes a relation?</text>
+    <g fill="#4a5158" font-size="15">
+      <text x="48" y="239">A table represents a set of related records. Each row has</text>
+      <text x="48" y="264">a unique key; each column describes one attribute.</text>
+      <text x="48" y="304">• Primary keys uniquely identify a record.</text>
+      <text x="48" y="333">• Foreign keys connect records across tables.</text>
+      <text x="48" y="362">• Normalization reduces repeated information.</text>
+    </g>
+    <rect x="512" y="292" width="230" height="114" rx="3" fill="#f5f7f8" stroke="#cbd6dc"/>
+    <path d="M512 327H742M512 366H742M595 292V406" stroke="#cbd6dc"/>
+    <g fill="#456173" font-size="13"><text x="525" y="315" font-weight="700">student_id</text><text x="610" y="315" font-weight="700">full_name</text><text x="525" y="352">202601</text><text x="610" y="352">Alex Rivera</text><text x="525" y="391">202602</text><text x="610" y="391">Sam Santos</text></g>
+    <path d="M48 448H752" stroke="#d7dfe4"/>
+    <text x="48" y="477" fill="#88939b" font-size="11">LECTURE NOTES · INTRODUCTION TO DATABASE SYSTEMS</text>
+    <text x="733" y="477" fill="#88939b" font-size="11">06</text>
+  </g>
+</svg>

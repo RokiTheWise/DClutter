@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+  <rect width="600" height="800" fill="#fff"/>
+  <g font-family="Arial, sans-serif">
+    <text x="48" y="74" fill="#273830" font-size="19" font-weight="700">NORTHFIELD STUDIO</text>
+    <text x="48" y="142" fill="#202520" font-size="48" font-weight="700">INVOICE</text>
+    <text x="48" y="174" fill="#777d78" font-size="14">Invoice #1042</text>
+    <text x="410" y="146" fill="#777d78" font-size="12">DATE ISSUED</text>
+    <text x="410" y="170" fill="#202520" font-size="16">14 October 2026</text>
+    <path d="M48 206H552" stroke="#dce1dc"/>
+    <text x="48" y="244" fill="#777d78" font-size="12" letter-spacing="1">BILL TO</text>
+    <text x="48" y="274" fill="#202520" font-size="20">Rivera &amp; Co.</text>
+    <text x="48" y="300" fill="#777d78" font-size="14">Creative services · October</text>
+    <rect x="48" y="348" width="504" height="38" fill="#edf1ed"/>
+    <g fill="#45534a" font-size="12" font-weight="700"><text x="60" y="372">DESCRIPTION</text><text x="373" y="372">QTY</text><text x="476" y="372">AMOUNT</text></g>
+    <g fill="#39433d" font-size="14"><text x="60" y="419">Website design</text><text x="384" y="419">1</text><text x="477" y="419">18,000</text><text x="60" y="466">Content updates</text><text x="384" y="466">2</text><text x="484" y="466">4,000</text><text x="60" y="513">Asset preparation</text><text x="384" y="513">1</text><text x="484" y="513">2,500</text></g>
+    <path d="M48 438H552M48 486H552M48 536H552" stroke="#e5e8e5"/>
+    <text x="340" y="584" fill="#777d78" font-size="14">Subtotal</text><text x="476" y="584" fill="#39433d" font-size="14">24,500</text>
+    <rect x="320" y="609" width="232" height="55" fill="#edf1ed"/>
+    <text x="337" y="644" fill="#273830" font-size="16" font-weight="700">TOTAL PHP</text><text x="461" y="644" fill="#273830" font-size="19" font-weight="700">24,500</text>
+    <text x="48" y="724" fill="#777d78" font-size="13">Thank you for your business.</text>
+    <text x="48" y="750" fill="#a0a7a1" font-size="11">Please reference invoice #1042 with your payment.</text>
+  </g>
+</svg>

@@ -52,8 +52,8 @@ colors carry it, declared as tokens in `globals.css`:
 
 One tint owns each band and the bands meet on arcs rather than straight edges,
 so one color rolls into the next. Ink is the only strong value on the page,
-and there is no accent color. Display type is Instrument Serif; everything else is
-the self-hosted Inter.
+and there is no accent color. Display type is Merriweather; body text and controls
+use Poppins. Both fonts are self-hosted through Next.js.
 
 ## Structure
 
@@ -62,6 +62,17 @@ the self-hosted Inter.
   plus the download pill that follows you down the page.
 - `src/components/hero.tsx`: parallaxing ridges, masked headline lines, and the
   product window rising out of a frosted tray.
+- `src/components/hero-demo.tsx`: an automatic sample session: stage, keep,
+  rename, file, review trash, and move to Trash, then reset to the first file.
+  The roughly ten-second loop uses fictional lecture notes, an invoice, and a
+  research proposal, with local document previews in `public/demo/`. Filing
+  dismisses the destination shelf as the card exits upward.
+  Playback pauses offscreen or in a hidden tab, with autoplay disabled for
+  reduced-motion preferences. Only the app window is visible; there are no
+  captions or playback controls.
+  Its native UI was checked in the installed app with disposable sample files:
+  system type, two-column metadata, inline rename footer, top destination shelf,
+  and the modal trash checklist. The website fonts apply outside this window.
 - `src/components/pile.tsx`: scattered files that sort into a deck. Scrubbed to
   scroll position, so scrolling back un-sorts it.
 - `src/components/decisions.tsx`: the sticky four-decision column and the card
@@ -82,7 +93,15 @@ the self-hosted Inter.
 
 ## Interactions
 
-The demo is the real interaction, not a video. Keep, Stage and File advance the
+The platform download links in the hero and footer start the download and open
+a native modal with three illustrated installation steps for the chosen OS.
+Release attachments target a hidden frame, keeping the current page visible
+instead of opening an empty tab during the download handoff.
+The visuals are focused HTML/CSS illustrations, not captured OS screenshots.
+A “Download again” link retries the same release asset. Escape, the close button, or
+clicking the backdrop dismisses it; keyboard focus returns to the trigger.
+
+The separate “Try it” demo is interactive. Keep, Stage and File advance the
 sample queue; Skip rotates it to the back; `Z` undoes the previous decision, and
 Start over resets the run. Arrow keys and Space work while the demo region has
 keyboard focus. The handler is bound to the demo rather than the document, so
@@ -108,15 +127,11 @@ Both platforms are described by `src/lib/platforms.ts`, which is the only
 place a version, a download URL or a minimum OS appears. The download
 buttons, the release blocks and the footer all read from it.
 
-**The Windows record is ahead of the actual release.** The asset name follows
-Tauri 2's NSIS convention, `{productName}_{version}_{arch}-setup.exe`, and
-`src-tauri/tauri.conf.json` in
-[DClutter-Windows](https://github.com/RokiTheWise/DClutter-Windows) bundles
-both `nsis` and `msi`. Windows 10 is the floor because WebView2 ships with 10
-and 11. The version is the assumption with nothing behind it: that config
-currently reads `0.1.0` and the repository has no releases, so the Windows
-download link 404s until a `v1.0.0` release exists carrying an asset of that
-name.
+Windows [v1.0.0](https://github.com/RokiTheWise/DClutter-Windows/releases/tag/v1.0.0)
+is published for Windows 10 and 11 (x64). The website links directly to
+`DClutter_1.0.0_x64-setup.exe`; an MSI is also available on the release page.
+The Windows installation modal follows the repository’s setup instructions,
+including the SmartScreen prompt and installation without administrator rights.
 
 To take Windows off the site, set its `status` back to `"development"`. The
 release block then reads "In development" and the button disappears.

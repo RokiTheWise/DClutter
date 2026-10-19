@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { Instrument_Serif } from "next/font/google";
+import { Merriweather, Poppins } from "next/font/google";
 import "./globals.css";
 
-const inter = localFont({
-  src: "../../public/fonts/InterVariable.woff2",
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-poppins",
 });
 
-const instrumentSerif = Instrument_Serif({
+const merriweather = Merriweather({
   subsets: ["latin"],
   weight: "400",
   style: ["normal", "italic"],
@@ -18,14 +18,14 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "DClutter: a little less cluttery, a little more clarity.",
+  title: "DClutter: Meet your files. Again.",
   description:
-    "A little less clutter. A little more clarity. Meet the free, open-source app that helps you sort your files, one decision at a time.",
+    "Rediscover what’s worth keeping. Clear out what isn’t",
   icons: { icon: "/logo.png", apple: "/logo.png" },
   openGraph: {
-    title: "DClutter: a little less cluttery, a little more clarity.",
+    title: "DClutter: Meet your files. Again.",
     description:
-      "Sort your files, one decision at a time. Available for macOS and Windows.",
+      "Rediscover what’s worth keeping. Clear out what isn’t",
     type: "website",
   },
 };
@@ -34,10 +34,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${instrumentSerif.variable}`}>
-        {children}
-      </body>
+    <html lang="en" className={`${poppins.variable} ${merriweather.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

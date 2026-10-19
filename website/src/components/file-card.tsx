@@ -1,4 +1,5 @@
 import type { SampleFile } from "@/lib/samples";
+import type { ReactNode } from "react";
 import { OpenIcon } from "./icons";
 
 function Preview({ kind }: { kind: SampleFile["preview"] }) {
@@ -93,11 +94,11 @@ function Preview({ kind }: { kind: SampleFile["preview"] }) {
   );
 }
 
-export default function FileCard({ file }: { file: SampleFile }) {
+export default function FileCard({ file, preview }: { file: SampleFile; preview?: ReactNode }) {
   return (
     <div className="fcard">
       <div className="fcard-preview">
-        <Preview kind={file.preview} />
+        {preview ?? <Preview kind={file.preview} />}
       </div>
       <div className="fcard-head">
         <div>

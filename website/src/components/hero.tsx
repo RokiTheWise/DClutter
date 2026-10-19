@@ -2,20 +2,11 @@
 
 import { useRef } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
-import WindowChrome from "./window-chrome";
-import FileCard from "./file-card";
-import { CheckIcon, FolderIcon, SkipIcon, TrashIcon } from "./icons";
-import { decisions, samples } from "@/lib/samples";
-import { releases } from "@/lib/platforms";
+import HeroDemo from "./hero-demo";
+import { MAC_REPO, releases } from "@/lib/platforms";
+import DownloadButton from "./download-button";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
-
-const HERO_ICONS = {
-  stage: TrashIcon,
-  skip: SkipIcon,
-  file: FolderIcon,
-  keep: CheckIcon,
-} as const;
 
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
@@ -66,12 +57,7 @@ export default function Hero() {
         <h1>
           <span className="line-mask">
             <motion.span style={{ display: "block" }} {...line(0)}>
-              A little less cluttery.
-            </motion.span>
-          </span>
-          <span className="line-mask">
-            <motion.span style={{ display: "block" }} {...line(1)}>
-              A little more clarity.
+              Meet your files. Again.
             </motion.span>
           </span>
         </h1>
@@ -82,9 +68,7 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.42 }}
         >
-          Think Tinder, for your folders. The sem ended, I opened Downloads,
-          and found 771 files. DClutter shows them to you one at a time, with
-          a real preview and the details that decide a file&rsquo;s fate.
+          Rediscover what’s worth keeping. Clear out what isn’t
         </motion.p>
 
         <motion.div
@@ -93,19 +77,17 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.54 }}
         >
-          {releases.map((release, i) =>
-            release.status === "available" ? (
-              <a
-                key={release.name}
-                className={i === 0 ? "btn" : "btn btn--quiet"}
-                href={release.downloadUrl}
-              >
-                Get for {release.name}
-                <span aria-hidden="true">↓</span>
-              </a>
-            ) : null,
-          )}
-          <span className="btn-note">Free and open source</span>
+          <div className="hero-downloads">
+            {releases.map((release) =>
+              release.status === "available" ? (
+                <DownloadButton
+                  key={release.name}
+                  release={release}
+                />
+              ) : null,
+            )}
+          </div>
+          <span className="btn-note">Free and <a href={MAC_REPO}>open source</a></span>
         </motion.div>
       </motion.div>
 
@@ -115,27 +97,7 @@ export default function Hero() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.1, ease: EASE, delay: 0.3 }}
       >
-        <WindowChrome>
-          <div className="win-body">
-            <FileCard file={samples[0]} />
-            <div
-              className="demo-actions"
-              style={{ padding: "14px 0 0" }}
-              aria-hidden="true"
-            >
-              {decisions.map((d) => {
-                const Icon = HERO_ICONS[d.id];
-                return (
-                  <div className="demo-act" data-hot={d.id === "stage"} key={d.id}>
-                    <Icon />
-                    <span>{d.label}</span>
-                    <kbd>{d.keyLabel}</kbd>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </WindowChrome>
+        <HeroDemo />
       </motion.div>
     </section>
   );

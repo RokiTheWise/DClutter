@@ -1,4 +1,5 @@
 import { MAC_REPO, releases } from "@/lib/platforms";
+import DownloadButton from "./download-button";
 
 export default function SiteEnd() {
   return (
@@ -18,16 +19,12 @@ export default function SiteEnd() {
           </p>
 
           <div className="end-actions">
-            {releases.map((release, i) =>
+            {releases.map((release) =>
               release.status === "available" ? (
-                <a
+                <DownloadButton
                   key={release.name}
-                  className={i === 0 ? "btn" : "btn btn--quiet"}
-                  href={release.downloadUrl}
-                >
-                  Get for {release.name}
-                  <span aria-hidden="true">↓</span>
-                </a>
+                  release={release}
+                />
               ) : null,
             )}
           </div>
