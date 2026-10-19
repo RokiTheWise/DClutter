@@ -2673,14 +2673,14 @@ button.win-icon:disabled {
 }
 
 /* ------------------------------------------------------------
-   7 — Download + footer (ink)
+   7 — Download + footer
    ------------------------------------------------------------ */
 
 .end {
   position: relative;
   background: var(--sky);
   color: var(--text);
-  padding-block: clamp(110px, 16vw, 200px) 0;
+  padding-top: clamp(80px, 8vw, 112px);
 }
 
 .end-arc {
@@ -2695,100 +2695,160 @@ button.win-icon:disabled {
   pointer-events: none;
 }
 
-.end-head {
-  text-align: center;
+.end-cta {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: clamp(40px, 5vw, 72px);
+}
+
+.end-head .display {
+  max-width: 10ch;
+  font-size: clamp(2.8rem, 5vw, 4.6rem);
+  line-height: 1.08;
 }
 
 .end-head .lede {
-  margin: 22px auto 0;
+  max-width: 29ch;
+  margin-top: 24px;
+  font-size: clamp(15px, 1.3vw, 18px);
 }
 
 .end-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 18px;
-  margin-top: 38px;
-}
-
-.end-releases {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: clamp(24px, 4vw, 48px);
-  margin-top: clamp(56px, 8vw, 88px);
-  padding-top: clamp(32px, 5vw, 48px);
-  border-top: 1px solid var(--hair);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 24px 16px;
 }
 
-.end-release h3 {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
-.end-release dl {
-  margin: 12px 0 0;
-}
-
-.end-release dl > div {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.end-release dl > div + div {
-  margin-top: 6px;
-}
-
-.end-release dt {
-  font-size: 13px;
-  color: var(--muted);
-  min-width: 8.5ch;
-}
-
-.end-release dd {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.end-release-soon {
-  margin-top: 12px;
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.end-closer {
-  margin-top: clamp(56px, 8vw, 88px);
-  font-family: var(--serif);
-  font-size: clamp(1.5rem, 3.4vw, 2.5rem);
-  line-height: 1.1;
+.end-platform {
+  min-width: 0;
   text-align: center;
-  color: var(--ink);
+}
+
+.end-platform .btn--download {
+  width: 100%;
+  padding-inline: 16px;
+  min-height: 54px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.end-platform p {
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.end-free {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .end-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px 28px;
-  margin-top: clamp(64px, 9vw, 104px);
-  padding-block: 28px 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(2, minmax(150px, 0.4fr));
+  gap: 40px;
+  margin-top: clamp(64px, 7vw, 96px);
+  padding-top: 40px;
   border-top: 1px solid var(--hair);
-  font-size: 13.5px;
+}
+
+.end-brand {
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  justify-self: start;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.end-links {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 12px;
+  font-size: 13px;
   color: var(--muted);
+}
+
+.end-links h3 {
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
 }
 
 .end-foot a:hover {
   color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-.end-foot .spacer {
-  margin-left: auto;
+.end-foot .end-brand:hover {
+  text-decoration: none;
+}
+
+.end-bottom {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding-block: 8px 28px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+@media (max-width: 1000px) {
+  .end-cta {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .end-head .display {
+    max-width: none;
+  }
+
+  .end-head .lede {
+    max-width: none;
+    margin-top: 18px;
+  }
+
+  .end-actions {
+    max-width: 580px;
+  }
+}
+
+@media (max-width: 560px) {
+  .end-actions {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .end-platform {
+    text-align: left;
+  }
+
+  .end-platform p {
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .end-foot {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px 24px;
+    padding-top: 28px;
+  }
+
+  .end-brand {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ------------------------------------------------------------

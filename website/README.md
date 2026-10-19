@@ -120,7 +120,9 @@ use Poppins. Both fonts are self-hosted through Next.js.
   cached snapshot with a saved-count notice when available, or show unavailable counts without
   replacing them with zero. The static export needs no server or API token.
   This website's privacy policy describes the GitHub requests.
-- `src/components/site-end.tsx`: download links, release details, and footer.
+- `src/components/site-end.tsx`: a compact closing invitation with platform
+  requirements directly below each download, followed by source-code links,
+  versioned release notes, and the privacy policy.
 - `src/components/file-card.tsx`, `window-chrome.tsx`: shared product chrome.
 - `src/lib/samples.ts`: sample files, the four decisions with their key
   bindings, and each decision's exit vector.
