@@ -279,7 +279,7 @@ export default function TriageDemo() {
   return (
     <div className="demo-shell">
       <WindowChrome
-        className="demo-win"
+        className="demo-win win--light"
         staged={state.now.staged.length}
         onReviewTrash={() => dispatch({ type: "openSheet" })}
         canUndo={state.past.length > 0}

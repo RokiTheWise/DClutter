@@ -112,6 +112,11 @@ Start over resets the run. Arrow keys and Space work while the demo region has
 keyboard focus. The handler is bound to the demo rather than the document, so
 the page keeps normal arrow-key scrolling everywhere else.
 
+Both product windows use the native app's light appearance via `win--light`:
+white file cards and folder shelves, gray controls, orange trash actions, and
+blue checklist selections and focus rings. The theme is scoped to the preview
+windows, including rename and trash review, independently of the page palette.
+
 A card's exit direction is only known once the decision is made, so it arrives
 through `AnimatePresence`'s `custom` at exit time. That requires a *function
 variant*; an inline `exit={...}` object resolves too early to carry it. The same

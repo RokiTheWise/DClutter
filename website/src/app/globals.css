@@ -1590,7 +1590,7 @@ button.win-icon:disabled {
     font-size: 10px;
   }
 
-  .hero-demo-actions kbd {
+  .hero-demo-actions .demo-act kbd {
     display: none;
   }
 
@@ -3205,4 +3205,113 @@ button.win-icon:disabled {
 
 .win--light .hero-demo-complete p {
   color: var(--win-dim);
+}
+
+/* The hands-on trial uses the same native surfaces and selection colors. */
+.win--light .demo-bins {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  max-width: 360px;
+}
+
+.win--light .demo-bin {
+  min-width: 0;
+  width: 100%;
+  padding-inline: 6px;
+}
+
+.win--light .demo-shelf {
+  left: clamp(16px, 3.4vw, 48px);
+  right: clamp(16px, 3.4vw, 48px);
+  top: clamp(16px, 3.4vw, 48px);
+  border: 1px solid var(--win-line);
+  border-radius: 18px;
+  background: var(--win-card);
+}
+
+.win--light .demo-bin {
+  border-color: var(--win-line);
+  color: var(--win-dim);
+}
+
+.win--light .demo-bin[data-hit="true"],
+.win--light .demo-bin:hover {
+  border-color: var(--win-text);
+  color: var(--win-text);
+}
+
+.win--light .demo-shelf-cancel:hover,
+.win--light .demo-status b,
+.win--light .demo-reset {
+  color: var(--win-text);
+}
+
+.win--light .demo-status .dot {
+  color: var(--win-dim);
+}
+
+.win--light .demo-reset {
+  border-color: var(--win-line);
+  background: var(--win-card);
+}
+
+.win--light .demo-reset:hover:not(:disabled) {
+  border-color: #aaa;
+  background: var(--win-control);
+}
+
+.win--light .demo-sheet-layer {
+  background: rgba(0, 0, 0, 0.18);
+  backdrop-filter: none;
+}
+
+.win--light .demo-sheet {
+  border-color: #bbb;
+  border-radius: 24px;
+  background: var(--win-bg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.win--light .demo-sheet-list {
+  min-height: 180px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+}
+
+.win--light .demo-sheet-list label {
+  color: var(--win-text);
+}
+
+.win--light .demo-sheet-list label:hover {
+  background: #f4f4f4;
+}
+
+.win--light .demo-sheet-list input {
+  accent-color: #007aff;
+}
+
+.win--light .demo-sheet-link {
+  color: #0068d9;
+  text-decoration: none;
+}
+
+.win--light .demo-sheet-btn {
+  border-color: transparent;
+  background: #e3e3e3;
+  color: var(--win-text);
+}
+
+.win--light .demo-sheet-btn:hover {
+  background: #d5d5d5;
+}
+
+.win--light .demo-sheet-btn--go {
+  background: var(--app-consequence);
+  color: #fff;
+}
+
+.win--light .demo-sheet-btn--go:hover {
+  background: #af3f1f;
 }
