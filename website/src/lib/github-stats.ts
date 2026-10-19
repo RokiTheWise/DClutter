@@ -6,12 +6,12 @@ export const repositories = [
 ] as const;
 
 type RepositoryId = (typeof repositories)[number]["id"];
-export type RepositoryStats = { id: RepositoryId; downloads: number; stars: number };
+export type RepositoryStats = { id: RepositoryId; downloads: number; stars: number; forks: number; releases: number };
 export type GitHubSnapshot = { fetchedAt: number; repositories: RepositoryStats[] };
 export type GitHubStatsResult = { snapshot: GitHubSnapshot; stale: boolean };
 
-type Release = { assets: { name: string; download_count: number }[] };
-const CACHE_KEY = "dclutter:public-github-stats:v1";
+type Release = { draft?: boolean; assets: { name: string; download_count: number }[] };
+const CACHE_KEY = "dclutter:public-github-stats:v2";
 const CACHE_MS = 15 * 60 * 1000;
 const APP_ASSET = /\.(dmg|zip|exe|msi)$/i;
 let pending: Promise<GitHubStatsResult> | null = null;
@@ -27,7 +27,7 @@ function cachedSnapshot(): GitHubSnapshot | null {
     if (!Number.isFinite(value.fetchedAt) || value.fetchedAt > Date.now() ||
         !Array.isArray(value.repositories) || value.repositories.length !== repositories.length) return null;
     if (!repositories.every((repo) => value.repositories.some((stat) =>
-      stat.id === repo.id && isCount(stat.downloads) && isCount(stat.stars)))) return null;
+      stat.id === repo.id && isCount(stat.downloads) && isCount(stat.stars) && isCount(stat.forks) && isCount(stat.releases)))) return null;
     return value;
   } catch {
     return null;
@@ -51,14 +51,17 @@ async function fetchRepository(repo: (typeof repositories)[number], signal: Abor
     request(slug, signal),
     request(`${slug}/releases?per_page=100&page=1`, signal),
   ]);
-  if (!isCount(info.stargazers_count)) throw new Error("GitHub star count unavailable");
+  if (!isCount(info.stargazers_count) || !isCount(info.forks_count)) throw new Error("GitHub repository counts unavailable");
 
   let downloads = 0;
+  let publishedReleases = 0;
   let page: Release[] = firstPage;
   let pageNumber = 1;
   while (true) {
     if (!Array.isArray(page)) throw new Error("GitHub releases unavailable");
     for (const release of page) {
+      if (release.draft) continue;
+      publishedReleases++;
       if (!Array.isArray(release.assets)) throw new Error("GitHub release assets unavailable");
       for (const asset of release.assets) {
         // Count app packages, excluding checksums and update manifests.
@@ -71,7 +74,7 @@ async function fetchRepository(repo: (typeof repositories)[number], signal: Abor
     if (page.length < 100) break;
     page = await request(`${slug}/releases?per_page=100&page=${++pageNumber}`, signal);
   }
-  return { id: repo.id, downloads, stars: info.stargazers_count };
+  return { id: repo.id, downloads, stars: info.stargazers_count, forks: info.forks_count, releases: publishedReleases };
 }
 
 /** Public aggregate counts only; no credentials, visitor analytics, or backend. */

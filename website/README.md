@@ -108,12 +108,16 @@ use Poppins. Both fonts are self-hosted through Next.js.
   cards. Click/tap a card to enlarge it; Escape returns it to the folder.
   The folder itself supports click/tap or Enter/Space and a hover peek.
   Dragging is disabled. No dependencies were added.
-- `src/components/github-stats.tsx`: combined app downloads and stars, a breakdown
-  for each platform, and direct links to both repositories. `lib/github-stats.ts`
+- `src/components/github-stats.tsx`: combined app downloads, stars, forks, and
+  published releases in a two-by-two layout, beside a left-aligned title and two
+  platform-specific GitHub buttons. A soft arch picks up the blush palette.
+  Counts animate once after loading, with a slight stagger and reduced-motion
+  support; their final values remain static for assistive technology. Each
+  number's tooltip gives the platform breakdown. `lib/github-stats.ts`
   reads GitHub's public REST API when the section enters view; counts are cached
   in session storage for 15 minutes. It paginates all releases and counts DMG,
   ZIP, EXE, and MSI assets, excluding checksums and manifests. API failures use a
-  dated cached snapshot when available, or show unavailable counts without
+  cached snapshot with a saved-count notice when available, or show unavailable counts without
   replacing them with zero. The static export needs no server or API token.
   This website's privacy policy describes the GitHub requests.
 - `src/components/site-end.tsx`: download links, release details, and footer.

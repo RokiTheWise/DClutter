@@ -1,14 +1,46 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "motion/react";
-import { getGitHubStats, repositories, type GitHubStatsResult } from "@/lib/github-stats";
+import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransform } from "motion/react";
+import { getGitHubStats, repositories, type GitHubStatsResult, type RepositoryStats } from "@/lib/github-stats";
+import { DesktopIcon, LaptopIcon } from "./icons";
 
 const number = new Intl.NumberFormat("en-US");
+const metrics = [
+  { key: "downloads", label: "App downloads" },
+  { key: "stars", label: "GitHub stars" },
+  { key: "forks", label: "Forks" },
+  { key: "releases", label: "Published releases" },
+] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
+
+function Count({ value, delay }: { value: number | null; delay: number }) {
+  const reduced = useReducedMotion();
+  const count = useMotionValue(0);
+  const text = useTransform(count, (value) => number.format(Math.round(value)));
+
+  useEffect(() => {
+    if (value === null) return;
+    if (reduced) {
+      count.set(value);
+      return;
+    }
+    const playback = animate(count, value, { duration: 1.1, delay, ease: EASE });
+    return () => playback.stop();
+  }, [value, delay, reduced, count]);
+
+  return (
+    <>
+      <span className="visually-hidden">{value === null ? "Unavailable" : number.format(value)}</span>
+      {value === null ? <span aria-hidden="true">—</span> : <motion.span aria-hidden="true">{text}</motion.span>}
+    </>
+  );
+}
 
 export default function GitHubStats() {
   const ref = useRef<HTMLElement>(null);
   const visible = useInView(ref, { once: true, amount: 0.2 });
+  const reduced = useReducedMotion();
   const [result, setResult] = useState<GitHubStatsResult | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -23,58 +55,59 @@ export default function GitHubStats() {
   }, [visible]);
 
   const totals = result?.snapshot.repositories.reduce(
-    (sum, repo) => ({ downloads: sum.downloads + repo.downloads, stars: sum.stars + repo.stars }),
-    { downloads: 0, stars: 0 },
+    (sum, repo) => ({
+      downloads: sum.downloads + repo.downloads,
+      stars: sum.stars + repo.stars,
+      forks: sum.forks + repo.forks,
+      releases: sum.releases + repo.releases,
+    }),
+    { downloads: 0, stars: 0, forks: 0, releases: 0 },
   );
-  const updated = result ? new Date(result.snapshot.fetchedAt) : null;
+  const breakdown = (key: keyof Omit<RepositoryStats, "id">) => result?.snapshot.repositories.map((stat) =>
+    `${repositories.find((repo) => repo.id === stat.id)?.name}: ${number.format(stat[key])}`,
+  ).join(" · ");
 
   return (
     <section ref={ref} className="band github-band" id="community" aria-labelledby="github-heading">
       <div className="band-arc" aria-hidden="true" />
       <div className="wrap">
-        <div className="github-header">
-          <h2 className="display" id="github-heading">Built in the open.</h2>
-          <div className="github-totals" aria-busy={!result && !failed}>
-            <div className="github-total">
-              <b>{totals ? number.format(totals.downloads) : "—"}</b>
-              <span>App downloads</span>
-            </div>
-            <div className="github-total">
-              <b>{totals ? number.format(totals.stars) : "—"}</b>
-              <span>GitHub stars</span>
+        <div className="github-layout">
+          <div className="github-copy">
+            <h2 className="display" id="github-heading">Built in the open.</h2>
+            <div className="github-actions">
+              {repositories.map((repo) => {
+                const Icon = repo.id === "macos" ? LaptopIcon : DesktopIcon;
+                return (
+                  <a className="github-repo-button" href={repo.url} key={repo.id} target="_blank" rel="noopener noreferrer">
+                    <Icon /> GitHub for {repo.name}
+                  </a>
+                );
+              })}
             </div>
           </div>
-        </div>
 
-        <div className="github-repos">
-          {repositories.map((repo) => {
-            const stats = result?.snapshot.repositories.find((item) => item.id === repo.id);
-            return (
-              <a className="github-repo" href={repo.url} key={repo.id} target="_blank" rel="noopener noreferrer">
-                <span className="github-platform">{repo.name}</span>
-                <span className="github-repo-name">{new URL(repo.url).pathname.slice(1)}</span>
-                <span className="github-repo-counts">
-                  <span><b>{stats ? number.format(stats.downloads) : "—"}</b> downloads</span>
-                  <span><b>{stats ? number.format(stats.stars) : "—"}</b> stars</span>
-                </span>
-                <span className="github-repo-link">View on GitHub</span>
-              </a>
-            );
-          })}
+          <motion.div
+            className="github-stat-stage"
+            initial={reduced ? false : { opacity: 0, y: 18 }}
+            animate={visible ? { opacity: 1, y: 0 } : undefined}
+            transition={{ duration: reduced ? 0 : 0.7, ease: EASE }}
+          >
+            <dl className="github-totals" aria-busy={!result && !failed}>
+              {metrics.map((metric, index) => (
+                <div className="github-total" key={metric.key} title={breakdown(metric.key)}>
+                  <dt>{metric.label}</dt>
+                  <dd><Count value={totals?.[metric.key] ?? null} delay={index * 0.06} /></dd>
+                </div>
+              ))}
+            </dl>
+          </motion.div>
         </div>
 
         <div className="github-foot">
-          <p>Installer and app archive downloads across all releases.</p>
+          <p>Totals across both repos. Downloads include installers and app archives.</p>
           <p role="status">
             {failed ? "Counts unavailable. View the repos for the latest." :
-              !updated ? "Loading GitHub counts…" : (
-                <>
-                  {result?.stale ? "Last available counts · " : "Updated "}
-                  <time dateTime={updated.toISOString()}>
-                    {updated.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                  </time>
-                </>
-              )}
+              result?.stale ? "Showing saved counts. GitHub is temporarily unavailable." : null}
           </p>
         </div>
       </div>

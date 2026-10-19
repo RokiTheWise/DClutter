@@ -85,8 +85,8 @@ export default function Privacy() {
           <h2>GitHub counts on this website</h2>
           <p>
             When the GitHub metrics section comes into view, your browser asks
-            GitHub for the public star and release-download counts of the two
-            repositories. GitHub receives your IP address and browser information
+            GitHub for the public download, star, fork, and release counts of the
+            two repositories. GitHub receives your IP address and browser information
             with those requests. File names, file contents, and sorting decisions
             are never part of them. The public counts are cached in session
             storage for fifteen minutes to reduce repeat requests.

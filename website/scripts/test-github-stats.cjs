@@ -38,7 +38,7 @@ function load(fetcher, storage) {
     const windows = endpoint.pathname.includes("DClutter-Windows");
     let data;
     if (!endpoint.pathname.endsWith("/releases")) {
-      data = { stargazers_count: windows ? 0 : 6 };
+      data = { stargazers_count: windows ? 0 : 6, forks_count: windows ? 0 : 1 };
     } else if (windows) {
       data = [{ assets: [asset("setup.exe", 10), asset("setup.msi", 1)] }];
     } else if (endpoint.searchParams.get("page") === "1") {
@@ -47,6 +47,7 @@ function load(fetcher, storage) {
       }));
     } else {
       data = [21, 14, 8].map((count) => ({ assets: [asset("DClutter.zip", count)] }));
+      data.push({ draft: true, assets: [asset("unpublished.zip", 999)] });
     }
     return { ok: true, json: async () => data };
   };
@@ -54,13 +55,13 @@ function load(fetcher, storage) {
   const api = load(fetcher, storage);
   const result = await api.getGitHubStats();
   assert.deepEqual(result.snapshot.repositories, [
-    { id: "macos", downloads: 48, stars: 6 },
-    { id: "windows", downloads: 11, stars: 0 },
+    { id: "macos", downloads: 48, stars: 6, forks: 1, releases: 103 },
+    { id: "windows", downloads: 11, stars: 0, forks: 0, releases: 1 },
   ]);
   assert.equal(result.stale, false);
   assert.equal(calls.length, 5, "all release pages are counted");
   assert.equal(result.snapshot.repositories.reduce((sum, repo) => sum + repo.downloads, 0), 59);
-  console.log("PASS: all release pages, app assets only, combined totals, and zero stars");
+  console.log("PASS: all release pages, published releases only, app assets, stars, and forks");
 
   await api.getGitHubStats();
   assert.equal(calls.length, 5, "fresh session cache avoids repeat GitHub requests");
