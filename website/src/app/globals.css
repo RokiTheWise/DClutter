@@ -2120,7 +2120,6 @@ button.win-icon:disabled {
 .demo-layout {
   display: flex;
   flex-direction: column;
-  height: min(960px, calc(100svh - 146px));
 }
 
 .demo-layout > .display {
@@ -2139,8 +2138,8 @@ button.win-icon:disabled {
 
 .demo-shell {
   position: relative;
-  flex: 1;
-  min-height: 0;
+  flex: none;
+  height: min(640px, calc(100svh - 110px));
   margin-top: 24px;
 }
 
@@ -3520,12 +3519,8 @@ button.win-icon:disabled {
 }
 
 @media (max-width: 700px) {
-  .demo-layout {
-    height: auto;
-  }
-
   .demo-shell {
-    flex: none;
+    height: auto;
   }
 
   .demo-canvas {

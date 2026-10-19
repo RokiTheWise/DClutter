@@ -92,8 +92,9 @@ use Poppins. Both fonts are self-hosted through Next.js.
   exits, incoming files, synchronized counters, and the destination shelf.
   Autoplay pauses offscreen/in hidden tabs and respects reduced motion.
   The section reserves clearance above the following band's raised arc.
-- `src/components/triage-demo.tsx`: the interactive demo. Its title, introduction,
-  and fixed 900×640 app canvas fit the laptop viewport together. The canvas
+- `src/components/triage-demo.tsx`: the interactive demo. The fixed 900×640 app
+  canvas fits the laptop viewport independently of its title and introduction,
+  which can scroll away while the app stays comfortably large. The canvas
   scales uniformly to the available area; file changes, sorting, folder shelves,
   trash review, undo, and completion preserve the same window and control positions.
   Phones use a fixed 700px-tall window with full-size text and tap targets.
