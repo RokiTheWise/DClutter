@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "generic": [
+    "IMG_1234.jpg",
+    "IMG-20230101-WA0001.jpg",
+    "IMG1234.png",
+    "DSC_0001.jpg",
+    "Screenshot 2024-01-01 at 10.00.00 AM.png",
+    "Screen Shot 2024-01-01 at 10.00.00 AM.png",
+    "download.zip",
+    "download (2).zip",
+    "Downloads.csv",
+    "Untitled.pages",
+    "Untitled 2.numbers",
+    "New Document.pdf",
+    "Document.pdf",
+    "Document 3.pdf",
+    "unnamed.txt",
+    "scan0001.pdf",
+    "Scan 2024-01-01.pdf",
+    "file.txt",
+    "1234567.pdf",
+    "  Untitled  .txt"
+  ],
+  "descriptive": [
+    "Quarterly Report Q3.pdf",
+    "Project Proposal - Acme Corp.docx",
+    "vacation-photo-hawaii.jpg",
+    "eecs101-lecture-notes.pdf",
+    "Cards.zip",
+    "invoice_10293.pdf",
+    "Filet recipe.txt",
+    "Documents index.pdf"
+  ]
+}
