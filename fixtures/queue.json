@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 1,
+  "now": 1700000000,
+  "tolerance": 0.0001,
+  "cases": [
+    {
+      "name": "size below 1 KB floors at zero points",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 100 }],
+      "expect": [{ "id": "a", "score": 0 }]
+    },
+    {
+      "name": "1 MB contributes log2 minus ten",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1048576 }],
+      "expect": [{ "id": "a", "score": 10 }]
+    },
+    {
+      "name": "1 GB contributes twenty",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1073741824 }],
+      "expect": [{ "id": "a", "score": 20 }]
+    },
+    {
+      "name": "size term is fractional between doublings",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1572864 }],
+      "expect": [{ "id": "a", "score": 10.584962500721156 }]
+    },
+    {
+      "name": "staleness is zero when reference date is now",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "lastOpenedDaysAgo": 0 }],
+      "expect": [{ "id": "a", "score": 0 }]
+    },
+    {
+      "name": "staleness ramps linearly before the cap",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "lastOpenedDaysAgo": 45 }],
+      "expect": [{ "id": "a", "score": 5 }]
+    },
+    {
+      "name": "staleness saturates at half-life",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "lastOpenedDaysAgo": 90 }],
+      "expect": [{ "id": "a", "score": 10 }]
+    },
+    {
+      "name": "staleness does not exceed cap beyond half-life",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "lastOpenedDaysAgo": 270 }],
+      "expect": [{ "id": "a", "score": 10 }]
+    },
+    {
+      "name": "dates in the future count as zero staleness",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "lastOpenedDaysAgo": -5 }],
+      "expect": [{ "id": "a", "score": 0 }]
+    },
+    {
+      "name": "staleness falls back to modified when last opened is missing",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "modifiedDaysAgo": 90 }],
+      "expect": [{ "id": "a", "score": 10 }]
+    },
+    {
+      "name": "staleness falls back to created when last opened and modified are missing",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "createdDaysAgo": 90 }],
+      "expect": [{ "id": "a", "score": 10 }]
+    },
+    {
+      "name": "last opened takes precedence over modified",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "lastOpenedDaysAgo": 0, "modifiedDaysAgo": 90 }],
+      "expect": [{ "id": "a", "score": 0 }]
+    },
+    {
+      "name": "unopened bonus applies when never opened but has a source URL",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "sourceURL": "https://example.com/f" }],
+      "expect": [{ "id": "a", "score": 2 }]
+    },
+    {
+      "name": "unopened bonus does not apply when opened",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "lastOpenedDaysAgo": 0, "sourceURL": "https://example.com/f" }],
+      "expect": [{ "id": "a", "score": 0 }]
+    },
+    {
+      "name": "unopened bonus does not apply without a source URL",
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024 }],
+      "expect": [{ "id": "a", "score": 0 }]
+    },
+    {
+      "name": "duplicate bonus applies to the redundant copy only",
+      "candidates": [
+        { "id": "keeper", "name": "Report.pdf", "bytes": 1024, "lastOpenedDaysAgo": 0 },
+        { "id": "copy", "name": "Report (2).pdf", "bytes": 1024, "lastOpenedDaysAgo": 0 }
+      ],
+      "expect": [
+        { "id": "keeper", "score": 0, "redundantCopy": false, "duplicateCount": 2 },
+        { "id": "copy", "score": 8, "redundantCopy": true, "duplicateCount": 2 }
+      ]
+    },
+    {
+      "name": "archive bonus applies to a zip with an extracted sibling folder",
+      "candidates": [
+        { "id": "zip", "name": "Cards.zip", "bytes": 1024, "lastOpenedDaysAgo": 0 },
+        { "id": "dir", "name": "Cards", "bytes": 0, "lastOpenedDaysAgo": 0, "isDirectory": true }
+      ],
+      "expect": [
+        { "id": "zip", "score": 4, "extractedArchive": true },
+        { "id": "dir", "score": 0, "extractedArchive": false }
+      ]
+    },
+    {
+      "name": "ambiguous penalty applies with no source and a generic name",
+      "candidates": [{ "id": "a", "name": "IMG_1234.jpg", "bytes": 1024, "lastOpenedDaysAgo": 0 }],
+      "expect": [{ "id": "a", "score": -5 }]
+    },
+    {
+      "name": "ambiguous penalty does not apply with a source URL",
+      "candidates": [{ "id": "a", "name": "IMG_1234.jpg", "bytes": 1024, "lastOpenedDaysAgo": 0, "sourceURL": "https://example.com/f" }],
+      "expect": [{ "id": "a", "score": 0 }]
+    },
+    {
+      "name": "ambiguous penalty does not apply to a descriptive name",
+      "candidates": [{ "id": "a", "name": "Quarterly Report.pdf", "bytes": 1024, "lastOpenedDaysAgo": 0 }],
+      "expect": [{ "id": "a", "score": 0 }]
+    },
+    {
+      "name": "signals are additive, not multiplicative",
+      "candidates": [
+        { "id": "keeper", "name": "Big.zip", "bytes": 4294967296, "modifiedDaysAgo": 90, "sourceURL": "https://example.com/f" },
+        { "id": "copy", "name": "Big (2).zip", "bytes": 4294967296, "modifiedDaysAgo": 90, "sourceURL": "https://example.com/f" }
+      ],
+      "expect": [
+        { "id": "keeper", "score": 34 },
+        { "id": "copy", "score": 42 }
+      ]
+    },
+    {
+      "name": "custom weights are respected",
+      "weights": { "unopened": 99 },
+      "candidates": [{ "id": "a", "name": "example.dat", "bytes": 1024, "sourceURL": "https://example.com/f" }],
+      "expect": [{ "id": "a", "score": 99 }]
+    },
+    {
+      "name": "rank orders candidates by descending score",
+      "candidates": [
+        { "id": "low", "name": "low.dat", "bytes": 1024, "lastOpenedDaysAgo": 0 },
+        { "id": "high", "name": "high.dat", "bytes": 1073741824, "lastOpenedDaysAgo": 0 }
+      ],
+      "expect": [
+        { "id": "low", "score": 0 },
+        { "id": "high", "score": 20 }
+      ],
+      "expectRank": ["high", "low"]
+    },
+    {
+      "name": "a single file is not a redundant copy",
+      "candidates": [{ "id": "a", "name": "Report.pdf", "bytes": 10000 }],
+      "expect": [{ "id": "a", "redundantCopy": false, "duplicateCount": 1 }]
+    },
+    {
+      "name": "copy-word suffix marks a duplicate",
+      "candidates": [
+        { "id": "keeper", "name": "Report.pdf", "bytes": 10000 },
+        { "id": "copy", "name": "Report copy 3.pdf", "bytes": 10000 }
+      ],
+      "expect": [
+        { "id": "keeper", "redundantCopy": false },
+        { "id": "copy", "redundantCopy": true }
+      ]
+    },
+    {
+      "name": "copy-word suffix is case-insensitive",
+      "candidates": [
+        { "id": "keeper", "name": "Report.pdf", "bytes": 10000 },
+        { "id": "copy", "name": "Report Copy.pdf", "bytes": 10000 }
+      ],
+      "expect": [
+        { "id": "keeper", "redundantCopy": false },
+        { "id": "copy", "redundantCopy": true }
+      ]
+    },
+    {
+      "name": "extension case does not split a cluster",
+      "candidates": [
+        { "id": "keeper", "name": "Report.PDF", "bytes": 10000 },
+        { "id": "copy", "name": "Report (2).pdf", "bytes": 10000 }
+      ],
+      "expect": [
+        { "id": "keeper", "redundantCopy": false },
+        { "id": "copy", "redundantCopy": true }
+      ]
+    },
+    {
+      "name": "same name with a different size is not a duplicate",
+      "candidates": [
+        { "id": "a", "name": "Report.pdf", "bytes": 10000 },
+        { "id": "b", "name": "Report.pdf", "bytes": 55000 }
+      ],
+      "expect": [
+        { "id": "a", "redundantCopy": false, "duplicateCount": 1 },
+        { "id": "b", "redundantCopy": false, "duplicateCount": 1 }
+      ]
+    },
+    {
+      "name": "sizes straddling a half-KB boundary still cluster (floor, not round)",
+      "candidates": [
+        { "id": "a", "name": "Report.pdf", "bytes": 1048063 },
+        { "id": "b", "name": "Report (2).pdf", "bytes": 1048065 }
+      ],
+      "expect": [
+        { "id": "a", "redundantCopy": false },
+        { "id": "b", "redundantCopy": true }
+      ]
+    },
+    {
+      "name": "different names are never duplicates regardless of size",
+      "candidates": [
+        { "id": "a", "name": "Report.pdf", "bytes": 10000 },
+        { "id": "b", "name": "Invoice.pdf", "bytes": 10000 }
+      ],
+      "expect": [
+        { "id": "a", "redundantCopy": false },
+        { "id": "b", "redundantCopy": false }
+      ]
+    },
+    {
+      "name": "when every copy is suffixed the oldest is kept",
+      "candidates": [
+        { "id": "older", "name": "Profile (2).pdf", "bytes": 10000, "createdDaysAgo": 20 },
+        { "id": "newer", "name": "Profile (3).pdf", "bytes": 10000, "createdDaysAgo": 10 }
+      ],
+      "expect": [
+        { "id": "older", "redundantCopy": false },
+        { "id": "newer", "redundantCopy": true }
+      ]
+    },
+    {
+      "name": "when several copies are unsuffixed the oldest of them is kept",
+      "candidates": [
+        { "id": "newer", "name": "Report.pdf", "bytes": 10000, "createdDaysAgo": 5 },
+        { "id": "older", "name": "report.pdf", "bytes": 10000, "createdDaysAgo": 10 },
+        { "id": "suffixed", "name": "Report (2).pdf", "bytes": 10000, "createdDaysAgo": 30 }
+      ],
+      "expect": [
+        { "id": "newer", "redundantCopy": true, "duplicateCount": 3 },
+        { "id": "older", "redundantCopy": false, "duplicateCount": 3 },
+        { "id": "suffixed", "redundantCopy": true, "duplicateCount": 3 }
+      ]
+    },
+    {
+      "name": "duplicate count reflects the full cluster size",
+      "candidates": [
+        { "id": "a", "name": "Report.pdf", "bytes": 10000 },
+        { "id": "b", "name": "Report (2).pdf", "bytes": 10000 },
+        { "id": "c", "name": "Report (3).pdf", "bytes": 10000 }
+      ],
+      "expect": [
+        { "id": "a", "redundantCopy": false, "duplicateCount": 3 },
+        { "id": "b", "redundantCopy": true, "duplicateCount": 3 },
+        { "id": "c", "redundantCopy": true, "duplicateCount": 3 }
+      ]
+    },
+    {
+      "name": "folders are never duplicates",
+      "candidates": [
+        { "id": "a", "name": "Photos", "bytes": 0, "isDirectory": true },
+        { "id": "b", "name": "Photos (2)", "bytes": 0, "isDirectory": true }
+      ],
+      "expect": [
+        { "id": "a", "redundantCopy": false, "duplicateCount": 1 },
+        { "id": "b", "redundantCopy": false, "duplicateCount": 1 }
+      ]
+    },
+    {
+      "name": "extracted archive match is case-insensitive",
+      "candidates": [
+        { "id": "zip", "name": "cards.ZIP", "bytes": 10000 },
+        { "id": "dir", "name": "Cards", "bytes": 0, "isDirectory": true }
+      ],
+      "expect": [{ "id": "zip", "extractedArchive": true }]
+    },
+    {
+      "name": "a zip without a sibling folder is not an extracted archive",
+      "candidates": [{ "id": "zip", "name": "Cards.zip", "bytes": 10000 }],
+      "expect": [{ "id": "zip", "extractedArchive": false }]
+    },
+    {
+      "name": "a folder itself is never an extracted archive",
+      "candidates": [
+        { "id": "dir", "name": "Cards", "bytes": 0, "isDirectory": true },
+        { "id": "zip", "name": "Cards.zip", "bytes": 10000 }
+      ],
+      "expect": [
+        { "id": "dir", "extractedArchive": false },
+        { "id": "zip", "extractedArchive": true }
+      ]
+    }
+  ]
+}
